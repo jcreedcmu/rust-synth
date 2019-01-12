@@ -32,10 +32,14 @@ use self::Message::*;
 fn message_of_vec(vec: &[u8]) -> Option<Message> {
   match vec.len() {
     3 => match vec[0] {
-      0x90 => {
+      0x80...0x8f => Some(NoteOff {
+        channel: vec[0] - 0x80,
+        pitch: vec[1],
+      }),
+      0x90...0x9f => {
         if vec[2] != 0 {
           Some(NoteOn {
-            channel: 0,
+            channel: vec[0] - 0x90,
             pitch: vec[1],
             velocity: vec[2],
           })
@@ -46,6 +50,13 @@ fn message_of_vec(vec: &[u8]) -> Option<Message> {
           })
         }
       }
+      0xb0 => match vec[1] {
+        0x40 => match vec[2] {
+          0x00 => Some(PedalOff),
+          _ => Some(PedalOn),
+        },
+        _ => None,
+      },
       _ => None,
     },
     _ => None,
@@ -67,24 +78,10 @@ impl MidiService {
     let input_port = client.input_port("example-port", move |packet_list: &PacketList| {
       for x in packet_list.iter() {
         println!("{}", x);
-        // pub struct MIDIPacket {
-        //     pub timeStamp: MIDITimeStamp,
-        //     pub length: UInt16,
-        //     pub data: [Byte; 256usize],
-        //     pub __padding: [Byte; 2usize]
-        // }
-        let d = x.data();
-        if d.len() == 3 {
-          for y in d.iter() {
-            println!("{}", y);
-          }
+        if let Some(x) = message_of_vec(&x.data()) {
+          k(&x);
         }
       }
-      k(&Message::NoteOn {
-        velocity: 0,
-        pitch: 0,
-        channel: 0,
-      });
     })?;
     input_port.connect_source(&source)?;
 
