@@ -1,16 +1,17 @@
-extern crate coremidi;
+extern crate coremidi as cm;
+use coremidi::{Client, PacketList, Source, Sources};
 
 use std::env;
 
 pub fn go(source_index: usize) {
   println!("Source index: {}", source_index);
 
-  let source = coremidi::Source::from_index(source_index).unwrap();
+  let source = Source::from_index(source_index).unwrap();
   println!("Source display name: {}", source.display_name().unwrap());
 
-  let client = coremidi::Client::new("example-client").unwrap();
+  let client = Client::new("example-client").unwrap();
 
-  let callback = |packet_list: &coremidi::PacketList| {
+  let callback = |packet_list: &PacketList| {
     println!("{}", packet_list);
   };
 
@@ -42,7 +43,7 @@ fn get_source_index() -> usize {
   match args_iter.next() {
     Some(arg) => match arg.parse::<usize>() {
       Ok(index) => {
-        if index >= coremidi::Sources::count() {
+        if index >= Sources::count() {
           println!("Source index out of range: {}", index);
           std::process::exit(-1);
         }
@@ -64,7 +65,7 @@ fn get_source_index() -> usize {
 }
 
 fn print_sources() {
-  for (i, source) in coremidi::Sources.into_iter().enumerate() {
+  for (i, source) in Sources.into_iter().enumerate() {
     match source.display_name() {
       Some(display_name) => println!("[{}] {}", i, display_name),
       None => (),
