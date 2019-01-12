@@ -1,0 +1,9 @@
+[package]
+name = "rsynth"
+version = "0.1.0"
+authors = ["Jason Reed <jcreed@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+portaudio = "0.7.0"
+coremidi = "0.3.0"
