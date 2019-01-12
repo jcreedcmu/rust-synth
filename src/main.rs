@@ -1,20 +1,42 @@
-#![feature(core_intrinsics)]
+#![feature(core_intrinsics, try_trait)]
+#![allow(unused_imports, unused_variables, unused_mut, dead_code)]
 
-//! Play a sine wave for several seconds.
-//!
-//! A rusty adaptation of the official PortAudio C "paex_sine.c" example by Phil Burk and Ross
-//! Bencina.
+//! Play some sounds.
 
-extern crate portaudio;
+extern crate coremidi as cm;
+extern crate midir;
+extern crate portaudio as pad;
 
-use portaudio as pad;
+use midir::{Ignore, MidiInput, MidiOutput};
+use std::error::Error;
 use std::f64::consts::PI;
+use std::option::NoneError;
+use std::thread;
+use std::time::Duration;
 
 const CHANNELS: u32 = 2;
 const NUM_SECONDS: i32 = 5;
 const SAMPLE_RATE: f64 = 44_100.0;
 const FRAMES_PER_BUFFER: u32 = 64;
 const TABLE_SIZE: usize = 150;
+
+type Mostly<T> = Result<T, Box<Error>>;
+
+fn domidi2() -> Mostly<()> {
+  let mut midi_in = MidiInput::new("My Test Input")?;
+  let log_all_bytes = Vec::new(); // We use this as an example custom data to pass into the callback
+  let conn_in = midi_in.connect(
+    0,
+    "midir-test",
+    |stamp, message, log| {
+      // The last of the three callback parameters is the object that we pass in as last parameter of `connect`.
+      println!("{}: {:?} (len = {})", stamp, message, message.len());
+      log.extend_from_slice(message);
+    },
+    log_all_bytes,
+  )?;
+  Ok(())
+}
 
 fn main() {
   match run() {
@@ -43,7 +65,9 @@ where
 {
 }
 
-fn run() -> Result<(), pad::Error> {
+fn run() -> Mostly<()> {
+  domidi2()?;
+
   println!(
     "PortAudio Test: output sine wave. SR = {}, BufSize = {}",
     SAMPLE_RATE, FRAMES_PER_BUFFER
