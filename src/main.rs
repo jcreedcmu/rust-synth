@@ -6,6 +6,7 @@
 extern crate portaudio as pad;
 
 mod midi;
+mod sb;
 
 use std::error::Error;
 use std::f64::consts::PI;
@@ -112,7 +113,9 @@ where
 }
 
 fn run() -> Mostly<()> {
-  midi::go(0)?;
+  let ms = midi::MidiService::new(0, move |msg| {
+    println!("{:?}", msg);
+  })?;
   //  do_other()?;
   sleep(Duration::from_millis(25000));
 

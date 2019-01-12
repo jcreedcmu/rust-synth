@@ -6,6 +6,92 @@ use std::fmt;
 use std::thread::sleep;
 use std::time::Duration;
 
+pub struct MidiService {
+  client: Client,
+  input_port: coremidi::InputPort,
+}
+
+type Pitch = u8;
+
+#[derive(Debug)]
+pub enum Message {
+  NoteOn {
+    pitch: Pitch,
+    channel: u8,
+    velocity: u8,
+  },
+  NoteOff {
+    pitch: Pitch,
+    channel: u8,
+  },
+  PedalOn,
+  PedalOff,
+}
+use self::Message::*;
+
+fn message_of_vec(vec: &[u8]) -> Option<Message> {
+  match vec.len() {
+    3 => match vec[0] {
+      0x90 => {
+        if vec[2] != 0 {
+          Some(NoteOn {
+            channel: 0,
+            pitch: vec[1],
+            velocity: vec[2],
+          })
+        } else {
+          Some(NoteOff {
+            channel: 0,
+            pitch: vec[1],
+          })
+        }
+      }
+      _ => None,
+    },
+    _ => None,
+  }
+}
+
+impl MidiService {
+  pub fn new<C>(source_index: usize, k: C) -> Result<MidiService, MidiError>
+  where
+    C: Fn(&Message) + std::marker::Send + 'static,
+  {
+    let source = match Source::from_index(source_index) {
+      Some(x) => x,
+      None => Err(MidiError::BadSource(source_index))?,
+    };
+
+    let client = Client::new("example-client")?;
+    println!("Listening...");
+    let input_port = client.input_port("example-port", move |packet_list: &PacketList| {
+      for x in packet_list.iter() {
+        println!("{}", x);
+        // pub struct MIDIPacket {
+        //     pub timeStamp: MIDITimeStamp,
+        //     pub length: UInt16,
+        //     pub data: [Byte; 256usize],
+        //     pub __padding: [Byte; 2usize]
+        // }
+        let d = x.data();
+        if d.len() == 3 {
+          for y in d.iter() {
+            println!("{}", y);
+          }
+        }
+      }
+      k(&Message::NoteOn {
+        velocity: 0,
+        pitch: 0,
+        channel: 0,
+      });
+    })?;
+    input_port.connect_source(&source)?;
+
+    //  input_port.disconnect_source(&source)?;
+    Ok(MidiService { client, input_port })
+  }
+}
 // pub fn input_port<F>(&self, name: &str, callback: F) -> Result<InputPort, OSStatus>
 //         where F: FnMut(&PacketList) + Send + 'static {
 
@@ -38,72 +124,5 @@ impl Error for MidiError {
   fn cause(&self) -> Option<&Error> {
     // Generic error, underlying cause isn't tracked.
     None
-  }
-}
-
-pub fn go(source_index: usize) -> Result<(), MidiError> {
-  //  println!("Source index: {}", source_index);
-
-  let source = match Source::from_index(source_index) {
-    Some(x) => x,
-    None => Err(MidiError::BadSource(source_index))?,
-  };
-
-  let client = Client::new("example-client")?;
-  println!("hi");
-  let input_port = client
-    .input_port("example-port", |packet_list: &PacketList| {
-      println!("{}", packet_list);
-    })
-    .unwrap();
-  input_port.connect_source(&source)?;
-  sleep(Duration::from_millis(25000));
-
-  //  input_port.disconnect_source(&source)?;
-  Ok(())
-}
-
-fn get_source_index() -> usize {
-  let mut args_iter = env::args();
-  let tool_name = args_iter
-    .next()
-    .and_then(|path| {
-      path
-        .split(std::path::MAIN_SEPARATOR)
-        .last()
-        .map(|v| v.to_string())
-    })
-    .unwrap_or("receive".to_string());
-
-  match args_iter.next() {
-    Some(arg) => match arg.parse::<usize>() {
-      Ok(index) => {
-        if index >= Sources::count() {
-          println!("Source index out of range: {}", index);
-          std::process::exit(-1);
-        }
-        index
-      }
-      Err(_) => {
-        println!("Wrong source index: {}", arg);
-        std::process::exit(-1);
-      }
-    },
-    None => {
-      println!("Usage: {} <source-index>", tool_name);
-      println!("");
-      println!("Available Sources:");
-      print_sources();
-      std::process::exit(-1);
-    }
-  }
-}
-
-fn print_sources() {
-  for (i, source) in Sources.into_iter().enumerate() {
-    match source.display_name() {
-      Some(display_name) => println!("[{}] {}", i, display_name),
-      None => (),
-    }
   }
 }
