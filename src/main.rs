@@ -83,8 +83,6 @@ fn do_other() -> Mostly<()> {
     }
   };
 
-  //  check(callback);
-
   check::<pad::StreamCallbackResult, pad::OutputStreamCallbackArgs<f32>, _>(callback);
   let mut stream = pa.open_non_blocking_stream(settings, callback)?;
 
@@ -114,7 +112,7 @@ where
 }
 
 fn run() -> Mostly<()> {
-  midi::go(0);
+  midi::go(0)?;
   //  do_other()?;
   sleep(Duration::from_millis(25000));
 

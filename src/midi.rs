@@ -1,31 +1,66 @@
-extern crate coremidi as cm;
+extern crate coremidi;
 use coremidi::{Client, PacketList, Source, Sources};
-
 use std::env;
+use std::error::Error;
+use std::fmt;
+use std::thread::sleep;
+use std::time::Duration;
 
-pub fn go(source_index: usize) {
-  println!("Source index: {}", source_index);
+// pub fn input_port<F>(&self, name: &str, callback: F) -> Result<InputPort, OSStatus>
+//         where F: FnMut(&PacketList) + Send + 'static {
 
-  let source = Source::from_index(source_index).unwrap();
-  println!("Source display name: {}", source.display_name().unwrap());
+#[derive(Debug)]
+pub enum MidiError {
+  Os(i32),
+  BadSource(usize),
+}
 
-  let client = Client::new("example-client").unwrap();
+impl From<i32> for MidiError {
+  fn from(x: i32) -> MidiError {
+    MidiError::Os(x)
+  }
+}
 
-  let callback = |packet_list: &PacketList| {
-    println!("{}", packet_list);
+impl fmt::Display for MidiError {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    match self {
+      MidiError::Os(x) => write!(f, "Os error {}", x),
+      MidiError::BadSource(x) => write!(f, "Bad source {}", x),
+    }
+  }
+}
+
+impl Error for MidiError {
+  fn description(&self) -> &str {
+    "invalid first item to double"
+  }
+
+  fn cause(&self) -> Option<&Error> {
+    // Generic error, underlying cause isn't tracked.
+    None
+  }
+}
+
+pub fn go(source_index: usize) -> Result<(), MidiError> {
+  //  println!("Source index: {}", source_index);
+
+  let source = match Source::from_index(source_index) {
+    Some(x) => x,
+    None => Err(MidiError::BadSource(source_index))?,
   };
 
-  let input_port = client.input_port("example-port", callback).unwrap();
-  input_port.connect_source(&source).unwrap();
+  let client = Client::new("example-client")?;
+  println!("hi");
+  let input_port = client
+    .input_port("example-port", |packet_list: &PacketList| {
+      println!("{}", packet_list);
+    })
+    .unwrap();
+  input_port.connect_source(&source)?;
+  sleep(Duration::from_millis(25000));
 
-  let mut input_line = String::new();
-  println!("Press [Intro] to finish ...");
-  std::io::stdin()
-    .read_line(&mut input_line)
-    .ok()
-    .expect("Failed to read line");
-
-  input_port.disconnect_source(&source).unwrap();
+  //  input_port.disconnect_source(&source)?;
+  Ok(())
 }
 
 fn get_source_index() -> usize {
