@@ -3,15 +3,14 @@
 
 //! Play some sounds.
 
-extern crate coremidi as cm;
-extern crate midir;
 extern crate portaudio as pad;
 
-use midir::{Ignore, MidiInput, MidiOutput};
+mod midi;
+
 use std::error::Error;
 use std::f64::consts::PI;
 use std::option::NoneError;
-use std::thread;
+use std::thread::sleep;
 use std::time::Duration;
 
 const CHANNELS: u32 = 2;
@@ -21,22 +20,6 @@ const FRAMES_PER_BUFFER: u32 = 64;
 const TABLE_SIZE: usize = 150;
 
 type Mostly<T> = Result<T, Box<Error>>;
-
-fn domidi2() -> Mostly<()> {
-  let mut midi_in = MidiInput::new("My Test Input")?;
-  let log_all_bytes = Vec::new(); // We use this as an example custom data to pass into the callback
-  let conn_in = midi_in.connect(
-    0,
-    "midir-test",
-    |stamp, message, log| {
-      // The last of the three callback parameters is the object that we pass in as last parameter of `connect`.
-      println!("{}: {:?} (len = {})", stamp, message, message.len());
-      log.extend_from_slice(message);
-    },
-    log_all_bytes,
-  )?;
-  Ok(())
-}
 
 fn main() {
   match run() {
@@ -59,15 +42,7 @@ fn wrap<T: std::cmp::PartialOrd + std::ops::SubAssign>(x: &mut T, size: T) {
 // {
 // }
 
-fn check<D, Args, C>(_cbk: C)
-where
-  C: FnMut(Args) -> D,
-{
-}
-
-fn run() -> Mostly<()> {
-  domidi2()?;
-
+fn do_other() -> Mostly<()> {
   println!(
     "PortAudio Test: output sine wave. SR = {}, BufSize = {}",
     SAMPLE_RATE, FRAMES_PER_BUFFER
@@ -124,10 +99,24 @@ fn run() -> Mostly<()> {
     }
     pa.sleep(250);
   }
+
   stream.stop()?;
   stream.close()?;
 
   println!("Test finished.");
+  Ok(())
+}
+
+fn check<D, Args, C>(_cbk: C)
+where
+  C: FnMut(Args) -> D,
+{
+}
+
+fn run() -> Mostly<()> {
+  midi::go(0);
+  //  do_other()?;
+  sleep(Duration::from_millis(25000));
 
   Ok(())
 }
