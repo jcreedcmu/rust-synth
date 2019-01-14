@@ -6,6 +6,7 @@
 
 mod audio;
 mod midi;
+mod sb;
 mod util;
 
 use std::error::Error;
@@ -25,10 +26,11 @@ fn main() {
 }
 
 fn run() -> Mostly<()> {
-  // do_other()?;
-  let ms = midi::MidiService::new(0, move |msg| {
-    println!("{:?}", msg);
-  })?;
+  sb::dance();
+  // let ads = audio::AudioService::new();
+  // let ms = midi::MidiService::new(0, move |msg| {
+  //   println!("{:?}", msg);
+  // })?;
 
   sleep(Duration::from_millis(25000));
 
