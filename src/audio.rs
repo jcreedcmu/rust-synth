@@ -19,9 +19,7 @@ fn wrap<T: std::cmp::PartialOrd + std::ops::SubAssign>(x: &mut T, size: T) {
   }
 }
 
-pub struct AudioService {
-  phase: Arc<Mutex<f64>>,
-}
+pub struct AudioService {}
 
 impl AudioService {
   pub fn new(state: &Data) -> Mostly<AudioService> {
@@ -44,9 +42,7 @@ impl AudioService {
 
     settings.flags = pad::stream_flags::NO_FLAG;
 
-    let serv = AudioService {
-      phase: state.phase.clone(),
-    };
+    let serv = AudioService {};
 
     let cstate = state.phase.clone();
     // This routine will be called by the PortAudio engine when audio is needed. It may called at
