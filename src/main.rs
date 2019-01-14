@@ -11,6 +11,7 @@ mod util;
 
 use std::error::Error;
 use std::option::NoneError;
+use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -25,9 +26,17 @@ fn main() {
   }
 }
 
+pub struct Data {
+  phase: Arc<Mutex<f64>>,
+}
+
 fn run() -> Mostly<()> {
+  let state = Data {
+    phase: Arc::new(Mutex::new(0.0)),
+  };
+
   //  sb::dance();
-  let ads = audio::AudioService::new()?;
+  let ads = audio::AudioService::new(&state)?;
   // let ms = midi::MidiService::new(0, move |msg| {
   //   println!("{:?}", msg);
   // })?;

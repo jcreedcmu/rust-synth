@@ -1,4 +1,6 @@
 use crate::util::Mostly;
+use crate::Data;
+
 use portaudio as pad;
 
 use std::error::Error;
@@ -22,7 +24,7 @@ pub struct AudioService {
 }
 
 impl AudioService {
-  pub fn new() -> Mostly<AudioService> {
+  pub fn new(state: &Data) -> Mostly<AudioService> {
     println!(
       "PortAudio Test: output sine wave. SR = {}, BufSize = {}",
       SAMPLE_RATE, FRAMES_PER_BUFFER
@@ -42,12 +44,11 @@ impl AudioService {
 
     settings.flags = pad::stream_flags::NO_FLAG;
 
-    let state = Arc::new(Mutex::new(0.0));
     let serv = AudioService {
-      phase: state.clone(),
+      phase: state.phase.clone(),
     };
 
-    let cstate = state.clone();
+    let cstate = state.phase.clone();
     // This routine will be called by the PortAudio engine when audio is needed. It may called at
     // interrupt level on some machines so don't do anything that could mess up the system like
     // dynamic resource allocation or IO.
