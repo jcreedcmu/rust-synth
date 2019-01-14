@@ -44,29 +44,35 @@ impl AudioService {
 
     let serv = AudioService {};
 
-    let cstate = state.phase.clone();
+    let cphase = state.phase.clone();
+    let cfreq = state.freq.clone();
     // This routine will be called by the PortAudio engine when audio is needed. It may called at
     // interrupt level on some machines so don't do anything that could mess up the system like
     // dynamic resource allocation or IO.
     let callback = move |pad::OutputStreamCallbackArgs { buffer, frames, .. }| {
-      let mut phase_mut = cstate.lock().unwrap();
+      let mut phase_mut = cphase.lock().unwrap();
+      let mut freq_mut = cfreq.lock().unwrap();
       let mut phase: f64 = *phase_mut;
+      let mut freq: f64 = *freq_mut;
       let mut idx = 0;
       for _ in 0..frames {
         let offset = phase as usize;
         buffer[idx] = sine[offset];
         buffer[idx + 1] = sine[offset];
-        phase += if global_t > 0.25 { 1.75 } else { 2.0 };
+        let base = freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
+        //        phase += if global_t > 0.25 { base * 1.5 } else { base };
+        phase += base;
         wrap(&mut phase, TABLE_SIZE as f64);
         idx += CHANNELS as usize;
         global_t += 1.0 / SAMPLE_RATE;
       }
       *phase_mut = phase;
-      if global_t > 0.5 {
-        pad::Abort
-      } else {
-        pad::Continue
-      }
+      // if global_t > 0.5 {
+      //   pad::Abort
+      // } else {
+      //   pad::Continue
+      // }
+      pad::Continue
     };
 
     let mut stream = pa.open_non_blocking_stream(settings, callback)?;

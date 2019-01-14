@@ -28,11 +28,13 @@ fn main() {
 
 pub struct Data {
   phase: Arc<Mutex<f64>>,
+  freq: Arc<Mutex<f64>>,
 }
 
 fn run() -> Mostly<()> {
   let state = Data {
     phase: Arc::new(Mutex::new(0.0)),
+    freq: Arc::new(Mutex::new(440.0)),
   };
 
   //  sb::dance();
