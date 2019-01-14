@@ -1,4 +1,3 @@
-extern crate coremidi;
 use coremidi::{Client, PacketList, Source, Sources};
 use std::env;
 use std::error::Error;

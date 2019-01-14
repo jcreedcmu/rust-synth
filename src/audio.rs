@@ -1,9 +1,8 @@
-extern crate portaudio as pad;
+use crate::util::Mostly;
+use portaudio as pad;
 
 use std::error::Error;
 use std::f64::consts::PI;
-
-pub type Mostly<T> = Result<T, Box<Error>>;
 
 pub struct AudioService {}
 
