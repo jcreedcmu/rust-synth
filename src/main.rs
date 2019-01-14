@@ -9,12 +9,12 @@ mod midi;
 mod sb;
 mod util;
 
+use midi::Message;
 use std::error::Error;
 use std::option::NoneError;
 use std::sync::{Arc, Mutex};
-use std::thread::sleep;
+use std::thread::{sleep, spawn};
 use std::time::Duration;
-
 use util::Mostly;
 
 fn main() {
@@ -38,10 +38,30 @@ fn run() -> Mostly<()> {
   };
 
   //  sb::dance();
+  let state2 = Data {
+    phase: state.phase.clone(),
+    freq: state.freq.clone(),
+  };
+
+  let ms = midi::MidiService::new(0, move |msg: &Message| {
+    let mut freq = state2.freq.lock().unwrap();
+    match msg {
+      Message::NoteOn {
+        pitch,
+        channel,
+        velocity,
+      } => {
+        *freq = 440.0 * 2.0f64.powf(((*pitch as f64) - 69.0) / 12.0);
+      }
+      Message::NoteOff { pitch, channel } => {
+        *freq = 0.0;
+      }
+      _ => (),
+    }
+    println!("{:?}", msg);
+  })?;
+
   let ads = audio::AudioService::new(&state)?;
-  // let ms = midi::MidiService::new(0, move |msg| {
-  //   println!("{:?}", msg);
-  // })?;
 
   sleep(Duration::from_millis(25000));
 
