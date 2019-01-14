@@ -26,8 +26,8 @@ fn main() {
 }
 
 fn run() -> Mostly<()> {
-  sb::dance();
-  // let ads = audio::AudioService::new();
+  //  sb::dance();
+  let ads = audio::AudioService::new()?;
   // let ms = midi::MidiService::new(0, move |msg| {
   //   println!("{:?}", msg);
   // })?;

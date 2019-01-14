@@ -3,7 +3,7 @@ use portaudio as pad;
 
 use std::error::Error;
 use std::f64::consts::PI;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 const CHANNELS: u32 = 2;
 const NUM_SECONDS: i32 = 5;
@@ -11,17 +11,6 @@ const SAMPLE_RATE: f64 = 44_100.0;
 const FRAMES_PER_BUFFER: u32 = 64;
 const TABLE_SIZE: usize = 150;
 
-// fn check<'a, C>(_cbk: C)
-// where
-//   C: FnMut(pad::OutputStreamCallbackArgs<'a, f32>) -> pad::StreamCallbackResult,
-// {
-// }
-
-fn check<D, Args, C>(_cbk: C)
-where
-  C: FnMut(Args) -> D,
-{
-}
 fn wrap<T: std::cmp::PartialOrd + std::ops::SubAssign>(x: &mut T, size: T) {
   if *x >= size {
     *x -= size;
@@ -29,7 +18,7 @@ fn wrap<T: std::cmp::PartialOrd + std::ops::SubAssign>(x: &mut T, size: T) {
 }
 
 pub struct AudioService {
-  phase: Mutex<f64>,
+  phase: Arc<Mutex<f64>>,
 }
 
 impl AudioService {
@@ -44,7 +33,7 @@ impl AudioService {
     for i in 0..TABLE_SIZE {
       sine[i] = (i as f64 / TABLE_SIZE as f64 * PI * 2.0).sin() as f32;
     }
-    let mut phase = 0.0; // in frames
+
     let mut global_t = 0.0; // in seconds
     let pa = pad::PortAudio::new()?;
 
@@ -53,14 +42,18 @@ impl AudioService {
 
     settings.flags = pad::stream_flags::NO_FLAG;
 
-    let f = Mutex::new(39.0);
-    let serv = AudioService { phase: f };
+    let state = Arc::new(Mutex::new(0.0));
+    let serv = AudioService {
+      phase: state.clone(),
+    };
 
+    let cstate = state.clone();
     // This routine will be called by the PortAudio engine when audio is needed. It may called at
     // interrupt level on some machines so don't do anything that could mess up the system like
     // dynamic resource allocation or IO.
     let callback = move |pad::OutputStreamCallbackArgs { buffer, frames, .. }| {
-      //      let foo: u8 = serv.phase.lock();
+      let mut phase_mut = cstate.lock().unwrap();
+      let mut phase: f64 = *phase_mut;
       let mut idx = 0;
       for _ in 0..frames {
         let offset = phase as usize;
@@ -71,6 +64,7 @@ impl AudioService {
         idx += CHANNELS as usize;
         global_t += 1.0 / SAMPLE_RATE;
       }
+      *phase_mut = phase;
       if global_t > 0.5 {
         pad::Abort
       } else {
@@ -78,7 +72,6 @@ impl AudioService {
       }
     };
 
-    check::<pad::StreamCallbackResult, pad::OutputStreamCallbackArgs<f32>, _>(callback);
     let mut stream = pa.open_non_blocking_stream(settings, callback)?;
 
     stream.start()?;
