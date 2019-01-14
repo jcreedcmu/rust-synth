@@ -6,7 +6,6 @@
 extern crate portaudio as pad;
 
 mod midi;
-mod sb;
 
 use std::error::Error;
 use std::f64::consts::PI;
