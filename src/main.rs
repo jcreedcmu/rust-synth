@@ -12,7 +12,7 @@ mod util;
 use midi::Message;
 use std::error::Error;
 use std::option::NoneError;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 use util::Mostly;
@@ -26,42 +26,44 @@ fn main() {
   }
 }
 
+pub struct State {
+  phase: f64,
+  freq: f64,
+}
+
 pub struct Data {
-  phase: Arc<Mutex<f64>>,
-  freq: Arc<Mutex<f64>>,
+  state: Arc<Mutex<State>>,
 }
 
 fn run() -> Mostly<()> {
-  let state = Data {
-    phase: Arc::new(Mutex::new(0.0)),
-    freq: Arc::new(Mutex::new(440.0)),
-  };
+  let state = Arc::new(Mutex::new(State {
+    phase: 0.0,
+    freq: 440.0,
+  }));
 
-  //  sb::dance();
-  let state2 = Data {
-    phase: state.phase.clone(),
-    freq: state.freq.clone(),
+  let dcb = Data {
+    state: state.clone(),
   };
 
   let ms = midi::MidiService::new(0, move |msg: &Message| {
-    let mut freq = state2.freq.lock().unwrap();
+    let mut s: MutexGuard<State> = dcb.state.lock().unwrap();
     match msg {
       Message::NoteOn {
         pitch,
         channel,
         velocity,
       } => {
-        *freq = 440.0 * 2.0f64.powf(((*pitch as f64) - 69.0) / 12.0);
+        s.freq = 440.0 * 2.0f64.powf(((*pitch as f64) - 69.0) / 12.0);
       }
       Message::NoteOff { pitch, channel } => {
-        *freq = 0.0;
+        s.freq = 0.0;
       }
       _ => (),
     }
     println!("{:?}", msg);
   })?;
 
-  let ads = audio::AudioService::new(&state)?;
+  let ads = audio::AudioService::new(&Data { state })?;
 
   sleep(Duration::from_millis(25000));
 

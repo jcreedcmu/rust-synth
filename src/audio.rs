@@ -1,11 +1,11 @@
 use crate::util::Mostly;
-use crate::Data;
+use crate::{Data, State};
 
 use portaudio as pad;
 
 use std::error::Error;
 use std::f64::consts::PI;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 const CHANNELS: u32 = 2;
 const NUM_SECONDS: i32 = 5;
@@ -22,7 +22,7 @@ fn wrap<T: std::cmp::PartialOrd + std::ops::SubAssign>(x: &mut T, size: T) {
 pub struct AudioService {}
 
 impl AudioService {
-  pub fn new(state: &Data) -> Mostly<AudioService> {
+  pub fn new(data: &Data) -> Mostly<AudioService> {
     println!(
       "PortAudio Test: output sine wave. SR = {}, BufSize = {}",
       SAMPLE_RATE, FRAMES_PER_BUFFER
@@ -44,29 +44,26 @@ impl AudioService {
 
     let serv = AudioService {};
 
-    let cphase = state.phase.clone();
-    let cfreq = state.freq.clone();
+    let sg = data.state.clone();
+
     // This routine will be called by the PortAudio engine when audio is needed. It may called at
     // interrupt level on some machines so don't do anything that could mess up the system like
     // dynamic resource allocation or IO.
     let callback = move |pad::OutputStreamCallbackArgs { buffer, frames, .. }| {
-      let mut phase_mut = cphase.lock().unwrap();
-      let mut freq_mut = cfreq.lock().unwrap();
-      let mut phase: f64 = *phase_mut;
-      let mut freq: f64 = *freq_mut;
+      let mut s: MutexGuard<State> = sg.lock().unwrap();
       let mut idx = 0;
       for _ in 0..frames {
-        let offset = phase as usize;
+        let offset = s.phase as usize;
         buffer[idx] = sine[offset];
         buffer[idx + 1] = sine[offset];
-        let base = freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
+        let base = s.freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
         //        phase += if global_t > 0.25 { base * 1.5 } else { base };
-        phase += base;
-        wrap(&mut phase, TABLE_SIZE as f64);
+        s.phase += base;
+        wrap(&mut s.phase, TABLE_SIZE as f64);
         idx += CHANNELS as usize;
         global_t += 1.0 / SAMPLE_RATE;
       }
-      *phase_mut = phase;
+
       // if global_t > 0.5 {
       //   pad::Abort
       // } else {
