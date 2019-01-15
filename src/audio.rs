@@ -48,6 +48,7 @@ impl AudioService {
 
     // state for callback
     let sg = data.state.clone();
+    let mut lowp = 0.0;
 
     // This routine will be called by the PortAudio engine when audio is needed. It may called at
     // interrupt level on some machines so don't do anything that could mess up the system like
@@ -69,8 +70,9 @@ impl AudioService {
             }
           }
         }
-        buffer[2 * ix] = samp;
-        buffer[2 * ix + 1] = samp;
+        lowp = 0.99 * lowp + 0.01 * samp;
+        buffer[2 * ix] = lowp;
+        buffer[2 * ix + 1] = lowp;
       }
       pad::Continue
     };
