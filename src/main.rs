@@ -17,6 +17,9 @@ use std::thread::{sleep, spawn};
 use std::time::Duration;
 use util::Mostly;
 
+const BOTTOM_NOTE: u8 = 21;
+const NUM_NOTES: usize = 88;
+
 fn main() {
   match run() {
     Ok(_) => {}
@@ -26,9 +29,19 @@ fn main() {
   }
 }
 
+#[derive(Clone)]
+pub struct NoteState {}
+
+#[derive(Clone)]
+pub struct KeyState {
+  is_on: bool,
+}
+
 pub struct State {
   phase: f64,
   freq: f64,
+  key_state: Vec<KeyState>,
+  note_state: Vec<NoteState>,
 }
 
 pub struct Data {
@@ -39,6 +52,8 @@ fn run() -> Mostly<()> {
   let state = Arc::new(Mutex::new(State {
     phase: 0.0,
     freq: 440.0,
+    key_state: vec![KeyState { is_on: false }; NUM_NOTES],
+    note_state: vec![],
   }));
 
   let dcb = Data {
