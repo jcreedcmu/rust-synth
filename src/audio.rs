@@ -54,27 +54,23 @@ impl AudioService {
     // dynamic resource allocation or IO.
     let callback = move |pad::OutputStreamCallbackArgs { buffer, frames, .. }| {
       let mut s: MutexGuard<State> = sg.lock().unwrap();
-      {
-        for ix in 0..frames {
-          buffer[2 * ix] = 0.0;
-          buffer[2 * ix + 1] = 0.0;
-        }
-      }
-      for note in s.note_state.iter_mut() {
-        match note {
-          None => (),
-          Some(note) => {
-            for ix in 0..frames {
+      for ix in 0..frames {
+        let mut samp = 0.0;
+
+        for note in s.note_state.iter_mut() {
+          match note {
+            None => (),
+            Some(note) => {
               let offset = note.phase as usize;
-              let samp = (note.amp as f32) * sine[offset];
-              buffer[2 * ix] += samp;
-              buffer[2 * ix + 1] += samp;
+              samp += (note.amp as f32) * sine[offset];
               let base = note.freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
               note.phase += base;
               wrap(&mut note.phase, TABLE_SIZE as f64);
             }
           }
         }
+        buffer[2 * ix] = samp;
+        buffer[2 * ix + 1] = samp;
       }
       pad::Continue
     };
