@@ -42,8 +42,11 @@ impl AudioService {
 
     settings.flags = pad::stream_flags::NO_FLAG;
 
+    // This doesn't seem important anymore, but leaving this here in
+    // case I need to stash any state in it
     let serv = AudioService {};
 
+    // state for callback
     let sg = data.state.clone();
 
     // This routine will be called by the PortAudio engine when audio is needed. It may called at
@@ -61,7 +64,6 @@ impl AudioService {
         match note {
           None => (),
           Some(note) => {
-            let mut idx = 0;
             for ix in 0..frames {
               let offset = note.phase as usize;
               let samp = (note.amp as f32) * sine[offset];
@@ -74,13 +76,6 @@ impl AudioService {
           }
         }
       }
-      // phase += if global_t > 0.25 { base * 1.5 } else { base };
-      // global_t += 1.0 / SAMPLE_RATE;
-      // if global_t > 0.5 {
-      //   pad::Abort
-      // } else {
-      //   pad::Continue
-      // }
       pad::Continue
     };
 
@@ -95,7 +90,7 @@ impl AudioService {
       if !stream.is_active()? {
         break;
       }
-      pa.sleep(250);
+      pa.sleep(500);
     }
 
     stream.stop()?;
