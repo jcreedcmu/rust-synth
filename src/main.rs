@@ -30,29 +30,51 @@ fn main() {
 }
 
 #[derive(Clone)]
-pub struct NoteState {}
+pub struct NoteState {
+  pitch: u8,
+  freq: f64,
+  amp: f64,
+  phase: f64,
+}
 
 #[derive(Clone)]
 pub struct KeyState {
-  is_on: bool,
+  is_on: Option<usize>, // index into note_state vector
 }
 
 pub struct State {
   phase: f64,
   freq: f64,
   key_state: Vec<KeyState>,
-  note_state: Vec<NoteState>,
+  note_state: Vec<Option<NoteState>>,
 }
 
 pub struct Data {
   state: Arc<Mutex<State>>,
 }
 
+fn find_note(s: &State, pitch: u8) -> Option<usize> {
+  s.note_state.iter().position(|x| match x {
+    Some(y) => y.pitch == pitch,
+    _ => false,
+  })
+}
+
+fn add_note(ns: &mut Vec<Option<NoteState>>, new: NoteState) -> () {
+  match ns.iter().position(|x| match x {
+    None => true,
+    _ => false,
+  }) {
+    None => ns.push(Some(new)),
+    Some(i) => ns[i] = Some(new),
+  }
+}
+
 fn run() -> Mostly<()> {
   let state = Arc::new(Mutex::new(State {
     phase: 0.0,
     freq: 440.0,
-    key_state: vec![KeyState { is_on: false }; NUM_NOTES],
+    key_state: vec![KeyState { is_on: None }; NUM_NOTES],
     note_state: vec![],
   }));
 
@@ -61,17 +83,45 @@ fn run() -> Mostly<()> {
   };
 
   let ms = midi::MidiService::new(0, move |msg: &Message| {
-    let mut s: MutexGuard<State> = dcb.state.lock().unwrap();
     match msg {
       Message::NoteOn {
         pitch,
         channel,
         velocity,
       } => {
-        s.freq = 440.0 * 2.0f64.powf(((*pitch as f64) - 69.0) / 12.0);
+        let pitch = *pitch;
+        let freq = 440.0 * 2.0f64.powf(((pitch as f64) - 69.0) / 12.0);
+        let mut s: MutexGuard<State> = dcb.state.lock().unwrap();
+
+        // Is this note already being played?
+        let pre = find_note(&s, pitch);
+
+        match pre {
+          Some(i) => match &mut s.note_state[i] {
+            None => panic!("we thought this note already existed"),
+            Some(ns) => ns.amp = 1.0,
+          },
+          None => add_note(
+            &mut s.note_state,
+            NoteState {
+              phase: 0.0,
+              freq,
+              pitch,
+              amp: 1.0,
+            },
+          ),
+        }
       }
       Message::NoteOff { pitch, channel } => {
-        s.freq = 0.0;
+        let mut s: MutexGuard<State> = dcb.state.lock().unwrap();
+        let pre = find_note(&s, *pitch);
+
+        match pre {
+          None => println!("kinda weird, a noteoff {} on something already off", pitch),
+          Some(i) => {
+            s.note_state[i] = None;
+          }
+        }
       }
       _ => (),
     }

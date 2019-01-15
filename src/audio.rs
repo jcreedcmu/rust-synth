@@ -51,19 +51,30 @@ impl AudioService {
     // dynamic resource allocation or IO.
     let callback = move |pad::OutputStreamCallbackArgs { buffer, frames, .. }| {
       let mut s: MutexGuard<State> = sg.lock().unwrap();
-      let mut idx = 0;
-      for _ in 0..frames {
-        let offset = s.phase as usize;
-        buffer[idx] = sine[offset];
-        buffer[idx + 1] = sine[offset];
-        let base = s.freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
-        //        phase += if global_t > 0.25 { base * 1.5 } else { base };
-        s.phase += base;
-        wrap(&mut s.phase, TABLE_SIZE as f64);
-        idx += CHANNELS as usize;
-        global_t += 1.0 / SAMPLE_RATE;
+      {
+        for ix in 0..frames {
+          buffer[2 * ix] = 0.0;
+          buffer[2 * ix + 1] = 0.0;
+        }
       }
-
+      for note in s.note_state.iter_mut() {
+        match note {
+          None => (),
+          Some(note) => {
+            let mut idx = 0;
+            for ix in 0..frames {
+              let offset = note.phase as usize;
+              buffer[2 * ix] += sine[offset];
+              buffer[2 * ix + 1] += sine[offset];
+              let base = note.freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
+              note.phase += base;
+              wrap(&mut note.phase, TABLE_SIZE as f64);
+            }
+          }
+        }
+      }
+      // phase += if global_t > 0.25 { base * 1.5 } else { base };
+      // global_t += 1.0 / SAMPLE_RATE;
       // if global_t > 0.5 {
       //   pad::Abort
       // } else {
