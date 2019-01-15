@@ -64,8 +64,9 @@ impl AudioService {
             let mut idx = 0;
             for ix in 0..frames {
               let offset = note.phase as usize;
-              buffer[2 * ix] += sine[offset];
-              buffer[2 * ix + 1] += sine[offset];
+              let samp = (note.amp as f32) * sine[offset];
+              buffer[2 * ix] += samp;
+              buffer[2 * ix + 1] += samp;
               let base = note.freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
               note.phase += base;
               wrap(&mut note.phase, TABLE_SIZE as f64);

@@ -95,11 +95,11 @@ fn run() -> Mostly<()> {
 
         // Is this note already being played?
         let pre = find_note(&s, pitch);
-
+        let amp = (*velocity as f64) / 128.0;
         match pre {
           Some(i) => match &mut s.note_state[i] {
             None => panic!("we thought this note already existed"),
-            Some(ns) => ns.amp = 1.0,
+            Some(ns) => ns.amp = amp,
           },
           None => add_note(
             &mut s.note_state,
@@ -107,7 +107,7 @@ fn run() -> Mostly<()> {
               phase: 0.0,
               freq,
               pitch,
-              amp: 1.0,
+              amp,
             },
           ),
         }
