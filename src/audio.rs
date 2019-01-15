@@ -23,18 +23,18 @@ pub struct AudioService {}
 
 impl AudioService {
   pub fn new(data: &Data) -> Mostly<AudioService> {
-    println!(
-      "PortAudio Test: output sine wave. SR = {}, BufSize = {}",
-      SAMPLE_RATE, FRAMES_PER_BUFFER
-    );
-
-    // Initialise sinusoidal wavetable.
-    let mut sine = [0.0; TABLE_SIZE];
+    // Initialise wavetable.
+    let mut wavetable = [0.0; TABLE_SIZE];
     for i in 0..TABLE_SIZE {
-      sine[i] = (i as f64 / TABLE_SIZE as f64 * PI * 2.0).sin() as f32;
+      //      wavetable[i] = (i as f64 / TABLE_SIZE as f64 * PI * 2.0).sin() as f32;
+      wavetable[i] = if (i as f64 / TABLE_SIZE as f64) < 0.5 {
+        -1.0
+      } else {
+        1.0
+      };
     }
 
-    let mut global_t = 0.0; // in seconds
+    let mut global_t = 0.0; // in seconds, not used right now?
     let pa = pad::PortAudio::new()?;
 
     let mut settings =
@@ -63,14 +63,14 @@ impl AudioService {
             None => (),
             Some(note) => {
               let offset = note.phase as usize;
-              samp += (note.amp as f32) * sine[offset];
+              samp += (note.amp as f32) * wavetable[offset];
               let base = note.freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
               note.phase += base;
               wrap(&mut note.phase, TABLE_SIZE as f64);
             }
           }
         }
-        lowp = 0.99 * lowp + 0.01 * samp;
+        lowp = 0.95 * lowp + 0.05 * samp;
         buffer[2 * ix] = lowp;
         buffer[2 * ix + 1] = lowp;
       }
@@ -80,8 +80,6 @@ impl AudioService {
     let mut stream = pa.open_non_blocking_stream(settings, callback)?;
 
     stream.start()?;
-
-    println!("Play for {} seconds.", NUM_SECONDS);
 
     loop {
       println!("playing...");
@@ -93,8 +91,6 @@ impl AudioService {
 
     stream.stop()?;
     stream.close()?;
-
-    println!("Test finished.");
     Ok(serv)
   }
 }
