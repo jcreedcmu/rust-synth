@@ -9,6 +9,7 @@ mod midi;
 mod sb;
 mod util;
 
+use audio::note_fsm_amp;
 use midi::Message;
 use std::error::Error;
 use std::option::NoneError;
@@ -31,7 +32,7 @@ fn main() {
 
 #[derive(Clone)]
 pub enum NoteFsm {
-  On { t: f64 },
+  On { amp: f64, t: f64, vel: f64 },
   Release { amp: f64, t: f64 },
 }
 
@@ -77,6 +78,26 @@ fn add_note(ns: &mut Vec<Option<NoteState>>, new: NoteState) -> () {
   }
 }
 
+fn restrike_note(note: &mut NoteState, vel: f64) {
+  note.fsm = NoteFsm::On {
+    t: 0.0,
+    amp: note_fsm_amp(&note.fsm),
+    vel,
+  };
+}
+
+fn release_note(note: &mut Option<NoteState>) {
+  match note {
+    Some(NoteState { ref mut fsm, .. }) => {
+      *fsm = NoteFsm::Release {
+        t: 0.0,
+        amp: note_fsm_amp(fsm),
+      };
+    }
+    _ => (),
+  }
+}
+
 fn run() -> Mostly<()> {
   let state = Arc::new(Mutex::new(State {
     phase: 0.0,
@@ -102,11 +123,12 @@ fn run() -> Mostly<()> {
 
         // Is this note already being played?
         let pre = find_note(&s, pitch);
-        let amp = (*velocity as f64) / 128.0;
+        let amp = (*velocity as f64) / 128.0; // XXX should be unused
+        let vel = (*velocity as f64) / 128.0;
         match pre {
           Some(i) => match &mut s.note_state[i] {
             None => panic!("we thought this note already existed"),
-            Some(ns) => ns.amp = amp,
+            Some(ref mut ns) => restrike_note(ns, vel), // ???
           },
           None => add_note(
             &mut s.note_state,
@@ -115,7 +137,11 @@ fn run() -> Mostly<()> {
               freq,
               pitch,
               amp,
-              fsm: NoteFsm::On { t: 0.0 },
+              fsm: NoteFsm::On {
+                amp: 0.0,
+                t: 0.0,
+                vel,
+              },
             },
           ),
         }
@@ -127,7 +153,7 @@ fn run() -> Mostly<()> {
         match pre {
           None => println!("kinda weird, a noteoff {} on something already off", pitch),
           Some(i) => {
-            s.note_state[i] = None;
+            release_note(&mut (s.note_state[i]));
           }
         }
       }

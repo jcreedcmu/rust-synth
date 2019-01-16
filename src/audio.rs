@@ -1,5 +1,5 @@
 use crate::util::Mostly;
-use crate::{Data, NoteState, State};
+use crate::{Data, NoteFsm, NoteState, State};
 
 use portaudio as pad;
 
@@ -21,22 +21,62 @@ fn wrap<T: std::cmp::PartialOrd + std::ops::SubAssign>(x: &mut T, size: T) {
 
 pub struct AudioService {}
 
-const ATTACK: f64 = 0.05; // seconds
-const DECAY: f64 = 0.05; // seconds
-const SUSTAIN: f64 = 0.5; // dimensionless
-const RELEASE: f64 = 1.0; // seconds
+const ATTACK: f64 = 0.1; // seconds
+const DECAY: f64 = 0.1; // seconds
+const SUSTAIN: f64 = 0.3; // dimensionless
+const RELEASE: f64 = 0.1; // seconds
 
-fn exec_note(note: &mut Option<NoteState>, wavetable: &[f32], samp: &mut f32) {
+pub fn note_fsm_amp(fsm: &NoteFsm) -> f64 {
+  match *fsm {
+    NoteFsm::On { t, amp, vel } => {
+      if t < ATTACK {
+        let a = t / ATTACK;
+        amp * (1.0 - a) + vel * a
+      } else if t < ATTACK + DECAY {
+        let a = (t - ATTACK) / DECAY;
+        vel * (1.0 - a) + SUSTAIN * a
+      } else {
+        SUSTAIN
+      }
+    }
+    NoteFsm::Release { t, amp } => amp * (1.0 - (t / RELEASE)),
+  }
+}
+
+fn advance_note(note: &mut Option<NoteState>) {
   match note {
+    Some(NoteState {
+      fsm: NoteFsm::On { ref mut t, .. },
+      ..
+    }) => {
+      *t += 1.0 / SAMPLE_RATE;
+    }
+    Some(NoteState {
+      fsm: NoteFsm::Release { ref mut t, .. },
+      ..
+    }) => {
+      *t += 1.0 / SAMPLE_RATE;
+      if *t > RELEASE {
+        *note = None;
+      }
+    }
     None => (),
-    Some(note) => {
+  }
+}
+
+fn exec_note(onote: &mut Option<NoteState>, wavetable: &[f32], samp: &mut f32) {
+  match *onote {
+    None => (),
+    Some(ref mut note) => {
       let offset = note.phase as usize;
-      *samp += (note.amp as f32) * wavetable[offset];
+      let scale = note.amp * note_fsm_amp(&note.fsm);
+      *samp += (scale as f32) * wavetable[offset];
       let base = note.freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
       note.phase += base;
       wrap(&mut note.phase, TABLE_SIZE as f64);
     }
   }
+  advance_note(onote);
 }
 
 impl AudioService {
@@ -45,7 +85,8 @@ impl AudioService {
     let mut wavetable = [0.0; TABLE_SIZE];
     for i in 0..TABLE_SIZE {
       //      wavetable[i] = (i as f64 / TABLE_SIZE as f64 * PI * 2.0).sin() as f32;
-      wavetable[i] = if (i as f64 / TABLE_SIZE as f64) < 0.5 {
+
+      wavetable[i] = if (i as f64 / TABLE_SIZE as f64) < 0.1 {
         -1.0
       } else {
         1.0
