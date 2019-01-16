@@ -30,26 +30,26 @@ fn main() {
   }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum NoteFsm {
   On { amp: f64, t: f64, vel: f64 },
   Release { amp: f64, t: f64 },
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NoteState {
   pitch: u8,
   freq: f64,
-  amp: f64,
   phase: f64,
   fsm: NoteFsm,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct KeyState {
   is_on: Option<usize>, // index into note_state vector
 }
 
+#[derive(Debug)]
 pub struct State {
   phase: f64,
   freq: f64,
@@ -120,15 +120,13 @@ fn run() -> Mostly<()> {
         let pitch = *pitch;
         let freq = 440.0 * 2.0f64.powf(((pitch as f64) - 69.0) / 12.0);
         let mut s: MutexGuard<State> = dcb.state.lock().unwrap();
-
         // Is this note already being played?
         let pre = find_note(&s, pitch);
-        let amp = (*velocity as f64) / 128.0; // XXX should be unused
-        let vel = (*velocity as f64) / 128.0;
+        let vel = (*velocity as f64) / 1280.0;
         match pre {
           Some(i) => match &mut s.note_state[i] {
             None => panic!("we thought this note already existed"),
-            Some(ref mut ns) => restrike_note(ns, vel), // ???
+            Some(ref mut ns) => restrike_note(ns, vel),
           },
           None => add_note(
             &mut s.note_state,
@@ -136,7 +134,6 @@ fn run() -> Mostly<()> {
               phase: 0.0,
               freq,
               pitch,
-              amp,
               fsm: NoteFsm::On {
                 amp: 0.0,
                 t: 0.0,
@@ -149,6 +146,7 @@ fn run() -> Mostly<()> {
       Message::NoteOff { pitch, channel } => {
         let mut s: MutexGuard<State> = dcb.state.lock().unwrap();
         let pre = find_note(&s, *pitch);
+        println!("state is {:#?}", s.note_state);
 
         match pre {
           None => println!("kinda weird, a noteoff {} on something already off", pitch),
@@ -163,8 +161,6 @@ fn run() -> Mostly<()> {
   })?;
 
   let ads = audio::AudioService::new(&Data { state })?;
-
-  sleep(Duration::from_millis(25000));
 
   Ok(())
 }

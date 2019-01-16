@@ -21,10 +21,10 @@ fn wrap<T: std::cmp::PartialOrd + std::ops::SubAssign>(x: &mut T, size: T) {
 
 pub struct AudioService {}
 
-const ATTACK: f64 = 0.1; // seconds
-const DECAY: f64 = 0.1; // seconds
-const SUSTAIN: f64 = 0.3; // dimensionless
-const RELEASE: f64 = 0.1; // seconds
+const ATTACK: f64 = 0.02; // seconds
+const DECAY: f64 = 0.02; // seconds
+const SUSTAIN: f64 = 0.8; // dimensionless
+const RELEASE: f64 = 1.0; // seconds
 
 pub fn note_fsm_amp(fsm: &NoteFsm) -> f64 {
   match *fsm {
@@ -34,9 +34,9 @@ pub fn note_fsm_amp(fsm: &NoteFsm) -> f64 {
         amp * (1.0 - a) + vel * a
       } else if t < ATTACK + DECAY {
         let a = (t - ATTACK) / DECAY;
-        vel * (1.0 - a) + SUSTAIN * a
+        vel * (1.0 - a) + vel * SUSTAIN * a
       } else {
-        SUSTAIN
+        SUSTAIN * vel
       }
     }
     NoteFsm::Release { t, amp } => amp * (1.0 - (t / RELEASE)),
@@ -69,7 +69,7 @@ fn exec_note(onote: &mut Option<NoteState>, wavetable: &[f32], samp: &mut f32) {
     None => (),
     Some(ref mut note) => {
       let offset = note.phase as usize;
-      let scale = note.amp * note_fsm_amp(&note.fsm);
+      let scale = note_fsm_amp(&note.fsm);
       *samp += (scale as f32) * wavetable[offset];
       let base = note.freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
       note.phase += base;
@@ -120,7 +120,7 @@ impl AudioService {
         for mut note in s.note_state.iter_mut() {
           exec_note(&mut note, &wavetable, &mut samp);
         }
-        lowp = 0.95 * lowp + 0.05 * samp;
+        lowp = samp; // 0.99 * lowp + 0.01 * samp;
         buffer[2 * ix] = lowp;
         buffer[2 * ix + 1] = lowp;
       }
