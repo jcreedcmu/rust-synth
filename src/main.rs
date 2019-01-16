@@ -146,7 +146,6 @@ fn run() -> Mostly<()> {
       Message::NoteOff { pitch, channel } => {
         let mut s: MutexGuard<State> = dcb.state.lock().unwrap();
         let pre = find_note(&s, *pitch);
-        println!("state is {:#?}", s.note_state);
 
         match pre {
           None => println!("kinda weird, a noteoff {} on something already off", pitch),

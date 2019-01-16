@@ -11,7 +11,7 @@ const CHANNELS: u32 = 2;
 const NUM_SECONDS: i32 = 5;
 const SAMPLE_RATE: f64 = 44_100.0;
 const FRAMES_PER_BUFFER: u32 = 64;
-const TABLE_SIZE: usize = 150;
+const TABLE_SIZE: usize = 40000;
 
 fn wrap<T: std::cmp::PartialOrd + std::ops::SubAssign>(x: &mut T, size: T) {
   if *x >= size {
@@ -22,9 +22,9 @@ fn wrap<T: std::cmp::PartialOrd + std::ops::SubAssign>(x: &mut T, size: T) {
 pub struct AudioService {}
 
 const ATTACK: f64 = 0.02; // seconds
-const DECAY: f64 = 0.02; // seconds
-const SUSTAIN: f64 = 0.8; // dimensionless
-const RELEASE: f64 = 1.0; // seconds
+const DECAY: f64 = 0.1; // seconds
+const SUSTAIN: f64 = 0.4; // dimensionless
+const RELEASE: f64 = 0.15; // seconds
 
 pub fn note_fsm_amp(fsm: &NoteFsm) -> f64 {
   match *fsm {
@@ -68,7 +68,7 @@ fn exec_note(onote: &mut Option<NoteState>, wavetable: &[f32], samp: &mut f32) {
   match *onote {
     None => (),
     Some(ref mut note) => {
-      let offset = note.phase as usize;
+      let offset = note.phase.floor() as usize;
       let scale = note_fsm_amp(&note.fsm);
       *samp += (scale as f32) * wavetable[offset];
       let base = note.freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
@@ -82,15 +82,20 @@ fn exec_note(onote: &mut Option<NoteState>, wavetable: &[f32], samp: &mut f32) {
 impl AudioService {
   pub fn new(data: &Data) -> Mostly<AudioService> {
     // Initialise wavetable.
-    let mut wavetable = [0.0; TABLE_SIZE];
+    let mut wavetable = vec![0.0; TABLE_SIZE];
     for i in 0..TABLE_SIZE {
-      //      wavetable[i] = (i as f64 / TABLE_SIZE as f64 * PI * 2.0).sin() as f32;
+      // // SINE
+      // wavetable[i] = (i as f64 / TABLE_SIZE as f64 * PI * 2.0).sin() as f32;
 
-      wavetable[i] = if (i as f64 / TABLE_SIZE as f64) < 0.1 {
-        -1.0
-      } else {
-        1.0
-      };
+      // // SQUARE
+      // wavetable[i] = if (i as f64 / TABLE_SIZE as f64) < 0.5 {
+      //   -1.0
+      // } else {
+      //   1.0
+      // };
+
+      //  SAW
+      wavetable[i] = (2.0 * (i as f64 / TABLE_SIZE as f64) - 1.0) as f32;
     }
 
     let mut global_t = 0.0; // in seconds, not used right now?
@@ -120,9 +125,9 @@ impl AudioService {
         for mut note in s.note_state.iter_mut() {
           exec_note(&mut note, &wavetable, &mut samp);
         }
-        lowp = samp; // 0.99 * lowp + 0.01 * samp;
-        buffer[2 * ix] = lowp;
-        buffer[2 * ix + 1] = lowp;
+        lowp = 0.99 * lowp + 0.01 * samp;
+        buffer[2 * ix] = 5.0 * lowp;
+        buffer[2 * ix + 1] = 5.0 * lowp;
       }
       pad::Continue
     };
