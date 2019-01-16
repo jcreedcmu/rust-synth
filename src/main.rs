@@ -30,11 +30,18 @@ fn main() {
 }
 
 #[derive(Clone)]
+pub enum NoteFsm {
+  On { t: f64 },
+  Release { amp: f64, t: f64 },
+}
+
+#[derive(Clone)]
 pub struct NoteState {
   pitch: u8,
   freq: f64,
   amp: f64,
   phase: f64,
+  fsm: NoteFsm,
 }
 
 #[derive(Clone)]
@@ -108,6 +115,7 @@ fn run() -> Mostly<()> {
               freq,
               pitch,
               amp,
+              fsm: NoteFsm::On { t: 0.0 },
             },
           ),
         }

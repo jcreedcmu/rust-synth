@@ -1,5 +1,5 @@
 use crate::util::Mostly;
-use crate::{Data, State};
+use crate::{Data, NoteState, State};
 
 use portaudio as pad;
 
@@ -20,6 +20,24 @@ fn wrap<T: std::cmp::PartialOrd + std::ops::SubAssign>(x: &mut T, size: T) {
 }
 
 pub struct AudioService {}
+
+const ATTACK: f64 = 0.05; // seconds
+const DECAY: f64 = 0.05; // seconds
+const SUSTAIN: f64 = 0.5; // dimensionless
+const RELEASE: f64 = 1.0; // seconds
+
+fn exec_note(note: &mut Option<NoteState>, wavetable: &[f32], samp: &mut f32) {
+  match note {
+    None => (),
+    Some(note) => {
+      let offset = note.phase as usize;
+      *samp += (note.amp as f32) * wavetable[offset];
+      let base = note.freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
+      note.phase += base;
+      wrap(&mut note.phase, TABLE_SIZE as f64);
+    }
+  }
+}
 
 impl AudioService {
   pub fn new(data: &Data) -> Mostly<AudioService> {
@@ -58,17 +76,8 @@ impl AudioService {
       for ix in 0..frames {
         let mut samp = 0.0;
 
-        for note in s.note_state.iter_mut() {
-          match note {
-            None => (),
-            Some(note) => {
-              let offset = note.phase as usize;
-              samp += (note.amp as f32) * wavetable[offset];
-              let base = note.freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
-              note.phase += base;
-              wrap(&mut note.phase, TABLE_SIZE as f64);
-            }
-          }
+        for mut note in s.note_state.iter_mut() {
+          exec_note(&mut note, &wavetable, &mut samp);
         }
         lowp = 0.95 * lowp + 0.05 * samp;
         buffer[2 * ix] = lowp;
