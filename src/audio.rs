@@ -1,7 +1,9 @@
 use crate::util::Mostly;
 use crate::{Data, NoteFsm, NoteState, State};
-
+use crossbeam_channel::unbounded;
 use portaudio as pad;
+use std::fs::File;
+use std::io::Write;
 
 use std::error::Error;
 use std::f64::consts::PI;
@@ -79,6 +81,10 @@ fn exec_note(onote: &mut Option<NoteState>, wavetable: &[f32], samp: &mut f32) {
   advance_note(onote);
 }
 
+fn vf_to_u8(v: &[f32]) -> &[u8] {
+  unsafe { std::slice::from_raw_parts(v.as_ptr() as *const u8, v.len() * 4) }
+}
+
 impl AudioService {
   pub fn new(data: &Data) -> Mostly<AudioService> {
     // Initialise wavetable.
@@ -99,7 +105,7 @@ impl AudioService {
     }
 
     let pa = pad::PortAudio::new()?;
-
+    let (send, recv) = unbounded::<Vec<f32>>();
     let mut settings =
       pa.default_output_stream_settings(CHANNELS as i32, SAMPLE_RATE, FRAMES_PER_BUFFER)?;
 
@@ -117,6 +123,23 @@ impl AudioService {
     // This routine will be called by the PortAudio engine when audio is needed. It may called at
     // interrupt level on some machines so don't do anything that could mess up the system like
     // dynamic resource allocation or IO.
+
+    // Can turn this raw data into a wav file like so:
+    // sox -c 2 -r 44100 /tmp/a.f32 /tmp/a.wav
+    let mut file = File::create("/tmp/a.f32").unwrap();
+    std::thread::spawn(move || {
+      let mut n = 0;
+      for ref x in recv.iter() {
+        n += 1;
+        if n % 100 == 0 {
+          n = 0;
+          println!("on channel recv'ed {}, {}, {}", x[0], x[1], x[2]);
+        }
+        let bytes = vf_to_u8(x);
+        file.write_all(bytes).unwrap();
+      }
+    });
+
     let callback = move |pad::OutputStreamCallbackArgs { buffer, frames, .. }| {
       let mut s: MutexGuard<State> = sg.lock().unwrap();
       for ix in 0..frames {
@@ -132,6 +155,7 @@ impl AudioService {
         buffer[2 * ix] = out / len;
         buffer[2 * ix + 1] = out / len;
       }
+      send.send(buffer.to_vec()).unwrap();
       pad::Continue
     };
 
