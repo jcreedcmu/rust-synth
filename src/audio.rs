@@ -22,8 +22,8 @@ fn wrap<T: std::cmp::PartialOrd + std::ops::SubAssign>(x: &mut T, size: T) {
 pub struct AudioService {}
 
 const ATTACK: f64 = 0.02; // seconds
-const DECAY: f64 = 0.1; // seconds
-const SUSTAIN: f64 = 0.4; // dimensionless
+const DECAY: f64 = 0.02; // seconds
+const SUSTAIN: f64 = 0.9; // dimensionless
 const RELEASE: f64 = 0.15; // seconds
 
 pub fn note_fsm_amp(fsm: &NoteFsm) -> f64 {
@@ -98,7 +98,6 @@ impl AudioService {
       wavetable[i] = (2.0 * (i as f64 / TABLE_SIZE as f64) - 1.0) as f32;
     }
 
-    let mut global_t = 0.0; // in seconds, not used right now?
     let pa = pad::PortAudio::new()?;
 
     let mut settings =
@@ -112,8 +111,9 @@ impl AudioService {
 
     // state for callback
     let sg = data.state.clone();
-    let mut lowp = 0.0;
-
+    let lowp_len: usize = 30;
+    let mut lowp: Vec<f32> = vec![0.0; lowp_len];
+    let mut lowp_ix = 0;
     // This routine will be called by the PortAudio engine when audio is needed. It may called at
     // interrupt level on some machines so don't do anything that could mess up the system like
     // dynamic resource allocation or IO.
@@ -125,9 +125,12 @@ impl AudioService {
         for mut note in s.note_state.iter_mut() {
           exec_note(&mut note, &wavetable, &mut samp);
         }
-        lowp = 0.99 * lowp + 0.01 * samp;
-        buffer[2 * ix] = 5.0 * lowp;
-        buffer[2 * ix + 1] = 5.0 * lowp;
+        lowp_ix = (lowp_ix + 1) % lowp_len;
+        lowp[lowp_ix] = samp;
+        let out: f32 = { lowp.iter().sum() };
+        let len: f32 = lowp.len() as f32;
+        buffer[2 * ix] = out / len;
+        buffer[2 * ix + 1] = out / len;
       }
       pad::Continue
     };
