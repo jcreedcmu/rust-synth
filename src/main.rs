@@ -55,6 +55,7 @@ pub struct State {
   freq: f64,
   key_state: Vec<KeyState>,
   note_state: Vec<Option<NoteState>>,
+  write_to_file: bool,
 }
 
 pub struct Data {
@@ -104,6 +105,7 @@ fn run() -> Mostly<()> {
     freq: 440.0,
     key_state: vec![KeyState { is_on: None }; NUM_NOTES],
     note_state: vec![],
+    write_to_file: false,
   }));
 
   let dcb = Data {

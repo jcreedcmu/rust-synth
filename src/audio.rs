@@ -13,7 +13,7 @@ const CHANNELS: u32 = 2;
 const NUM_SECONDS: i32 = 5;
 const SAMPLE_RATE: f64 = 44_100.0;
 const FRAMES_PER_BUFFER: u32 = 64;
-const TABLE_SIZE: usize = 40000;
+const TABLE_SIZE: usize = 4000;
 
 fn wrap<T: std::cmp::PartialOrd + std::ops::SubAssign>(x: &mut T, size: T) {
   if *x >= size {
@@ -21,11 +21,20 @@ fn wrap<T: std::cmp::PartialOrd + std::ops::SubAssign>(x: &mut T, size: T) {
   }
 }
 
+fn wrap_not_mod<T: std::cmp::PartialOrd + std::ops::SubAssign + std::convert::From<f64>>(
+  x: &mut T,
+  size: T,
+) {
+  if *x >= size {
+    *x = 0.0.into();
+  }
+}
+
 pub struct AudioService {}
 
-const ATTACK: f64 = 0.02; // seconds
-const DECAY: f64 = 0.02; // seconds
-const SUSTAIN: f64 = 0.9; // dimensionless
+const ATTACK: f64 = 0.005; // seconds
+const DECAY: f64 = 0.005; // seconds
+const SUSTAIN: f64 = 0.5; // dimensionless
 const RELEASE: f64 = 0.15; // seconds
 
 pub fn note_fsm_amp(fsm: &NoteFsm) -> f64 {
@@ -70,12 +79,18 @@ fn exec_note(onote: &mut Option<NoteState>, wavetable: &[f32], samp: &mut f32) {
   match *onote {
     None => (),
     Some(ref mut note) => {
+      let phase: f64 = note.phase;
       let offset = note.phase.floor() as usize;
+      let fpart: f32 = (phase as f32) - (offset as f32);
+
+      // linear interp
+      let table_val = fpart * wavetable[offset + 1] + (1.0 - fpart) * wavetable[offset];
+
       let scale = note_fsm_amp(&note.fsm);
-      *samp += (scale as f32) * wavetable[offset];
+      *samp += (scale as f32) * table_val;
       let base = note.freq * (TABLE_SIZE as f64) / SAMPLE_RATE;
       note.phase += base;
-      wrap(&mut note.phase, TABLE_SIZE as f64);
+      wrap_not_mod(&mut note.phase, TABLE_SIZE as f64);
     }
   }
   advance_note(onote);
@@ -88,7 +103,7 @@ fn vf_to_u8(v: &[f32]) -> &[u8] {
 impl AudioService {
   pub fn new(data: &Data) -> Mostly<AudioService> {
     // Initialise wavetable.
-    let mut wavetable = vec![0.0; TABLE_SIZE];
+    let mut wavetable = vec![0.0; TABLE_SIZE + 1];
     for i in 0..TABLE_SIZE {
       // // SINE
       // wavetable[i] = (i as f64 / TABLE_SIZE as f64 * PI * 2.0).sin() as f32;
@@ -103,6 +118,7 @@ impl AudioService {
       //  SAW
       wavetable[i] = (2.0 * (i as f64 / TABLE_SIZE as f64) - 1.0) as f32;
     }
+    wavetable[TABLE_SIZE] = wavetable[0];
 
     let pa = pad::PortAudio::new()?;
     let (send, recv) = unbounded::<Vec<f32>>();
@@ -133,7 +149,7 @@ impl AudioService {
         n += 1;
         if n % 100 == 0 {
           n = 0;
-          println!("on channel recv'ed {}, {}, {}", x[0], x[1], x[2]);
+          println!("on channel recv'ed {}", x[0]);
         }
         let bytes = vf_to_u8(x);
         file.write_all(bytes).unwrap();
@@ -155,7 +171,9 @@ impl AudioService {
         buffer[2 * ix] = out / len;
         buffer[2 * ix + 1] = out / len;
       }
-      send.send(buffer.to_vec()).unwrap();
+      if s.write_to_file {
+        send.send(buffer.to_vec()).unwrap();
+      }
       pad::Continue
     };
 
