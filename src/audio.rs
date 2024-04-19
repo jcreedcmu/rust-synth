@@ -32,7 +32,6 @@ impl AudioService {
     let sg = data.state.clone();
     let sg2 = data.state.clone();
 
-    // Produce a sinusoid of maximum amplitude.
     let mut sample_clock = 0f32;
     let mut next_value = move || {
       let mut s: MutexGuard<State> = sg.lock().unwrap();

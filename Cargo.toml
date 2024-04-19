@@ -4,10 +4,6 @@ version = "0.1.0"
 authors = ["Jason Reed <jcreed@gmail.com>"]
 edition = "2021"
 
-[[bin]]
-name = "rsynth"
-path = "src/main-2024.rs"
-
 [dependencies]
 anyhow = "1.0"
 cpal = "0.15.3"
