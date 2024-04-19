@@ -5,6 +5,7 @@ mod audio;
 mod midi;
 mod util;
 
+use audio::note_fsm_amp;
 use midi::Message;
 use midir::{Ignore, MidiIO, MidiInput, MidiInputPort, MidiOutput};
 use std::error::Error;
@@ -54,6 +55,43 @@ fn main() {
   }
 }
 
+fn find_note(s: &State, pitch: u8) -> Option<usize> {
+  s.note_state.iter().position(|x| match x {
+    Some(y) => y.pitch == pitch,
+    _ => false,
+  })
+}
+
+fn add_note(ns: &mut Vec<Option<NoteState>>, new: NoteState) -> () {
+  match ns.iter().position(|x| match x {
+    None => true,
+    _ => false,
+  }) {
+    None => ns.push(Some(new)),
+    Some(i) => ns[i] = Some(new),
+  }
+}
+
+fn restrike_note(note: &mut NoteState, vel: f32) {
+  note.fsm = NoteFsm::On {
+    t: 0.0,
+    amp: note_fsm_amp(&note.fsm),
+    vel,
+  };
+}
+
+fn release_note(note: &mut Option<NoteState>) {
+  match note {
+    Some(NoteState { ref mut fsm, .. }) => {
+      *fsm = NoteFsm::Release {
+        t: 0.0,
+        amp: note_fsm_amp(fsm),
+      };
+    }
+    _ => (),
+  }
+}
+
 fn run() -> Result<(), Box<dyn Error>> {
   let state = Arc::new(Mutex::new(State {
     phase: 0.0,
@@ -82,8 +120,28 @@ fn run() -> Result<(), Box<dyn Error>> {
         let pitch = *pitch;
         let freq = 440.0 * 2.0f32.powf(((pitch as f32) - 69.0) / 12.0);
         let mut s: MutexGuard<State> = sg.state.lock().unwrap();
-        println!("freq is {}", freq);
-        s.freq = freq;
+        // Is this note already being played?
+        let pre = find_note(&s, pitch);
+        let vel = (*velocity as f32) / 1280.0;
+        match pre {
+          Some(i) => match &mut s.note_state[i] {
+            None => panic!("we thought this note already existed"),
+            Some(ref mut ns) => restrike_note(ns, vel),
+          },
+          None => add_note(
+            &mut s.note_state,
+            NoteState {
+              phase: 0.0,
+              freq,
+              pitch,
+              fsm: NoteFsm::On {
+                amp: 0.0,
+                t: 0.0,
+                vel,
+              },
+            },
+          ),
+        }
       }
       Message::NoteOff { pitch, channel } => {}
       _ => (),
