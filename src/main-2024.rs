@@ -8,6 +8,42 @@ mod util;
 use midir::{Ignore, MidiIO, MidiInput, MidiInputPort, MidiOutput};
 use std::error::Error;
 use std::io::{stdin, stdout, Write};
+use std::sync::{Arc, Mutex, MutexGuard};
+
+const BOTTOM_NOTE: u8 = 21;
+const NUM_NOTES: usize = 88;
+
+#[derive(Clone, Debug)]
+pub enum NoteFsm {
+  On { amp: f64, t: f64, vel: f64 },
+  Release { amp: f64, t: f64 },
+}
+
+#[derive(Clone, Debug)]
+pub struct NoteState {
+  pitch: u8,
+  freq: f64,
+  phase: f64,
+  fsm: NoteFsm,
+}
+
+#[derive(Clone, Debug)]
+pub struct KeyState {
+  is_on: Option<usize>, // index into note_state vector
+}
+
+#[derive(Debug)]
+pub struct State {
+  phase: f64,
+  freq: f64,
+  key_state: Vec<KeyState>,
+  note_state: Vec<Option<NoteState>>,
+  write_to_file: bool,
+}
+
+pub struct Data {
+  state: Arc<Mutex<State>>,
+}
 
 fn main() {
   match run() {
@@ -46,6 +82,14 @@ fn do_midi_stuff() -> Result<(), Box<dyn Error>> {
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
+  let state = Arc::new(Mutex::new(State {
+    phase: 0.0,
+    freq: 440.0,
+    key_state: vec![KeyState { is_on: None }; NUM_NOTES],
+    note_state: vec![],
+    write_to_file: false,
+  }));
+
   let _ = std::thread::spawn(move || {
     let _ = do_midi_stuff();
   });
