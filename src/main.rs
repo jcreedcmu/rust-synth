@@ -143,7 +143,17 @@ fn run() -> Result<(), Box<dyn Error>> {
           ),
         }
       }
-      Message::NoteOff { pitch, channel } => {}
+      Message::NoteOff { pitch, channel } => {
+        let mut s: MutexGuard<State> = sg.state.lock().unwrap();
+        let pre = find_note(&s, *pitch);
+
+        match pre {
+          None => println!("kinda weird, a noteoff {} on something already off", pitch),
+          Some(i) => {
+            release_note(&mut (s.note_state[i]));
+          }
+        }
+      }
       _ => (),
     });
     let mut input = String::new();
