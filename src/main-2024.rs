@@ -1,7 +1,10 @@
 #![allow(unused_imports, unused_variables, unused_mut, dead_code)]
 extern crate midir;
 
+mod audio;
 mod beep;
+mod util;
+
 use midir::{Ignore, MidiIO, MidiInput, MidiInputPort, MidiOutput};
 use std::error::Error;
 use std::io::{stdin, stdout, Write};
@@ -13,13 +16,12 @@ fn main() {
   }
 }
 
-fn run() -> Result<(), Box<dyn Error>> {
-  beep::beep()?;
+fn do_midi_stuff() -> Result<(), Box<dyn Error>> {
   let mut midi_in = MidiInput::new("midir input")?;
   midi_in.ignore(Ignore::None);
 
   let midi_device_num = 1;
-  let in_port: MidiInputPort = midi_in
+  let in_port = midi_in
     .ports()
     .get(midi_device_num)
     .ok_or("Invalid port number")?
@@ -40,6 +42,14 @@ fn run() -> Result<(), Box<dyn Error>> {
 
   let mut input = String::new();
   stdin().read_line(&mut input)?; // wait for next enter key press
+  Ok(())
+}
 
+fn run() -> Result<(), Box<dyn Error>> {
+  let _ = std::thread::spawn(move || {
+    let _ = do_midi_stuff();
+  });
+
+  let ads = audio::AudioService::new()?;
   Ok(())
 }
