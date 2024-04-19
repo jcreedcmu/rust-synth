@@ -35,13 +35,17 @@ impl AudioService {
     let sg = data.state.clone();
     let sg2 = data.state.clone();
 
+    fn wave(x: f32) -> f32 {
+      return if x > 0.5 { 1.0 } else { -1.0 };
+    }
+
     let mut next_value = move || {
       let mut s: MutexGuard<State> = sg.lock().unwrap();
       s.phase += s.freq / sample_rate;
       if s.phase > 1. {
         s.phase -= 1.;
       }
-      0.01 * (s.phase * 2.0 * std::f32::consts::PI).sin()
+      0.01 * wave(s.phase * 2.0 * std::f32::consts::PI)
     };
 
     let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
