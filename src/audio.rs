@@ -24,20 +24,24 @@ impl AudioService {
       sample_format => panic!("Unsupported sample format '{sample_format}'"),
     };
 
-    let cc: cpal::StreamConfig = config.into();
+    let mut stream_config: cpal::StreamConfig = config.into();
+    stream_config.buffer_size = cpal::BufferSize::Fixed(1100);
 
-    let sample_rate = cc.sample_rate.0 as f32;
-    let channels = cc.channels as usize;
+    println!("stream config {:?}", stream_config);
+
+    let sample_rate = stream_config.sample_rate.0 as f32;
+    let channels = stream_config.channels as usize;
 
     let sg = data.state.clone();
     let sg2 = data.state.clone();
 
-    let mut sample_clock = 0f32;
     let mut next_value = move || {
       let mut s: MutexGuard<State> = sg.lock().unwrap();
-      s.phase += s.freq * 2.0 * std::f32::consts::PI / sample_rate;
-      sample_clock = (sample_clock + 1.0) % sample_rate;
-      0.01 * s.phase.sin()
+      s.phase += s.freq / sample_rate;
+      if s.phase > 1. {
+        s.phase -= 1.;
+      }
+      0.01 * (s.phase * 2.0 * std::f32::consts::PI).sin()
     };
 
     let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
@@ -48,7 +52,7 @@ impl AudioService {
     };
 
     let stream = device.build_output_stream(
-      &cc,
+      &stream_config,
       move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
         write_data(data, channels, &mut next_value)
       },
