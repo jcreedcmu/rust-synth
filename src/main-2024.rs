@@ -94,6 +94,6 @@ fn run() -> Result<(), Box<dyn Error>> {
     let _ = do_midi_stuff();
   });
 
-  let ads = audio::AudioService::new()?;
+  let ads = audio::AudioService::new(&Data { state })?;
   Ok(())
 }
