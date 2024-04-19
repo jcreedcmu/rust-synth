@@ -1,6 +1,7 @@
 #![allow(unused_imports, unused_variables, unused_mut, dead_code)]
 extern crate midir;
 
+mod beep;
 use std::error::Error;
 use std::io::{stdin, stdout, Write};
 
@@ -14,6 +15,7 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
+  beep::beep()?;
   let mut midi_in = MidiInput::new("midir  input")?;
   midi_in.ignore(Ignore::None);
 
