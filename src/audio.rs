@@ -25,7 +25,7 @@ impl AudioService {
     };
 
     let mut stream_config: cpal::StreamConfig = config.into();
-    stream_config.buffer_size = cpal::BufferSize::Fixed(1100);
+    stream_config.buffer_size = cpal::BufferSize::Fixed(1124);
 
     println!("stream config {:?}", stream_config);
 
@@ -39,15 +39,6 @@ impl AudioService {
       return if x > 0.5 { 1.0 } else { -1.0 };
     }
 
-    let mut next_value = move || {
-      let mut s: MutexGuard<State> = sg.lock().unwrap();
-      s.phase += s.freq / sample_rate;
-      if s.phase > 1. {
-        s.phase -= 1.;
-      }
-      0.01 * wave(s.phase * 2.0 * std::f32::consts::PI)
-    };
-
     let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
 
     let going = move || -> bool {
@@ -58,7 +49,17 @@ impl AudioService {
     let stream = device.build_output_stream(
       &stream_config,
       move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
-        write_data(data, channels, &mut next_value)
+        let mut s: MutexGuard<State> = sg.lock().unwrap();
+
+        for frame in data.chunks_mut(channels) {
+          for sample in frame.iter_mut() {
+            s.phase += s.freq / sample_rate;
+            if s.phase > 1. {
+              s.phase -= 1.;
+            }
+            *sample = 0.01 * wave(s.phase);
+          }
+        }
       },
       err_fn,
       None,
@@ -74,17 +75,5 @@ impl AudioService {
     }
 
     Ok(AudioService {})
-  }
-}
-
-fn write_data<T>(output: &mut [T], channels: usize, next_sample: &mut dyn FnMut() -> f32)
-where
-  T: Sample + FromSample<f32>,
-{
-  for frame in output.chunks_mut(channels) {
-    let value: T = T::from_sample(next_sample());
-    for sample in frame.iter_mut() {
-      *sample = value;
-    }
   }
 }
