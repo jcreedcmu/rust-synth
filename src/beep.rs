@@ -10,24 +10,11 @@ pub fn beep() -> anyhow::Result<()> {
     .expect("failed to find output device");
   println!("Output device: {}", device.name()?);
 
-  let config = device.default_output_config().unwrap();
+  let config = device.default_output_config()?;
   println!("Default output config: {:?}", config);
 
   match config.sample_format() {
-    cpal::SampleFormat::I8 => run::<i8>(&device, &config.into()),
-    cpal::SampleFormat::I16 => run::<i16>(&device, &config.into()),
-    // cpal::SampleFormat::I24 => run::<I24>(&device, &config.into()),
-    cpal::SampleFormat::I32 => run::<i32>(&device, &config.into()),
-    // cpal::SampleFormat::I48 => run::<I48>(&device, &config.into()),
-    cpal::SampleFormat::I64 => run::<i64>(&device, &config.into()),
-    cpal::SampleFormat::U8 => run::<u8>(&device, &config.into()),
-    cpal::SampleFormat::U16 => run::<u16>(&device, &config.into()),
-    // cpal::SampleFormat::U24 => run::<U24>(&device, &config.into()),
-    cpal::SampleFormat::U32 => run::<u32>(&device, &config.into()),
-    // cpal::SampleFormat::U48 => run::<U48>(&device, &config.into()),
-    cpal::SampleFormat::U64 => run::<u64>(&device, &config.into()),
     cpal::SampleFormat::F32 => run::<f32>(&device, &config.into()),
-    cpal::SampleFormat::F64 => run::<f64>(&device, &config.into()),
     sample_format => panic!("Unsupported sample format '{sample_format}'"),
   }
 }
@@ -43,7 +30,7 @@ where
   let mut sample_clock = 0f32;
   let mut next_value = move || {
     sample_clock = (sample_clock + 1.0) % sample_rate;
-    (sample_clock * 440.0 * 2.0 * std::f32::consts::PI / sample_rate).sin()
+    0.001 * (sample_clock * 880.0 * 2.0 * std::f32::consts::PI / sample_rate).sin()
   };
 
   let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
