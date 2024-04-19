@@ -1,13 +1,13 @@
+use coremidi::{Client, PacketList, Source, Sources};
 use std::env;
 use std::error::Error;
 use std::fmt;
 use std::thread::sleep;
 use std::time::Duration;
 
-use midir::{Ignore, MidiIO, MidiInput, MidiInputPort, MidiOutput};
-
 pub struct MidiService {
-  conn_in: midir::MidiInputConnection<()>,
+  client: Client,
+  input_port: coremidi::InputPort,
 }
 
 type Pitch = u8;
@@ -26,17 +26,16 @@ pub enum Message {
   PedalOn,
   PedalOff,
 }
-
 use self::Message::*;
 
 fn message_of_vec(vec: &[u8]) -> Option<Message> {
   match vec.len() {
     3 => match vec[0] {
-      0x80..=0x8f => Some(NoteOff {
+      0x80...0x8f => Some(NoteOff {
         channel: vec[0] - 0x80,
         pitch: vec[1],
       }),
-      0x90..=0x9f => {
+      0x90...0x9f => {
         if vec[2] != 0 {
           Some(NoteOn {
             channel: vec[0] - 0x90,
@@ -64,40 +63,31 @@ fn message_of_vec(vec: &[u8]) -> Option<Message> {
 }
 
 impl MidiService {
-  pub fn new<C>(source_index: usize, k: C) -> Result<MidiService, Box<dyn Error>>
+  pub fn new<C>(source_index: usize, k: C) -> Result<MidiService, MidiError>
   where
     C: Fn(&Message) + std::marker::Send + 'static,
   {
-    let mut midi_in = MidiInput::new("midir input")?;
-    midi_in.ignore(Ignore::None);
+    let source = match Source::from_index(source_index) {
+      Some(x) => x,
+      None => Err(MidiError::BadSource(source_index))?,
+    };
 
-    let midi_device_num = 1;
-    let in_port = midi_in
-      .ports()
-      .get(midi_device_num)
-      .ok_or("Invalid port number")?
-      .clone();
-
-    println!("\nOpening connections");
-    let in_port_name = midi_in.port_name(&in_port)?;
-
-    // _conn_in needs to be a named binding, because it needs to be kept alive until the end of the scope
-    let conn_in: midir::MidiInputConnection<()> = midi_in.connect(
-      &in_port,
-      "midir-print",
-      move |stamp, message, _| {
-        println!("{}: {:?} (len = {})", stamp, message, message.len());
-        if let Some(msg) = message_of_vec(message) {
-          k(&msg);
+    let client = Client::new("example-client")?;
+    println!("Listening...");
+    let input_port = client.input_port("example-port", move |packet_list: &PacketList| {
+      for x in packet_list.iter() {
+        println!("{}", x);
+        if let Some(x) = message_of_vec(&x.data()) {
+          k(&x);
         }
-      },
-      (),
-    )?;
+      }
+    })?;
+    input_port.connect_source(&source)?;
 
-    Ok(MidiService { conn_in })
+    //  input_port.disconnect_source(&source)?;
+    Ok(MidiService { client, input_port })
   }
 }
-
 // pub fn input_port<F>(&self, name: &str, callback: F) -> Result<InputPort, OSStatus>
 //         where F: FnMut(&PacketList) + Send + 'static {
 
@@ -127,7 +117,7 @@ impl Error for MidiError {
     "invalid first item to double"
   }
 
-  fn cause(&self) -> Option<&dyn Error> {
+  fn cause(&self) -> Option<&Error> {
     // Generic error, underlying cause isn't tracked.
     None
   }

@@ -3,6 +3,7 @@ extern crate midir;
 
 mod audio;
 mod beep;
+mod midi;
 mod util;
 
 use midir::{Ignore, MidiIO, MidiInput, MidiInputPort, MidiOutput};
@@ -36,6 +37,7 @@ pub struct KeyState {
 pub struct State {
   phase: f32,
   freq: f32,
+  going: bool,
   key_state: Vec<KeyState>,
   note_state: Vec<Option<NoteState>>,
   write_to_file: bool,
@@ -52,43 +54,31 @@ fn main() {
   }
 }
 
-fn do_midi_stuff() -> Result<(), Box<dyn Error>> {
-  let mut midi_in = MidiInput::new("midir input")?;
-  midi_in.ignore(Ignore::None);
-
-  let midi_device_num = 1;
-  let in_port = midi_in
-    .ports()
-    .get(midi_device_num)
-    .ok_or("Invalid port number")?
-    .clone();
-
-  println!("\nOpening connections");
-  let in_port_name = midi_in.port_name(&in_port)?;
-
-  // _conn_in needs to be a named binding, because it needs to be kept alive until the end of the scope
-  let _conn_in = midi_in.connect(
-    &in_port,
-    "midir-print",
-    move |stamp, message, _| {
-      println!("{}: {:?} (len = {})", stamp, message, message.len());
-    },
-    (),
-  )?;
-
-  let mut input = String::new();
-  stdin().read_line(&mut input)?; // wait for next enter key press
-  Ok(())
-}
-
 fn run() -> Result<(), Box<dyn Error>> {
   let state = Arc::new(Mutex::new(State {
     phase: 0.0,
     freq: 440.0,
+    going: true,
     key_state: vec![KeyState { is_on: None }; NUM_NOTES],
     note_state: vec![],
     write_to_file: false,
   }));
+
+  let sg = Data {
+    state: state.clone(),
+  };
+
+  let do_midi_stuff = move || -> Result<(), Box<dyn Error>> {
+    let ms = midi::MidiService::new(0, move |msg: &midi::Message| {
+      println!("midi message processed!");
+    });
+    let mut input = String::new();
+    stdin().read_line(&mut input)?; // wait for next enter key press
+
+    let mut s: MutexGuard<State> = sg.state.lock().unwrap();
+    s.going = false;
+    Ok(())
+  };
 
   let _ = std::thread::spawn(move || {
     let _ = do_midi_stuff();

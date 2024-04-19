@@ -30,6 +30,7 @@ impl AudioService {
     let channels = cc.channels as usize;
 
     let sg = data.state.clone();
+    let sg2 = data.state.clone();
 
     // Produce a sinusoid of maximum amplitude.
     let mut sample_clock = 0f32;
@@ -42,6 +43,11 @@ impl AudioService {
 
     let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
 
+    let going = move || -> bool {
+      let mut s: MutexGuard<State> = sg2.lock().unwrap();
+      s.going
+    };
+
     let stream = device.build_output_stream(
       &cc,
       move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
@@ -53,7 +59,7 @@ impl AudioService {
     stream.play()?;
 
     loop {
-      if false {
+      if !going() {
         break;
       }
       println!("playing...");
