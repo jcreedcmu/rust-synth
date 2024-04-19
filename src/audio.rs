@@ -25,7 +25,7 @@ impl AudioService {
     };
 
     let mut stream_config: cpal::StreamConfig = config.into();
-    stream_config.buffer_size = cpal::BufferSize::Fixed(1124);
+    stream_config.buffer_size = cpal::BufferSize::Fixed(1024);
 
     println!("stream config {:?}", stream_config);
 
