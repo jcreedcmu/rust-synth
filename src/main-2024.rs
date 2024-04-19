@@ -15,15 +15,15 @@ const NUM_NOTES: usize = 88;
 
 #[derive(Clone, Debug)]
 pub enum NoteFsm {
-  On { amp: f64, t: f64, vel: f64 },
-  Release { amp: f64, t: f64 },
+  On { amp: f32, t: f32, vel: f32 },
+  Release { amp: f32, t: f32 },
 }
 
 #[derive(Clone, Debug)]
 pub struct NoteState {
   pitch: u8,
-  freq: f64,
-  phase: f64,
+  freq: f32,
+  phase: f32,
   fsm: NoteFsm,
 }
 
@@ -34,8 +34,8 @@ pub struct KeyState {
 
 #[derive(Debug)]
 pub struct State {
-  phase: f64,
-  freq: f64,
+  phase: f32,
+  freq: f32,
   key_state: Vec<KeyState>,
   note_state: Vec<Option<NoteState>>,
   write_to_file: bool,

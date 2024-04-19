@@ -35,8 +35,9 @@ impl AudioService {
     let mut sample_clock = 0f32;
     let mut next_value = move || {
       let mut s: MutexGuard<State> = sg.lock().unwrap();
+      s.phase += s.freq * 2.0 * std::f32::consts::PI / sample_rate;
       sample_clock = (sample_clock + 1.0) % sample_rate;
-      0.001 * (sample_clock * (s.freq as f32) * 2.0 * std::f32::consts::PI / sample_rate).sin()
+      0.01 * s.phase.sin()
     };
 
     let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
