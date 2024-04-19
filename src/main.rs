@@ -2,7 +2,6 @@
 extern crate midir;
 
 mod audio;
-mod beep;
 mod midi;
 mod util;
 

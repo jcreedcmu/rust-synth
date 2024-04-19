@@ -7,6 +7,7 @@
     mkShell {
       nativeBuildInputs = [
         rustc
+        cargo
         rust-analyzer
         alsa-lib.dev
         alsa-plugins

@@ -1,79 +1,68 @@
 use crate::util::Mostly;
 use crate::{Data, NoteFsm, NoteState, State};
-use cpal::{
-  traits::{DeviceTrait, HostTrait, StreamTrait},
-  FromSample, Sample, SizedSample,
-};
+use portaudio as pad;
+use portaudio::Devices;
 use std::sync::{Arc, Mutex, MutexGuard};
-
 pub struct AudioService {}
+
+const CHANNELS: u32 = 2;
+const SAMPLE_RATE: f32 = 44_100.0;
+const FRAMES_PER_BUFFER: u32 = 64;
+const TABLE_SIZE: usize = 4000;
 
 impl AudioService {
   pub fn new(data: &Data) -> Mostly<AudioService> {
-    let host = cpal::default_host();
-    let device = host
-      .default_output_device()
-      .expect("failed to find output device");
-    println!("[as] Output device: {}", device.name()?);
+    let pa = pad::PortAudio::new()?;
 
-    let config = device.default_output_config()?;
-    println!("[as] Default output config: {:?}", config);
+    let mut settings =
+      pa.default_output_stream_settings(CHANNELS as i32, SAMPLE_RATE as f64, FRAMES_PER_BUFFER)?;
 
-    match config.sample_format() {
-      cpal::SampleFormat::F32 => (),
-      sample_format => panic!("Unsupported sample format '{sample_format}'"),
-    };
-
-    let mut stream_config: cpal::StreamConfig = config.into();
-    stream_config.buffer_size = cpal::BufferSize::Fixed(1024);
-
-    println!("stream config {:?}", stream_config);
-
-    let sample_rate = stream_config.sample_rate.0 as f32;
-    let channels = stream_config.channels as usize;
+    settings.flags = pad::stream_flags::NO_FLAG;
 
     let sg = data.state.clone();
     let sg2 = data.state.clone();
+    let lowp_len: usize = 30;
+    let mut lowp: Vec<f32> = vec![0.0; lowp_len];
+    let mut lowp_ix = 0;
 
     fn wave(x: f32) -> f32 {
       return if x > 0.5 { 1.0 } else { -1.0 };
     }
 
-    let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
+    let callback = move |pad::OutputStreamCallbackArgs { buffer, frames, .. }| {
+      let mut s: MutexGuard<State> = sg.lock().unwrap();
+      for ix in 0..frames {
+        let mut samp = 0.0;
+        s.phase += s.freq / SAMPLE_RATE;
+        if s.phase > 1. {
+          s.phase -= 1.;
+        }
+        let out: f32 = 0.01 * wave(s.phase);
+        buffer[2 * ix] = out;
+        buffer[2 * ix + 1] = out;
+      }
 
-    let going = move || -> bool {
-      let mut s: MutexGuard<State> = sg2.lock().unwrap();
-      s.going
+      if s.going {
+        pad::Continue
+      } else {
+        pad::Abort
+      }
     };
 
-    let stream = device.build_output_stream(
-      &stream_config,
-      move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
-        let mut s: MutexGuard<State> = sg.lock().unwrap();
+    let mut stream = pa.open_non_blocking_stream(settings, callback)?;
 
-        for frame in data.chunks_mut(channels) {
-          for sample in frame.iter_mut() {
-            s.phase += s.freq / sample_rate;
-            if s.phase > 1. {
-              s.phase -= 1.;
-            }
-            *sample = 0.01 * wave(s.phase);
-          }
-        }
-      },
-      err_fn,
-      None,
-    )?;
-    stream.play()?;
+    stream.start()?;
 
     loop {
-      if !going() {
+      println!("playing...");
+      if !stream.is_active()? {
         break;
       }
-      println!("playing...");
       std::thread::sleep(std::time::Duration::from_millis(500));
     }
 
+    stream.stop()?;
+    stream.close()?;
     Ok(AudioService {})
   }
 }
