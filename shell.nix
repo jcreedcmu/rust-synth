@@ -1,11 +1,21 @@
 { pkgs ? import <nixpkgs> {} }:
-  pkgs.mkShell {
-    nativeBuildInputs = with pkgs.buildPackages; [
-      rustc
-      rust-analyzer
-      alsa-lib.dev
-    ];
-    shellHook = ''
-    export ALSA_CONFIG_PATH=./asoundrc
+  with pkgs; with builtins; let
+    asoundShellHook = ''
+    export ALSA_PLUGIN_DIR=${alsa-plugins}/lib/alsa-lib
     '';
+
+    patchedAlsa = trace alsa-lib.patches
+      alsa-lib.overrideAttrs (finala: preva: {
+      patches = preva.patches ++ [ ./patches/0001-Debug-a-little.patch ];
+    });
+  in
+    mkShell {
+      nativeBuildInputs = [
+        rustc
+        rust-analyzer
+        # alsa-lib.dev
+        patchedAlsa.dev
+        alsa-plugins
+      ];
+      shellHook = asoundShellHook;
 }
