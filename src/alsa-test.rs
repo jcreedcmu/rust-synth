@@ -20,7 +20,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 
   let audio_thread = std::thread::spawn(move || {
     // Open default playback device
-    let pcm = PCM::new("hw:2", Direction::Playback, false).unwrap();
+    let pcm = PCM::new("hw:CARD=Generic_1", Direction::Playback, false).unwrap();
 
     // Set hardware parameters: 44100 Hz / Mono / 16 bit
     let hwp = HwParams::any(&pcm).unwrap();
@@ -50,7 +50,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 
     let mut phase: f32 = 0.;
 
-    const BUF_SIZE: usize = 256;
+    const BUF_SIZE: usize = 128;
     let mut iters: usize = 0;
     let mut buf = [0i16; BUF_SIZE];
     loop {

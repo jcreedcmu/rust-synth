@@ -1,5 +1,7 @@
 use crate::util::Mostly;
 use crate::{Data, NoteFsm, NoteState, State};
+use alsa::pcm::{Access, Format, HwParams, PCM};
+use alsa::{Direction, ValueOr};
 use portaudio as pad;
 use portaudio::Devices;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -30,15 +32,7 @@ impl AudioService {
     }
     wavetable[TABLE_SIZE] = wavetable[0];
 
-    let pa = pad::PortAudio::new()?;
-
-    let mut settings =
-      pa.default_output_stream_settings(CHANNELS as i32, SAMPLE_RATE as f64, FRAMES_PER_BUFFER)?;
-
-    settings.flags = pad::stream_flags::NO_FLAG;
-
     let sg = data.state.clone();
-    let sg2 = data.state.clone();
     let lowp_len: usize = 5;
     let mut lowp: Vec<f32> = vec![0.0; lowp_len];
     let mut lowp_ix = 0;
@@ -47,48 +41,76 @@ impl AudioService {
       return if x > 0.5 { 1.0 } else { -1.0 };
     }
 
-    let callback = move |pad::OutputStreamCallbackArgs { buffer, frames, .. }| {
-      let mut s: MutexGuard<State> = sg.lock().unwrap();
-      for ix in 0..frames {
-        let mut samp = 0.0;
+    // Initialize alsa
+    // Open default playback device
+    let pcm = PCM::new("hw:2", Direction::Playback, false).unwrap();
+    const BUF_SIZE: usize = 64;
 
-        for mut note in s.note_state.iter_mut() {
-          exec_note(&mut note, &wavetable, &mut samp);
-        }
+    // Set hardware parameters: 44100 Hz / Mono / 16 bit
+    let hwp = HwParams::any(&pcm).unwrap();
+    hwp.set_channels(2).unwrap();
+    hwp.set_rate(44100, ValueOr::Nearest).unwrap();
+    hwp.set_format(Format::s16()).unwrap();
+    hwp.set_access(Access::RWInterleaved).unwrap();
+    hwp.set_buffer_size_min(3).unwrap();
+    hwp.set_buffer_size_max(BUF_SIZE as i64).unwrap();
+    pcm.hw_params(&hwp).unwrap();
+    let io = pcm.io_i16().unwrap();
 
-        buffer[2 * ix] = samp;
-        buffer[2 * ix + 1] = samp;
-      }
+    // Make sure we don't start the stream too early
+    let hwp = pcm.hw_params_current().unwrap();
 
-      if s.going {
-        pad::Continue
-      } else {
-        pad::Abort
-      }
-    };
-
-    let mut stream = pa.open_non_blocking_stream(settings, callback)?;
-
-    stream.start()?;
-
-    loop {
-      println!("playing...");
-      if !stream.is_active()? {
-        break;
-      }
-      std::thread::sleep(std::time::Duration::from_millis(500));
+    let x = hwp.get_buffer_size();
+    match x {
+      Ok(x) => println!("buffer size {x}"),
+      Err(_) => {}
     }
 
-    stream.stop()?;
-    stream.close()?;
+    let swp = pcm.sw_params_current().unwrap();
+    swp
+      .set_start_threshold(hwp.get_buffer_size().unwrap())
+      .unwrap();
+    pcm.sw_params(&swp).unwrap();
+
+    let mut phase: f32 = 0.;
+
+    let mut iters: usize = 0;
+    let mut buf = [0i16; BUF_SIZE];
+    loop {
+      {
+        let mut s: MutexGuard<State> = sg.lock().unwrap();
+        if !s.going {
+          break;
+        }
+        for (i, a) in buf.iter_mut().enumerate() {
+          let mut samp = 0.0;
+
+          for mut note in s.note_state.iter_mut() {
+            exec_note(&mut note, &wavetable, &mut samp);
+          }
+
+          *a = (samp * 16000.0) as i16;
+        }
+      }
+      let _written = io.writei(&buf[..]);
+    }
+
+    // In case the buffer was larger than 2 seconds, start the stream manually.
+    if pcm.state() != alsa::pcm::State::Running {
+      pcm.start().unwrap()
+    };
+
+    // Wait for the stream to finish playback.
+    pcm.drain().unwrap();
+
     Ok(AudioService {})
   }
 }
 
 const ATTACK: f32 = 0.005; // seconds
 const DECAY: f32 = 0.005; // seconds
-const SUSTAIN: f32 = 0.5; // dimensionless
-const RELEASE: f32 = 0.15; // seconds
+const SUSTAIN: f32 = 0.3; // dimensionless
+const RELEASE: f32 = 0.05; // seconds
 
 pub fn note_fsm_amp(fsm: &NoteFsm) -> f32 {
   match *fsm {
