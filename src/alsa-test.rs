@@ -46,7 +46,9 @@ fn run() -> Result<(), Box<dyn Error>> {
 
     let mut phase: f32 = 0.;
 
-    let mut buf = [0i16; 256];
+    const BUF_SIZE: usize = 256;
+
+    let mut buf = [0i16; BUF_SIZE];
     loop {
       if !going.load(Ordering::Relaxed) {
         break;
@@ -58,7 +60,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         }
         *a = ((phase * 2.0 * ::std::f32::consts::PI).sin() * 800.0) as i16;
       }
-      assert_eq!(io.writei(&buf[..]).unwrap(), 256);
+      assert_eq!(io.writei(&buf[..]).unwrap(), BUF_SIZE);
     }
 
     // In case the buffer was larger than 2 seconds, start the stream manually.
