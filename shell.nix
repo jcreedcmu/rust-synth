@@ -11,6 +11,7 @@
         rust-analyzer
         alsa-lib.dev
         alsa-plugins
+        alsa-utils
       ];
       shellHook = asoundShellHook;
 }
