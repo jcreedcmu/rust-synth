@@ -28,6 +28,8 @@ fn run() -> Result<(), Box<dyn Error>> {
     hwp.set_rate(44100, ValueOr::Nearest).unwrap();
     hwp.set_format(Format::s16()).unwrap();
     hwp.set_access(Access::RWInterleaved).unwrap();
+    hwp.set_buffer_size_min(3).unwrap();
+    hwp.set_buffer_size_max(2048).unwrap();
     pcm.hw_params(&hwp).unwrap();
     let io = pcm.io_i16().unwrap();
 
@@ -57,7 +59,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         break;
       }
       let ff = freq.load(Ordering::Relaxed) as f32;
-      if iters % 1000 == 0 {
+      if iters % 1000000 == 0 {
         println!("another 1000, freq = {ff}");
       }
       for (i, a) in buf.iter_mut().enumerate() {
@@ -67,7 +69,8 @@ fn run() -> Result<(), Box<dyn Error>> {
         }
         *a = ((phase * 2.0 * ::std::f32::consts::PI).sin() * 800.0) as i16;
       }
-      assert_eq!(io.writei(&buf[..]).unwrap(), BUF_SIZE);
+      //      let _written = io.writei(&buf[..]).unwrap();
+      let _written = io.writei(&buf[..]);
     }
 
     // In case the buffer was larger than 2 seconds, start the stream manually.
@@ -79,6 +82,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     pcm.drain().unwrap();
   });
 
+  let mut flip: bool = true;
   loop {
     let mut input = String::new();
     stdin().read_line(&mut input)?; // wait for next enter key press
@@ -86,7 +90,9 @@ fn run() -> Result<(), Box<dyn Error>> {
       break;
     } else if input.eq("f\n") {
       println!("here");
-      freq2.store(880, Ordering::Relaxed);
+
+      freq2.store(if flip { 880 } else { 440 }, Ordering::Relaxed);
+      flip = !flip;
     }
   }
   //  std::thread::sleep(std::time::Duration::from_millis(10000));
