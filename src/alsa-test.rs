@@ -20,16 +20,16 @@ fn run() -> Result<(), Box<dyn Error>> {
 
   let audio_thread = std::thread::spawn(move || {
     // Open default playback device
-    let pcm = PCM::new("default", Direction::Playback, false).unwrap();
+    let pcm = PCM::new("hw:2", Direction::Playback, false).unwrap();
 
     // Set hardware parameters: 44100 Hz / Mono / 16 bit
     let hwp = HwParams::any(&pcm).unwrap();
-    hwp.set_channels(1).unwrap();
+    hwp.set_channels(2).unwrap();
     hwp.set_rate(44100, ValueOr::Nearest).unwrap();
     hwp.set_format(Format::s16()).unwrap();
     hwp.set_access(Access::RWInterleaved).unwrap();
     hwp.set_buffer_size_min(3).unwrap();
-    hwp.set_buffer_size_max(2048).unwrap();
+    hwp.set_buffer_size_max(128).unwrap();
     pcm.hw_params(&hwp).unwrap();
     let io = pcm.io_i16().unwrap();
 
