@@ -431,7 +431,7 @@ static int async_loop(snd_pcm_t *handle,
 	data.phase = 0;
 	err = snd_async_add_pcm_handler(&ahandler, handle, async_callback, &data);
 	if (err < 0) {
-		printf("Unable to register async handler\n");
+	  printf("Unable to register async handler %d\n", err);
 		exit(EXIT_FAILURE);
 	}
 	for (count = 0; count < 2; count++) {
