@@ -3,7 +3,7 @@ use alsa::pcm::{Access, Format, HwParams, State, PCM};
 use alsa::{Direction, ValueOr};
 use std::error::Error;
 use std::io::stdin;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
 fn main() {
@@ -14,7 +14,9 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
-  let going: Arc<AtomicBool> = Arc::new(AtomicBool::new(true));
+  let going = Arc::new(AtomicBool::new(true));
+  let freq = Arc::new(AtomicU64::new(110));
+  let freq2 = freq.clone();
 
   let audio_thread = std::thread::spawn(move || {
     // Open default playback device
@@ -47,14 +49,19 @@ fn run() -> Result<(), Box<dyn Error>> {
     let mut phase: f32 = 0.;
 
     const BUF_SIZE: usize = 256;
-
+    let mut iters: usize = 0;
     let mut buf = [0i16; BUF_SIZE];
     loop {
+      iters += 1;
       if !going.load(Ordering::Relaxed) {
         break;
       }
+      let ff = freq.load(Ordering::Relaxed) as f32;
+      if iters % 1000 == 0 {
+        println!("another 1000, freq = {ff}");
+      }
       for (i, a) in buf.iter_mut().enumerate() {
-        phase += 440.0 / 44100.0;
+        phase += ff / 44100.0;
         if phase > 1. {
           phase -= 1.;
         }
@@ -72,9 +79,16 @@ fn run() -> Result<(), Box<dyn Error>> {
     pcm.drain().unwrap();
   });
 
-  let mut input = String::new();
-  stdin().read_line(&mut input)?; // wait for next enter key press
-
+  loop {
+    let mut input = String::new();
+    stdin().read_line(&mut input)?; // wait for next enter key press
+    if input.eq("\n") {
+      break;
+    } else if input.eq("f\n") {
+      println!("here");
+      freq2.store(880, Ordering::Relaxed);
+    }
+  }
   //  std::thread::sleep(std::time::Duration::from_millis(10000));
   Ok(())
 }
