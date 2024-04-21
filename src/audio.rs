@@ -10,7 +10,7 @@ const CHANNELS: u32 = 2;
 const FRAMES_PER_BUFFER: u32 = 64;
 
 impl AudioService {
-  pub fn new(data: &Data, synth: Synth) -> Mostly<AudioService> {
+  pub fn new(card: u8, data: &Data, synth: Synth) -> Mostly<AudioService> {
     let sg = data.state.clone();
     let lowp_len: usize = 5;
     let mut lowp: Vec<f32> = vec![0.0; lowp_len];
@@ -21,8 +21,9 @@ impl AudioService {
     }
 
     // Initialize alsa
-    // Open default playback device
-    let pcm = PCM::new("hw:2", Direction::Playback, false).unwrap();
+    // Open default playback devic
+    let device_name = format!("hw:{card}");
+    let pcm = PCM::new(&device_name, Direction::Playback, false).unwrap();
     const BUF_SIZE: usize = 64;
 
     // Set hardware parameters: 44100 Hz / Mono / 16 bit
