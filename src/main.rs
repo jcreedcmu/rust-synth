@@ -8,6 +8,7 @@ mod reduce;
 mod state;
 mod synth;
 mod util;
+use dbus::blocking as dbus;
 
 use midi::Message;
 use state::{Data, State};
@@ -23,6 +24,19 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
+  let conn = dbus::Connection::new_session()?;
+  let proxy = dbus::Proxy::new(
+    "org.freedesktop.ReserveDevice1.Audio2",
+    "/org/freedesktop/ReserveDevice1/Audio2",
+    std::time::Duration::from_millis(5000),
+    &conn,
+  );
+  let (result,): (bool,) =
+    proxy.method_call("org.freedesktop.ReserveDevice1", "RequestRelease", (1000,))?;
+  // let res = conn
+  //   .request_name(", true, false, false)
+  //   .unwrap();
+  println!("released? {:?}", result);
   let state = Arc::new(Mutex::new(State::new()));
 
   let sg = Data {

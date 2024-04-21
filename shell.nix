@@ -12,6 +12,7 @@
         alsa-lib.dev
         alsa-plugins
         alsa-utils
+        dbus
       ];
       shellHook = asoundShellHook;
 }
