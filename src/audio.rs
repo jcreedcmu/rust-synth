@@ -102,8 +102,12 @@ impl AudioService {
           for mut note in s.note_state.iter_mut() {
             synth.exec_note(&mut note, &mut samp);
           }
+          lowp_ix = (lowp_ix + 1) % lowp_len;
+          lowp[lowp_ix] = samp;
+          let out: f32 = { lowp.iter().sum() };
+          let len: f32 = lowp.len() as f32;
 
-          let samp_i16 = (samp * 32767.0) as i16;
+          let samp_i16 = (out / len * 32767.0) as i16;
 
           ch[0] = samp_i16;
           ch[1] = samp_i16;
