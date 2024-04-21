@@ -1,9 +1,9 @@
 use crate::synth::Synth;
 use crate::util::Mostly;
-use crate::{Data, NoteFsm, NoteState, State};
+use crate::{Data, State};
 use alsa::pcm::{Access, Format, HwParams, PCM};
 use alsa::{Direction, ValueOr};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::MutexGuard;
 pub struct AudioService {}
 
 const CHANNELS: u32 = 2;

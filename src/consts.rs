@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 
 pub const BOTTOM_NOTE: u8 = 21;
 pub const NUM_NOTES: usize = 88;

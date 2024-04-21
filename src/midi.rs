@@ -1,10 +1,7 @@
-use std::env;
 use std::error::Error;
 use std::fmt;
-use std::thread::sleep;
-use std::time::Duration;
 
-use midir::{Ignore, MidiIO, MidiInput, MidiInputPort, MidiOutput};
+use midir::{Ignore, MidiInput};
 
 pub struct MidiService {
   conn_in: midir::MidiInputConnection<()>,
