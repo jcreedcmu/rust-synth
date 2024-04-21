@@ -3,28 +3,6 @@ Rust Synth
 
 Playing around with audio synthesis in rust.
 
-Hardware Devices
-----------------
-
-Software mixers like pulseaudio, jack, pipewire multiplex access to
-the sound card, but I have had a tricky time getting so far getting
-any of them to perform with low latency. My main goal with this
-repository is to optimize for fun while synthesizing audio from live
-performance on a midi keyboard. Minimizing latency is therefore
-paramount.
-
-For this reason, I'm directly asking ALSA for `hw:2` (because that
-happens to be where my soundcard is) and using `pasuspender` to ask
-pulseaudio to relinquish control during the execution of my
-synthesizer.
-
-There is a dbus endpoint (see [ardour source
-code](https://github.com/Ardour/ardour/blob/master/libs/ardouralsautil/reserve.c)
-as an example, or the
-[specification](http://git.0pointer.net/reserve.git/tree/reserve.txt))
-for requesting reservation of audio devices. This is probably the
-right way of handling the issue from inside an executing program.
-
 Nix Notes
 ---------
 
