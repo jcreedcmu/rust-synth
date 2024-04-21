@@ -63,7 +63,7 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
           &mut s.note_state,
           NoteState {
             phase: 0.0,
-            freq,
+            freq_hz: freq,
             pitch,
             fsm: NoteFsm::On {
               amp: 0.0,

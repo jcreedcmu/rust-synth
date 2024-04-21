@@ -11,7 +11,7 @@ pub enum NoteFsm {
 #[derive(Clone, Debug)]
 pub struct NoteState {
   pub pitch: u8,
-  pub freq: f32,
+  pub freq_hz: f32,
   pub phase: f32,
   pub fsm: NoteFsm,
 }
@@ -23,8 +23,6 @@ pub struct KeyState {
 
 #[derive(Debug)]
 pub struct State {
-  pub phase: f32,
-  pub freq: f32,
   pub going: bool,
   pub key_state: Vec<KeyState>,
   pub note_state: Vec<Option<NoteState>>,
@@ -38,8 +36,6 @@ pub struct Data {
 impl State {
   pub fn new() -> State {
     State {
-      phase: 0.0,
-      freq: 440.0,
       going: true,
       key_state: vec![KeyState { is_on: None }; NUM_NOTES],
       note_state: vec![],

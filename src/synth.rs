@@ -1,4 +1,4 @@
-use crate::consts::SAMPLE_RATE;
+use crate::consts::SAMPLE_RATE_hz;
 use crate::state::{NoteFsm, NoteState};
 
 pub const TABLE_SIZE: usize = 4000;
@@ -43,7 +43,7 @@ impl Synth {
 
         let scale = note_fsm_amp(&note.fsm);
         *samp += (scale as f32) * table_val;
-        let base = note.freq * (TABLE_SIZE as f32) / SAMPLE_RATE;
+        let base = note.freq_hz * (TABLE_SIZE as f32) / SAMPLE_RATE_hz;
         note.phase += base;
         wrap_not_mod(&mut note.phase, TABLE_SIZE as f32);
       }
@@ -52,25 +52,25 @@ impl Synth {
   }
 }
 
-const ATTACK: f32 = 0.005; // seconds
-const DECAY: f32 = 0.005; // seconds
+const ATTACK_s: f32 = 0.005;
+const DECAY_s: f32 = 0.005;
 const SUSTAIN: f32 = 0.3; // dimensionless
-const RELEASE: f32 = 0.05; // seconds
+const RELEASE_s: f32 = 0.05;
 
 pub fn note_fsm_amp(fsm: &NoteFsm) -> f32 {
   match *fsm {
     NoteFsm::On { t_s, amp, vel } => {
-      if t_s < ATTACK {
-        let a = t_s / ATTACK;
+      if t_s < ATTACK_s {
+        let a = t_s / ATTACK_s;
         amp * (1.0 - a) + vel * a
-      } else if t_s < ATTACK + DECAY {
-        let a = (t_s - ATTACK) / DECAY;
+      } else if t_s < ATTACK_s + DECAY_s {
+        let a = (t_s - ATTACK_s) / DECAY_s;
         vel * (1.0 - a) + vel * SUSTAIN * a
       } else {
         SUSTAIN * vel
       }
     }
-    NoteFsm::Release { t_s, amp } => amp * (1.0 - (t_s / RELEASE)),
+    NoteFsm::Release { t_s, amp } => amp * (1.0 - (t_s / RELEASE_s)),
   }
 }
 
@@ -80,14 +80,14 @@ fn advance_note(note: &mut Option<NoteState>) {
       fsm: NoteFsm::On { ref mut t_s, .. },
       ..
     }) => {
-      *t_s += 1.0 / SAMPLE_RATE;
+      *t_s += 1.0 / SAMPLE_RATE_hz;
     }
     Some(NoteState {
       fsm: NoteFsm::Release { ref mut t_s, .. },
       ..
     }) => {
-      *t_s += 1.0 / SAMPLE_RATE;
-      if *t_s > RELEASE {
+      *t_s += 1.0 / SAMPLE_RATE_hz;
+      if *t_s > RELEASE_s {
         *note = None;
       }
     }
