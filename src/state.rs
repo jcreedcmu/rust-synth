@@ -27,8 +27,8 @@ pub struct NoteState {
 #[derive(Clone, Debug)]
 pub enum KeyState {
   Off,
-  On { note: usize },      // index into note_state vector
-  PedalOn { note: usize }, // only on because pedal held
+  On { note_ix: usize },   // index into note_state vector
+  Held { note_ix: usize }, // only on because pedal held
 }
 
 #[derive(Debug)]

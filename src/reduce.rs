@@ -1,5 +1,5 @@
 use crate::midi::Message;
-use crate::state::{EnvState, NoteState, State};
+use crate::state::{EnvState, KeyState, NoteState, State};
 use crate::synth::note_env_amp;
 use crate::util;
 
@@ -10,14 +10,20 @@ fn find_note(s: &State, pitch: u8) -> Option<usize> {
   })
 }
 
-fn add_note(ns: &mut Vec<Option<NoteState>>, new: NoteState) -> () {
+fn add_note(ns: &mut Vec<Option<NoteState>>, new: NoteState) -> usize {
   let first_free_index = ns.iter().position(|x| match x {
     None => true,
     _ => false,
   });
   match first_free_index {
-    None => ns.push(Some(new)),
-    Some(i) => ns[i] = Some(new),
+    None => {
+      ns.push(Some(new));
+      ns.len() - 1
+    }
+    Some(i) => {
+      ns[i] = Some(new);
+      i
+    }
   }
 }
 
@@ -58,11 +64,15 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
       // Is this note already being played?
       let pre = find_note(&s, pitch);
       let vel = (*velocity as f32) / 1280.0;
-      match pre {
-        Some(i) => match &mut s.note_state[i] {
-          None => panic!("we thought this note already existed"),
-          Some(ref mut ns) => restrike_note(ns, vel),
-        },
+
+      let note_ix = match pre {
+        Some(i) => {
+          match &mut s.note_state[i] {
+            None => panic!("Invariant Violation: we thought this note already existed"),
+            Some(ref mut ns) => restrike_note(ns, vel),
+          };
+          i
+        }
         None => add_note(
           &mut s.note_state,
           NoteState {
@@ -76,15 +86,18 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
             },
           },
         ),
-      }
+      };
+      s.key_state[pitch as usize] = KeyState::On { note_ix };
     }
     Message::NoteOff { pitch, channel } => {
-      let pre = find_note(&s, *pitch);
+      let pitch = *pitch;
+      let pre = find_note(&s, pitch);
 
       match pre {
-        None => println!("kinda weird, a noteoff {} on something already off", pitch),
+        None => println!("warning: NoteOff {} on a note already off", pitch),
         Some(i) => {
           release_note(&mut (s.note_state[i]));
+          s.key_state[pitch as usize] = KeyState::Off;
         }
       }
     }
