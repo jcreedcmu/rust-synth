@@ -25,8 +25,10 @@ pub struct NoteState {
 }
 
 #[derive(Clone, Debug)]
-pub struct KeyState {
-  pub is_on: Option<usize>, // index into note_state vector
+pub enum KeyState {
+  Off,
+  On { note: usize },      // index into note_state vector
+  PedalOn { note: usize }, // only on because pedal held
 }
 
 #[derive(Debug)]
@@ -42,6 +44,9 @@ pub struct State {
   // this similarly a fixed length of NUM_NOTES.
   pub note_state: Vec<Option<NoteState>>,
 
+  // Is the sustain pedal on?
+  pub pedal: bool,
+
   pub write_to_file: bool,
 }
 
@@ -53,8 +58,9 @@ impl State {
   pub fn new() -> State {
     State {
       going: true,
-      key_state: vec![KeyState { is_on: None }; NUM_NOTES],
+      key_state: vec![KeyState::Off; NUM_NOTES],
       note_state: vec![],
+      pedal: false,
       write_to_file: false,
     }
   }
