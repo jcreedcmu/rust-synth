@@ -1,2 +1,8 @@
-go:
-	pasuspender -- cargo run --bin rsynth
+build:
+	cargo build
+
+run:
+	pasuspender -- cargo run
+
+count:
+	wc -l src/*.rs
