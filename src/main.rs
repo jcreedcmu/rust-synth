@@ -60,6 +60,52 @@ fn release_note(note: &mut Option<NoteState>) {
   }
 }
 
+fn midi_reducer(msg: &Message, s: &mut State) {
+  match msg {
+    Message::NoteOn {
+      pitch,
+      channel,
+      velocity,
+    } => {
+      let pitch = *pitch;
+      let freq = 440.0 * 2.0f32.powf(((pitch as f32) - 69.0) / 12.0);
+      // Is this note already being played?
+      let pre = find_note(&s, pitch);
+      let vel = (*velocity as f32) / 1280.0;
+      match pre {
+        Some(i) => match &mut s.note_state[i] {
+          None => panic!("we thought this note already existed"),
+          Some(ref mut ns) => restrike_note(ns, vel),
+        },
+        None => add_note(
+          &mut s.note_state,
+          NoteState {
+            phase: 0.0,
+            freq,
+            pitch,
+            fsm: NoteFsm::On {
+              amp: 0.0,
+              t: 0.0,
+              vel,
+            },
+          },
+        ),
+      }
+    }
+    Message::NoteOff { pitch, channel } => {
+      let pre = find_note(&s, *pitch);
+
+      match pre {
+        None => println!("kinda weird, a noteoff {} on something already off", pitch),
+        Some(i) => {
+          release_note(&mut (s.note_state[i]));
+        }
+      }
+    }
+    _ => (),
+  }
+}
+
 fn run() -> Result<(), Box<dyn Error>> {
   let state = Arc::new(Mutex::new(State {
     phase: 0.0,
@@ -78,53 +124,8 @@ fn run() -> Result<(), Box<dyn Error>> {
     state: state.clone(),
   };
 
-  let midi_reducer = move |msg: &Message, s: &mut State| {
-    match msg {
-      Message::NoteOn {
-        pitch,
-        channel,
-        velocity,
-      } => {
-        let pitch = *pitch;
-        let freq = 440.0 * 2.0f32.powf(((pitch as f32) - 69.0) / 12.0);
-        // Is this note already being played?
-        let pre = find_note(&s, pitch);
-        let vel = (*velocity as f32) / 1280.0;
-        match pre {
-          Some(i) => match &mut s.note_state[i] {
-            None => panic!("we thought this note already existed"),
-            Some(ref mut ns) => restrike_note(ns, vel),
-          },
-          None => add_note(
-            &mut s.note_state,
-            NoteState {
-              phase: 0.0,
-              freq,
-              pitch,
-              fsm: NoteFsm::On {
-                amp: 0.0,
-                t: 0.0,
-                vel,
-              },
-            },
-          ),
-        }
-      }
-      Message::NoteOff { pitch, channel } => {
-        let pre = find_note(&s, *pitch);
-
-        match pre {
-          None => println!("kinda weird, a noteoff {} on something already off", pitch),
-          Some(i) => {
-            release_note(&mut (s.note_state[i]));
-          }
-        }
-      }
-      _ => (),
-    }
-  };
-
   let _ = std::thread::spawn(move || -> Result<(), Box<dyn Error + Send + Sync>> {
+    // XXX MidiService should just mut-borrow state?
     let ms = midi::MidiService::new(0, move |msg: &Message| {
       let mut s: MutexGuard<State> = sg.state.lock().unwrap();
       midi_reducer(msg, &mut s);
