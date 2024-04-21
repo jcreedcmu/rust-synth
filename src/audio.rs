@@ -31,8 +31,7 @@ impl AudioService {
     hwp.set_rate(44100, ValueOr::Nearest).unwrap();
     hwp.set_format(Format::s16()).unwrap();
     hwp.set_access(Access::RWInterleaved).unwrap();
-    hwp.set_buffer_size_min(3).unwrap();
-    hwp.set_buffer_size_max(BUF_SIZE as i64).unwrap();
+    hwp.set_buffer_size(BUF_SIZE as i64).unwrap();
     pcm.hw_params(&hwp).unwrap();
     let io = pcm.io_i16().unwrap();
 
@@ -68,16 +67,11 @@ impl AudioService {
             synth.exec_note(&mut note, &mut samp);
           }
 
-          *a = (samp * 16000.0) as i16;
+          *a = (samp * 32767.0) as i16;
         }
       }
       let _written = io.writei(&buf[..]);
     }
-
-    // In case the buffer was larger than 2 seconds, start the stream manually.
-    if pcm.state() != alsa::pcm::State::Running {
-      pcm.start().unwrap()
-    };
 
     // Wait for the stream to finish playback.
     pcm.drain().unwrap();
