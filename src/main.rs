@@ -14,6 +14,7 @@ use std::error::Error;
 use std::io::{stdin, stdout, Write};
 use std::sync::{Arc, Mutex, MutexGuard};
 use synth::note_fsm_amp;
+use util::Mostly;
 
 fn main() {
   match run() {
@@ -77,8 +78,8 @@ fn run() -> Result<(), Box<dyn Error>> {
     state: state.clone(),
   };
 
-  let do_midi_stuff = move || -> Result<(), Box<dyn Error>> {
-    let ms = midi::MidiService::new(0, move |msg: &Message| match msg {
+  let midi_reducer = move |msg: &Message, s: &mut State| {
+    match msg {
       Message::NoteOn {
         pitch,
         channel,
@@ -86,7 +87,6 @@ fn run() -> Result<(), Box<dyn Error>> {
       } => {
         let pitch = *pitch;
         let freq = 440.0 * 2.0f32.powf(((pitch as f32) - 69.0) / 12.0);
-        let mut s: MutexGuard<State> = sg.state.lock().unwrap();
         // Is this note already being played?
         let pre = find_note(&s, pitch);
         let vel = (*velocity as f32) / 1280.0;
@@ -111,7 +111,6 @@ fn run() -> Result<(), Box<dyn Error>> {
         }
       }
       Message::NoteOff { pitch, channel } => {
-        let mut s: MutexGuard<State> = sg.state.lock().unwrap();
         let pre = find_note(&s, *pitch);
 
         match pre {
@@ -122,6 +121,13 @@ fn run() -> Result<(), Box<dyn Error>> {
         }
       }
       _ => (),
+    }
+  };
+
+  let _ = std::thread::spawn(move || -> Result<(), Box<dyn Error + Send + Sync>> {
+    let ms = midi::MidiService::new(0, move |msg: &Message| {
+      let mut s: MutexGuard<State> = sg.state.lock().unwrap();
+      midi_reducer(msg, &mut s);
     });
     let mut input = String::new();
     stdin().read_line(&mut input)?; // wait for next enter key press
@@ -129,10 +135,6 @@ fn run() -> Result<(), Box<dyn Error>> {
     let mut s: MutexGuard<State> = sg2.state.lock().unwrap();
     s.going = false;
     Ok(())
-  };
-
-  let _ = std::thread::spawn(move || {
-    let _ = do_midi_stuff();
   });
 
   let ads = audio::AudioService::new(&Data { state }, synth::Synth::new())?;
