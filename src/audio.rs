@@ -10,7 +10,7 @@ use std::sync::MutexGuard;
 pub struct AudioService {}
 
 const CHANNELS: u32 = 2;
-const FRAMES_PER_BUFFER: u32 = 64;
+const BUF_SIZE: usize = 64;
 
 struct Reservation {
   conn: dbus::Connection,
@@ -66,11 +66,10 @@ impl AudioService {
     // Open default playback devic
     let device_name = format!("hw:{card}");
     let pcm = PCM::new(&device_name, Direction::Playback, false).unwrap();
-    const BUF_SIZE: usize = 64;
 
     // Set hardware parameters: 44100 Hz / Mono / 16 bit
     let hwp = HwParams::any(&pcm).unwrap();
-    hwp.set_channels(2).unwrap();
+    hwp.set_channels(CHANNELS).unwrap();
     hwp.set_rate(44100, ValueOr::Nearest).unwrap();
     hwp.set_format(Format::s16()).unwrap();
     hwp.set_access(Access::RWInterleaved).unwrap();
@@ -97,20 +96,25 @@ impl AudioService {
 
     let mut iters: usize = 0;
     let mut buf = [0i16; BUF_SIZE];
+
     loop {
       {
         let mut s: MutexGuard<State> = sg.lock().unwrap();
         if !s.going {
           break;
         }
-        for (i, a) in buf.iter_mut().enumerate() {
+
+        for ch in buf.chunks_mut(CHANNELS as usize) {
           let mut samp = 0.0;
 
           for mut note in s.note_state.iter_mut() {
             synth.exec_note(&mut note, &mut samp);
           }
 
-          *a = (samp * 32767.0) as i16;
+          let samp_i16 = (samp * 32767.0) as i16;
+
+          ch[0] = samp_i16;
+          ch[1] = samp_i16;
         }
       }
       let _written = io.writei(&buf[..]);
