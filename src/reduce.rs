@@ -95,12 +95,32 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
 
       match pre {
         None => println!("warning: NoteOff {} on a note already off", pitch),
-        Some(i) => {
-          release_note(&mut (s.note_state[i]));
-          s.key_state[pitch as usize] = KeyState::Off;
+        Some(note_ix) => {
+          if s.pedal {
+            s.key_state[pitch as usize] = KeyState::Held { note_ix };
+          } else {
+            release_note(&mut (s.note_state[note_ix]));
+            s.key_state[pitch as usize] = KeyState::Off;
+          }
         }
       }
     }
-    _ => (),
+    Message::PedalOff { .. } => {
+      s.pedal = false;
+      // Release all pedal-held notes
+      for ks in s.key_state.iter_mut() {
+        match ks {
+          KeyState::Held { note_ix } => {
+            release_note(&mut (s.note_state[*note_ix]));
+            *ks = KeyState::Off;
+          }
+          _ => (),
+        }
+        //
+      }
+    }
+    Message::PedalOn { .. } => {
+      s.pedal = true;
+    }
   }
 }
