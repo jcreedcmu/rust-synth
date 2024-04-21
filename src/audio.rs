@@ -3,14 +3,56 @@ use crate::util::Mostly;
 use crate::{Data, State};
 use alsa::pcm::{Access, Format, HwParams, PCM};
 use alsa::{Direction, ValueOr};
+use dbus::blocking as dbus;
+use std::error::Error;
 use std::sync::MutexGuard;
+
 pub struct AudioService {}
 
 const CHANNELS: u32 = 2;
 const FRAMES_PER_BUFFER: u32 = 64;
 
+struct Reservation {
+  conn: dbus::Connection,
+}
+
+fn dbus_reserve(card: u8) -> Result<Reservation, Box<dyn Error>> {
+  // Following the dbus audio device reservation protocol documented in
+  // https://git.0pointer.net/reserve.git/tree/reserve.txt
+  // and some useful examples are
+  // https://github.com/Ardour/ardour/blob/master/libs/ardouralsautil/reserve.c
+  // https://gitlab.freedesktop.org/pipewire/pipewire/-/blob/master/src/tools/reserve.c
+  let service = &format!("org.freedesktop.ReserveDevice1.Audio{card}");
+  let object = &format!("/org/freedesktop/ReserveDevice1/Audio{card}");
+  let iface = "org.freedesktop.ReserveDevice1";
+  let method = "RequestRelease";
+  let priority = 1000; // arbitrary, I'm just hoping it's larger than jack, pulseaudio, pipewire, etc.
+  let conn = dbus::Connection::new_session()?;
+  let timeout = std::time::Duration::from_millis(5000);
+
+  let proxy = dbus::Proxy::new(service, object, timeout, &conn);
+  let (release_result,): (bool,) = proxy.method_call(iface, method, (priority,))?;
+  assert!(release_result);
+
+  // "The initial request shall be made with
+  // DBUS_NAME_FLAG_DO_NOT_QUEUE and DBUS_NAME_FLAG_ALLOW_REPLACEMENT
+  // (exception see below). DBUS_NAME_FLAG_REPLACE_EXISTING shall not
+  // be set."
+  // (https://git.0pointer.net/reserve.git/tree/reserve.txt)
+  let allow_replacement = true;
+  let replace_existing = false;
+  let do_not_queue = true;
+  let reserve_result =
+    conn.request_name(service, allow_replacement, replace_existing, do_not_queue)?;
+  assert!(reserve_result == dbus::stdintf::org_freedesktop_dbus::RequestNameReply::PrimaryOwner);
+
+  Ok(Reservation { conn })
+}
+
 impl AudioService {
   pub fn new(card: u8, data: &Data, synth: Synth) -> Mostly<AudioService> {
+    let _reservation = dbus_reserve(card)?;
+
     let sg = data.state.clone();
     let lowp_len: usize = 5;
     let mut lowp: Vec<f32> = vec![0.0; lowp_len];
