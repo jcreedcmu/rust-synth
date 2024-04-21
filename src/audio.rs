@@ -58,16 +58,10 @@ impl AudioService {
     let mut lowp: Vec<f32> = vec![0.0; lowp_len];
     let mut lowp_ix = 0;
 
-    fn wave(x: f32) -> f32 {
-      return if x > 0.5 { 1.0 } else { -1.0 };
-    }
-
     // Initialize alsa
-    // Open default playback devic
     let device_name = format!("hw:{card}");
     let pcm = PCM::new(&device_name, Direction::Playback, false).unwrap();
 
-    // Set hardware parameters: 44100 Hz / Mono / 16 bit
     let hwp = HwParams::any(&pcm).unwrap();
     hwp.set_channels(CHANNELS).unwrap();
     hwp.set_rate(44100, ValueOr::Nearest).unwrap();
@@ -77,12 +71,10 @@ impl AudioService {
     pcm.hw_params(&hwp).unwrap();
     let io = pcm.io_i16().unwrap();
 
-    // Make sure we don't start the stream too early
     let hwp = pcm.hw_params_current().unwrap();
-
-    let x = hwp.get_buffer_size();
-    match x {
-      Ok(x) => println!("buffer size {x}"),
+    let buffer_size = hwp.get_buffer_size();
+    match buffer_size {
+      Ok(s) => println!("buffer size is {s}"),
       Err(_) => {}
     }
 
