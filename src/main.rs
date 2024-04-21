@@ -60,6 +60,9 @@ fn release_note(note: &mut Option<NoteState>) {
   }
 }
 
+// Could have this function return pure data that represents the
+// change, then have subsequent function carry it out, so that we hold
+// state lock for shorter duration.
 fn midi_reducer(msg: &Message, s: &mut State) {
   match msg {
     Message::NoteOn {
