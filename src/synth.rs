@@ -1,5 +1,5 @@
 use crate::consts::SAMPLE_RATE_hz;
-use crate::state::{NoteFsm, NoteState};
+use crate::state::{EnvState, NoteState};
 
 pub const TABLE_SIZE: usize = 4000;
 
@@ -41,7 +41,7 @@ impl Synth {
         // linear interp
         let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
 
-        let scale = note_fsm_amp(&note.fsm);
+        let scale = note_env_amp(&note.env_state);
         *samp += (scale as f32) * table_val;
         let base = note.freq_hz * (TABLE_SIZE as f32) / SAMPLE_RATE_hz;
         note.phase += base;
@@ -57,9 +57,9 @@ const DECAY_s: f32 = 0.005;
 const SUSTAIN: f32 = 0.3; // dimensionless
 const RELEASE_s: f32 = 0.05;
 
-pub fn note_fsm_amp(fsm: &NoteFsm) -> f32 {
-  match *fsm {
-    NoteFsm::On { t_s, amp, vel } => {
+pub fn note_env_amp(env_state: &EnvState) -> f32 {
+  match *env_state {
+    EnvState::On { t_s, amp, vel } => {
       if t_s < ATTACK_s {
         let a = t_s / ATTACK_s;
         amp * (1.0 - a) + vel * a
@@ -70,20 +70,21 @@ pub fn note_fsm_amp(fsm: &NoteFsm) -> f32 {
         SUSTAIN * vel
       }
     }
-    NoteFsm::Release { t_s, amp } => amp * (1.0 - (t_s / RELEASE_s)),
+    EnvState::Release { t_s, amp } => amp * (1.0 - (t_s / RELEASE_s)),
   }
 }
 
+// Advance note state forward by 1 audio sample
 fn advance_note(note: &mut Option<NoteState>) {
   match note {
     Some(NoteState {
-      fsm: NoteFsm::On { ref mut t_s, .. },
+      env_state: EnvState::On { ref mut t_s, .. },
       ..
     }) => {
       *t_s += 1.0 / SAMPLE_RATE_hz;
     }
     Some(NoteState {
-      fsm: NoteFsm::Release { ref mut t_s, .. },
+      env_state: EnvState::Release { ref mut t_s, .. },
       ..
     }) => {
       *t_s += 1.0 / SAMPLE_RATE_hz;

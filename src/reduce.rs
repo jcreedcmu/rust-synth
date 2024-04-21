@@ -1,6 +1,6 @@
 use crate::midi::Message;
-use crate::state::{NoteFsm, NoteState, State};
-use crate::synth::note_fsm_amp;
+use crate::state::{EnvState, NoteState, State};
+use crate::synth::note_env_amp;
 
 fn find_note(s: &State, pitch: u8) -> Option<usize> {
   s.note_state.iter().position(|x| match x {
@@ -20,19 +20,21 @@ fn add_note(ns: &mut Vec<Option<NoteState>>, new: NoteState) -> () {
 }
 
 fn restrike_note(note: &mut NoteState, vel: f32) {
-  note.fsm = NoteFsm::On {
+  note.env_state = EnvState::On {
     t_s: 0.0,
-    amp: note_fsm_amp(&note.fsm),
+    amp: note_env_amp(&note.env_state),
     vel,
   };
 }
 
 fn release_note(note: &mut Option<NoteState>) {
   match note {
-    Some(NoteState { ref mut fsm, .. }) => {
-      *fsm = NoteFsm::Release {
+    Some(NoteState {
+      ref mut env_state, ..
+    }) => {
+      *env_state = EnvState::Release {
         t_s: 0.0,
-        amp: note_fsm_amp(fsm),
+        amp: note_env_amp(env_state),
       };
     }
     _ => (),
@@ -65,7 +67,7 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
             phase: 0.0,
             freq_hz: freq,
             pitch,
-            fsm: NoteFsm::On {
+            env_state: EnvState::On {
               amp: 0.0,
               t_s: 0.0,
               vel,
