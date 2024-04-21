@@ -1,5 +1,5 @@
-use crate::consts::{NoteFsm, NoteState, State};
 use crate::midi::Message;
+use crate::state::{NoteFsm, NoteState, State};
 use crate::synth::note_fsm_amp;
 
 fn find_note(s: &State, pitch: u8) -> Option<usize> {

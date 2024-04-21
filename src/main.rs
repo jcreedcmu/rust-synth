@@ -5,11 +5,12 @@ mod audio;
 mod consts;
 mod midi;
 mod reduce;
+mod state;
 mod synth;
 mod util;
 
-use consts::{Data, KeyState, State, NUM_NOTES};
 use midi::Message;
+use state::{Data, State};
 use std::error::Error;
 use std::io::stdin;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -22,14 +23,7 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
-  let state = Arc::new(Mutex::new(State {
-    phase: 0.0,
-    freq: 440.0,
-    going: true,
-    key_state: vec![KeyState { is_on: None }; NUM_NOTES],
-    note_state: vec![],
-    write_to_file: false,
-  }));
+  let state = Arc::new(Mutex::new(State::new()));
 
   let sg = Data {
     state: state.clone(),

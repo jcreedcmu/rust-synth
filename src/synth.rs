@@ -1,4 +1,5 @@
-use crate::consts::{NoteFsm, NoteState, SAMPLE_RATE};
+use crate::consts::SAMPLE_RATE;
+use crate::state::{NoteFsm, NoteState};
 
 pub const TABLE_SIZE: usize = 4000;
 
