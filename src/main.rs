@@ -31,12 +31,14 @@ fn run() -> Result<(), Box<dyn Error>> {
     std::time::Duration::from_millis(5000),
     &conn,
   );
-  let (result,): (bool,) =
+  let (release_result,): (bool,) =
     proxy.method_call("org.freedesktop.ReserveDevice1", "RequestRelease", (1000,))?;
-  // let res = conn
-  //   .request_name(", true, false, false)
-  //   .unwrap();
-  println!("released? {:?}", result);
+  assert!(release_result);
+
+  let reserve_result =
+    conn.request_name("org.freedesktop.ReserveDevice1.Audio2", true, false, false)?;
+  assert!(reserve_result == dbus::stdintf::org_freedesktop_dbus::RequestNameReply::PrimaryOwner);
+
   let state = Arc::new(Mutex::new(State::new()));
 
   let sg = Data {
