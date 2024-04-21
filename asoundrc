@@ -1,8 +1,0 @@
-pcm.!default {
-    type hw
-    card 0  # Replace '0' with the index of your sound card (use 'aplay -l' to find it)
-}
-ctl.!default {
-    type hw
-    card 0  # Same as above, replace '0' with your sound card index
-}
