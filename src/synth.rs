@@ -4,7 +4,7 @@ use crate::state::{NoteFsm, NoteState};
 pub const TABLE_SIZE: usize = 4000;
 
 pub struct Synth {
-  pub wavetable: Vec<f32>,
+  wavetable: Vec<f32>,
 }
 
 impl Synth {
