@@ -1,6 +1,7 @@
 use crate::midi::Message;
 use crate::state::{EnvState, NoteState, State};
 use crate::synth::note_env_amp;
+use crate::util;
 
 fn find_note(s: &State, pitch: u8) -> Option<usize> {
   s.note_state.iter().position(|x| match x {
@@ -52,7 +53,7 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
       velocity,
     } => {
       let pitch = *pitch;
-      let freq = 440.0 * 2.0f32.powf(((pitch as f32) - 69.0) / 12.0);
+      let freq = util::freq_of_pitch(pitch);
       // Is this note already being played?
       let pre = find_note(&s, pitch);
       let vel = (*velocity as f32) / 1280.0;
