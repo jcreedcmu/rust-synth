@@ -32,8 +32,16 @@ pub struct KeyState {
 #[derive(Debug)]
 pub struct State {
   pub going: bool,
+
+  // This is NUM_NOTES long, one keystate for every physical key.
   pub key_state: Vec<KeyState>,
+
+  // This has a varying length as synthesis goes on. Every time we
+  // need to allocate a ugen, we try to reuse existing `None`s, but
+  // push a new one if necessary. Can't remember why I didn't make
+  // this similarly a fixed length of NUM_NOTES.
   pub note_state: Vec<Option<NoteState>>,
+
   pub write_to_file: bool,
 }
 

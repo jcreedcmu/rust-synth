@@ -11,10 +11,11 @@ fn find_note(s: &State, pitch: u8) -> Option<usize> {
 }
 
 fn add_note(ns: &mut Vec<Option<NoteState>>, new: NoteState) -> () {
-  match ns.iter().position(|x| match x {
+  let first_free_index = ns.iter().position(|x| match x {
     None => true,
     _ => false,
-  }) {
+  });
+  match first_free_index {
     None => ns.push(Some(new)),
     Some(i) => ns[i] = Some(new),
   }
