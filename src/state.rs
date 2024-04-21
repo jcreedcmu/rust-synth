@@ -4,8 +4,8 @@ use crate::consts::NUM_NOTES;
 
 #[derive(Clone, Debug)]
 pub enum NoteFsm {
-  On { amp: f32, t: f32, vel: f32 },
-  Release { amp: f32, t: f32 },
+  On { amp: f32, t_s: f32, vel: f32 },
+  Release { amp: f32, t_s: f32 },
 }
 
 #[derive(Clone, Debug)]

@@ -21,7 +21,7 @@ fn add_note(ns: &mut Vec<Option<NoteState>>, new: NoteState) -> () {
 
 fn restrike_note(note: &mut NoteState, vel: f32) {
   note.fsm = NoteFsm::On {
-    t: 0.0,
+    t_s: 0.0,
     amp: note_fsm_amp(&note.fsm),
     vel,
   };
@@ -31,7 +31,7 @@ fn release_note(note: &mut Option<NoteState>) {
   match note {
     Some(NoteState { ref mut fsm, .. }) => {
       *fsm = NoteFsm::Release {
-        t: 0.0,
+        t_s: 0.0,
         amp: note_fsm_amp(fsm),
       };
     }
@@ -67,7 +67,7 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
             pitch,
             fsm: NoteFsm::On {
               amp: 0.0,
-              t: 0.0,
+              t_s: 0.0,
               vel,
             },
           },

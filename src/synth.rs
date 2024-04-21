@@ -59,35 +59,35 @@ const RELEASE: f32 = 0.05; // seconds
 
 pub fn note_fsm_amp(fsm: &NoteFsm) -> f32 {
   match *fsm {
-    NoteFsm::On { t, amp, vel } => {
-      if t < ATTACK {
-        let a = t / ATTACK;
+    NoteFsm::On { t_s, amp, vel } => {
+      if t_s < ATTACK {
+        let a = t_s / ATTACK;
         amp * (1.0 - a) + vel * a
-      } else if t < ATTACK + DECAY {
-        let a = (t - ATTACK) / DECAY;
+      } else if t_s < ATTACK + DECAY {
+        let a = (t_s - ATTACK) / DECAY;
         vel * (1.0 - a) + vel * SUSTAIN * a
       } else {
         SUSTAIN * vel
       }
     }
-    NoteFsm::Release { t, amp } => amp * (1.0 - (t / RELEASE)),
+    NoteFsm::Release { t_s, amp } => amp * (1.0 - (t_s / RELEASE)),
   }
 }
 
 fn advance_note(note: &mut Option<NoteState>) {
   match note {
     Some(NoteState {
-      fsm: NoteFsm::On { ref mut t, .. },
+      fsm: NoteFsm::On { ref mut t_s, .. },
       ..
     }) => {
-      *t += 1.0 / SAMPLE_RATE;
+      *t_s += 1.0 / SAMPLE_RATE;
     }
     Some(NoteState {
-      fsm: NoteFsm::Release { ref mut t, .. },
+      fsm: NoteFsm::Release { ref mut t_s, .. },
       ..
     }) => {
-      *t += 1.0 / SAMPLE_RATE;
-      if *t > RELEASE {
+      *t_s += 1.0 / SAMPLE_RATE;
+      if *t_s > RELEASE {
         *note = None;
       }
     }
