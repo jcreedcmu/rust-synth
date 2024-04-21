@@ -1,6 +1,7 @@
+use std::slice::IterMut;
 use std::sync::{Arc, Mutex};
 
-use crate::consts::NUM_NOTES;
+use crate::consts::{BOTTOM_NOTE, NUM_NOTES};
 
 // This is the part of the state that tracks where a note is in its
 // ADSR envelope.
@@ -36,7 +37,7 @@ pub struct State {
   pub going: bool,
 
   // This is NUM_NOTES long, one keystate for every physical key.
-  pub key_state: Vec<KeyState>,
+  key_state: Vec<KeyState>,
 
   // This has a varying length as synthesis goes on. Every time we
   // need to allocate a ugen, we try to reuse existing `None`s, but
@@ -63,5 +64,13 @@ impl State {
       pedal: false,
       write_to_file: false,
     }
+  }
+
+  pub fn get_key_state_mut(self: &mut State, pitch: usize) -> &mut KeyState {
+    &mut self.key_state[pitch - (BOTTOM_NOTE as usize)]
+  }
+
+  pub fn get_key_states(self: &mut State) -> IterMut<'_, KeyState> {
+    self.key_state.iter_mut()
   }
 }

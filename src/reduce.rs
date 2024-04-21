@@ -87,7 +87,7 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
           },
         ),
       };
-      s.key_state[pitch as usize] = KeyState::On { note_ix };
+      *s.get_key_state_mut(pitch.into()) = KeyState::On { note_ix };
     }
     Message::NoteOff { pitch, channel } => {
       let pitch = *pitch;
@@ -97,10 +97,10 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
         None => println!("warning: NoteOff {} on a note already off", pitch),
         Some(note_ix) => {
           if s.pedal {
-            s.key_state[pitch as usize] = KeyState::Held { note_ix };
+            *s.get_key_state_mut(pitch.into()) = KeyState::Held { note_ix };
           } else {
             release_note(&mut (s.note_state[note_ix]));
-            s.key_state[pitch as usize] = KeyState::Off;
+            *s.get_key_state_mut(pitch.into()) = KeyState::Off;
           }
         }
       }
@@ -108,15 +108,20 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
     Message::PedalOff { .. } => {
       s.pedal = false;
       // Release all pedal-held notes
-      for ks in s.key_state.iter_mut() {
+
+      let mut note_ixs: Vec<usize> = vec![];
+
+      for ks in s.get_key_states() {
         match ks {
           KeyState::Held { note_ix } => {
-            release_note(&mut (s.note_state[*note_ix]));
+            note_ixs.push(*note_ix);
             *ks = KeyState::Off;
           }
           _ => (),
         }
-        //
+      }
+      for note_ix in note_ixs.iter() {
+        release_note(&mut (s.note_state[*note_ix]));
       }
     }
     Message::PedalOn { .. } => {
