@@ -1,5 +1,5 @@
 use crate::consts::SAMPLE_RATE_hz;
-use crate::state::{EnvState, ReasonableSynthState, UgenState};
+use crate::state::{BassDrumSynthState, EnvState, ReasonableSynthState, UgenState};
 
 pub const TABLE_SIZE: usize = 4000;
 
@@ -30,6 +30,11 @@ impl Synth {
     Synth { wavetable }
   }
 
+  // FIXME: do the dispatch with traits or something
+  fn exec_bass_synth(self: &Synth, state: &mut BassDrumSynthState, samp: &mut f32) {
+    // let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
+  }
+
   fn exec_reasonable_synth(self: &Synth, state: &mut ReasonableSynthState, samp: &mut f32) {
     let phase: f32 = state.phase;
     let offset = state.phase.floor() as usize;
@@ -47,9 +52,8 @@ impl Synth {
 
   fn exec_ugen(self: &Synth, ugen: &mut UgenState, samp: &mut f32) {
     match *ugen {
-      UgenState::ReasonableSynth(ref mut state) => {
-        self.exec_reasonable_synth(state, samp);
-      },
+      UgenState::ReasonableSynth(ref mut state) => self.exec_reasonable_synth(state, samp),
+      UgenState::BassDrumSynth(ref mut state) => self.exec_bass_synth(state, samp),
     }
   }
 
@@ -86,21 +90,25 @@ pub fn ugen_env_amp(env_state: &EnvState) -> f32 {
 
 // Advance ugen state forward by 1 audio sample
 fn advance_ugen(ugen: &mut Option<UgenState>) {
+  let tick_s = 1.0 / SAMPLE_RATE_hz;
   match ugen {
     Some(UgenState::ReasonableSynth(ReasonableSynthState {
       env_state: EnvState::On { ref mut t_s, .. },
       ..
     })) => {
-      *t_s += 1.0 / SAMPLE_RATE_hz;
+      *t_s += tick_s;
     },
     Some(UgenState::ReasonableSynth(ReasonableSynthState {
       env_state: EnvState::Release { ref mut t_s, .. },
       ..
     })) => {
-      *t_s += 1.0 / SAMPLE_RATE_hz;
+      *t_s += tick_s;
       if *t_s > RELEASE_s {
         *ugen = None;
       }
+    },
+    Some(UgenState::BassDrumSynth(BassDrumSynthState { ref mut t_s })) => {
+      *t_s += tick_s;
     },
     None => (),
   }

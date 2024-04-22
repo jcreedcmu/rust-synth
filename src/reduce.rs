@@ -69,10 +69,10 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
       let ugen_ix = match pre {
         Some(i) => {
           match &mut s.ugen_state[i] {
-            None => {
+            Some(UgenState::ReasonableSynth(ref mut ns)) => restrike_rs_ugen(ns, vel),
+            _ => {
               panic!("Invariant Violation: expected key_state pointed to live ReasonableSynth ugen")
             },
-            Some(UgenState::ReasonableSynth(ref mut ns)) => restrike_rs_ugen(ns, vel),
           };
           i
         },

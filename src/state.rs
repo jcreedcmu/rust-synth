@@ -18,6 +18,11 @@ pub enum EnvState {
 }
 
 #[derive(Clone, Debug)]
+pub struct BassDrumSynthState {
+  pub t_s: f32,
+}
+
+#[derive(Clone, Debug)]
 pub struct ReasonableSynthState {
   pub pitch: u8,
   pub freq_hz: f32,
@@ -28,6 +33,7 @@ pub struct ReasonableSynthState {
 #[derive(Clone, Debug)]
 pub enum UgenState {
   ReasonableSynth(ReasonableSynthState),
+  BassDrumSynth(BassDrumSynthState),
 }
 
 #[derive(Clone, Debug)]
