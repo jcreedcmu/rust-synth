@@ -55,8 +55,8 @@ impl Synth {
     let table_val =
       fpart * self.noise_wavetable[offset + 1] + (1.0 - fpart) * self.noise_wavetable[offset];
 
-    const bass_drum_freq_hz: f32 = 440.0 / (TABLE_SIZE as f32);
-    *samp += 0.01 * table_val;
+    let bass_drum_freq_hz: f32 = state.freq_hz / (TABLE_SIZE as f32);
+    *samp += 0.05 * table_val;
 
     let base = bass_drum_freq_hz / SAMPLE_RATE_hz;
 

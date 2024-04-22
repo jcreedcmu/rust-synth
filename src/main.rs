@@ -41,6 +41,7 @@ fn run() -> Result<(), Box<dyn Error>> {
   };
 
   let _ = std::thread::spawn(move || -> Result<(), Box<dyn Error + Send + Sync>> {
+    let mut toggle: bool = true;
     loop {
       std::thread::sleep(std::time::Duration::from_millis(500));
       {
@@ -53,8 +54,10 @@ fn run() -> Result<(), Box<dyn Error>> {
           UgenState::BassDrumSynth(BassDrumSynthState {
             t_s: 0.0,
             phase: 0.0,
+            freq_hz: if toggle { 660.0 } else { 1760.0 },
           }),
         );
+        toggle = !toggle;
       }
     }
     Ok(())
@@ -84,6 +87,7 @@ fn run() -> Result<(), Box<dyn Error>> {
             UgenState::BassDrumSynth(BassDrumSynthState {
               t_s: 0.0,
               phase: 0.0,
+              freq_hz: 440.0,
             }),
           );
         },
