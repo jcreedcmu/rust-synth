@@ -18,11 +18,16 @@ pub enum EnvState {
 }
 
 #[derive(Clone, Debug)]
-pub struct UgenState {
+pub struct ReasonableSynthState {
   pub pitch: u8,
   pub freq_hz: f32,
   pub phase: f32,
   pub env_state: EnvState,
+}
+
+#[derive(Clone, Debug)]
+pub enum UgenState {
+  ReasonableSynth(ReasonableSynthState),
 }
 
 #[derive(Clone, Debug)]

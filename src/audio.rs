@@ -100,7 +100,7 @@ impl AudioService {
           let mut samp = 0.0;
 
           for mut ugen in s.ugen_state.iter_mut() {
-            synth.exec_ugen(&mut ugen, &mut samp);
+            synth.exec_maybe_ugen(&mut ugen, &mut samp);
           }
           lowp_ix = (lowp_ix + 1) % lowp_len;
           lowp[lowp_ix] = samp;

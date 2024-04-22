@@ -1,11 +1,11 @@
 use crate::midi::Message;
-use crate::state::{EnvState, KeyState, State, UgenState};
+use crate::state::{EnvState, KeyState, ReasonableSynthState, State, UgenState};
 use crate::synth::ugen_env_amp;
 use crate::util;
 
 fn find_ugen(s: &State, pitch: u8) -> Option<usize> {
   s.ugen_state.iter().position(|x| match x {
-    Some(y) => y.pitch == pitch,
+    Some(UgenState::ReasonableSynth(rs)) => rs.pitch == pitch,
     _ => false,
   })
 }
@@ -27,7 +27,7 @@ fn add_ugen(ns: &mut Vec<Option<UgenState>>, new: UgenState) -> usize {
   }
 }
 
-fn restrike_ugen(ugen: &mut UgenState, vel: f32) {
+fn restrike_rs_ugen(ugen: &mut ReasonableSynthState, vel: f32) {
   ugen.env_state = EnvState::On {
     t_s: 0.0,
     amp: ugen_env_amp(&ugen.env_state),
@@ -37,9 +37,9 @@ fn restrike_ugen(ugen: &mut UgenState, vel: f32) {
 
 fn release_ugen(ugen: &mut Option<UgenState>) {
   match ugen {
-    Some(UgenState {
+    Some(UgenState::ReasonableSynth(ReasonableSynthState {
       ref mut env_state, ..
-    }) => {
+    })) => {
       *env_state = EnvState::Release {
         t_s: 0.0,
         amp: ugen_env_amp(env_state),
@@ -69,13 +69,13 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
         Some(i) => {
           match &mut s.ugen_state[i] {
             None => panic!("Invariant Violation: we thought this ugen already existed"),
-            Some(ref mut ns) => restrike_ugen(ns, vel),
+            Some(UgenState::ReasonableSynth(ref mut ns)) => restrike_rs_ugen(ns, vel),
           };
           i
         }
         None => add_ugen(
           &mut s.ugen_state,
-          UgenState {
+          UgenState::ReasonableSynth(ReasonableSynthState {
             phase: 0.0,
             freq_hz: freq,
             pitch,
@@ -84,7 +84,7 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
               t_s: 0.0,
               vel,
             },
-          },
+          }),
         ),
       };
       *s.get_key_state_mut(pitch.into()) = KeyState::On { ugen_ix };

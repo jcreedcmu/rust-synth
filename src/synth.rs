@@ -1,5 +1,5 @@
 use crate::consts::SAMPLE_RATE_hz;
-use crate::state::{EnvState, UgenState};
+use crate::state::{EnvState, ReasonableSynthState, UgenState};
 
 pub const TABLE_SIZE: usize = 4000;
 
@@ -30,23 +30,33 @@ impl Synth {
     Synth { wavetable }
   }
 
-  pub fn exec_ugen(self: &Synth, ougen: &mut Option<UgenState>, samp: &mut f32) {
+  fn exec_reasonable_synth(self: &Synth, state: &mut ReasonableSynthState, samp: &mut f32) {
+    let phase: f32 = state.phase;
+    let offset = state.phase.floor() as usize;
+    let fpart: f32 = (phase as f32) - (offset as f32);
+
+    // linear interp
+    let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
+
+    let scale = ugen_env_amp(&state.env_state);
+    *samp += (scale as f32) * table_val;
+    let base = state.freq_hz * (TABLE_SIZE as f32) / SAMPLE_RATE_hz;
+    state.phase += base;
+    wrap_not_mod(&mut state.phase, TABLE_SIZE as f32);
+  }
+
+  fn exec_ugen(self: &Synth, ugen: &mut UgenState, samp: &mut f32) {
+    match *ugen {
+      UgenState::ReasonableSynth(ref mut state) => {
+        self.exec_reasonable_synth(state, samp);
+      }
+    }
+  }
+
+  pub fn exec_maybe_ugen(self: &Synth, ougen: &mut Option<UgenState>, samp: &mut f32) {
     match *ougen {
       None => (),
-      Some(ref mut ugen) => {
-        let phase: f32 = ugen.phase;
-        let offset = ugen.phase.floor() as usize;
-        let fpart: f32 = (phase as f32) - (offset as f32);
-
-        // linear interp
-        let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
-
-        let scale = ugen_env_amp(&ugen.env_state);
-        *samp += (scale as f32) * table_val;
-        let base = ugen.freq_hz * (TABLE_SIZE as f32) / SAMPLE_RATE_hz;
-        ugen.phase += base;
-        wrap_not_mod(&mut ugen.phase, TABLE_SIZE as f32);
-      }
+      Some(ref mut ugen) => self.exec_ugen(ugen, samp),
     }
     advance_ugen(ougen);
   }
@@ -77,16 +87,16 @@ pub fn ugen_env_amp(env_state: &EnvState) -> f32 {
 // Advance ugen state forward by 1 audio sample
 fn advance_ugen(ugen: &mut Option<UgenState>) {
   match ugen {
-    Some(UgenState {
+    Some(UgenState::ReasonableSynth(ReasonableSynthState {
       env_state: EnvState::On { ref mut t_s, .. },
       ..
-    }) => {
+    })) => {
       *t_s += 1.0 / SAMPLE_RATE_hz;
     }
-    Some(UgenState {
+    Some(UgenState::ReasonableSynth(ReasonableSynthState {
       env_state: EnvState::Release { ref mut t_s, .. },
       ..
-    }) => {
+    })) => {
       *t_s += 1.0 / SAMPLE_RATE_hz;
       if *t_s > RELEASE_s {
         *ugen = None;
