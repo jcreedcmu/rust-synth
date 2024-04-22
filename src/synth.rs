@@ -9,9 +9,6 @@ pub struct Synth {
   saw_wavetable: Vec<f32>,
   noise_wavetable: Vec<f32>,
   // low pass state
-
-  // XXX don't need to store len, really
-  lowp_len: usize,
   lowp: Vec<f32>,
   lowp_ix: usize,
 }
@@ -111,14 +108,14 @@ impl Synth {
     }
     let Synth {
       ref mut lowp_ix,
-      lowp_len,
       ref mut lowp,
       ..
     } = self;
-    *lowp_ix = (*lowp_ix + 1) % *lowp_len;
+    let lowp_len = lowp.len();
+    *lowp_ix = (*lowp_ix + 1) % lowp_len;
     lowp[*lowp_ix] = samp;
     let out: f32 = { lowp.iter().sum() };
-    let len: f32 = *lowp_len as f32;
+    let len: f32 = lowp_len as f32;
 
     out / len
   }
