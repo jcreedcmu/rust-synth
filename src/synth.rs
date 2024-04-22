@@ -56,6 +56,8 @@ impl Synth {
       fpart * self.noise_wavetable[offset + 1] + (1.0 - fpart) * self.noise_wavetable[offset];
 
     const bass_drum_freq_hz: f32 = 20.0;
+    *samp += 0.01 * table_val;
+
     let base = bass_drum_freq_hz * (TABLE_SIZE as f32) / SAMPLE_RATE_hz;
 
     // XXX This phase alteration should be in advance, not in exec, I think. Probably
