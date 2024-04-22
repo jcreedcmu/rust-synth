@@ -50,6 +50,7 @@ impl Synth {
   fn exec_bass_synth(self: &Synth, state: &mut BassDrumSynthState, samp: &mut f32) {
     let phase: f32 = state.phase;
     let offset = state.phase.floor() as usize;
+    // XXX This fpart calculation should be obsolete if I'm fmodding by 1. during update
     let fpart: f32 = (phase as f32) - (offset as f32);
     let table_val =
       fpart * self.noise_wavetable[offset + 1] + (1.0 - fpart) * self.noise_wavetable[offset];
@@ -60,12 +61,16 @@ impl Synth {
     // XXX This phase alteration should be in advance, not in exec, I think. Probably
     // exec should take a non-mutable reference to ugen state.
     state.phase += base;
+    if state.phase > 1. {
+      state.phase -= 1.;
+    }
     wrap_not_mod(&mut state.phase, TABLE_SIZE as f32);
   }
 
   fn exec_reasonable_synth(self: &Synth, state: &mut ReasonableSynthState, samp: &mut f32) {
     let phase: f32 = state.phase;
     let offset = state.phase.floor() as usize;
+    // XXX This fpart calculation should be obsolete if I'm fmodding by 1. during update
     let fpart: f32 = (phase as f32) - (offset as f32);
 
     // linear interp
@@ -79,6 +84,9 @@ impl Synth {
     // XXX This phase alteration should be in advance, not in exec, I think. Probably
     // exec should take a non-mutable reference to ugen state.
     state.phase += base;
+    if state.phase > 1. {
+      state.phase -= 1.;
+    }
     wrap_not_mod(&mut state.phase, TABLE_SIZE as f32);
   }
 

@@ -10,7 +10,8 @@ mod synth;
 mod util;
 
 use midi::Message;
-use state::{Data, State};
+use reduce::add_ugen_state;
+use state::{BassDrumSynthState, Data, State, UgenState};
 use std::error::Error;
 use std::io::stdin;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -41,11 +42,31 @@ fn run() -> Result<(), Box<dyn Error>> {
       let mut s: MutexGuard<State> = sg.state.lock().unwrap();
       reduce::midi_reducer(msg, &mut s);
     });
-    let mut input = String::new();
-    stdin().read_line(&mut input)?; // wait for next enter key press
 
-    let mut s: MutexGuard<State> = sg2.state.lock().unwrap();
-    s.going = false;
+    loop {
+      let mut input = String::new();
+      stdin().read_line(&mut input)?; // wait for next enter key press
+
+      match input.as_str() {
+        "\n" => {
+          let mut s: MutexGuard<State> = sg2.state.lock().unwrap();
+          s.going = false;
+          break;
+        },
+        "k\n" => {
+          let mut s: MutexGuard<State> = sg2.state.lock().unwrap();
+          add_ugen_state(
+            &mut s,
+            UgenState::BassDrumSynth(BassDrumSynthState {
+              t_s: 0.0,
+              phase: 0.0,
+            }),
+          );
+          // add kick
+        },
+        _ => println!("Didn't recognize {input}."),
+      }
+    }
     Ok(())
   });
 

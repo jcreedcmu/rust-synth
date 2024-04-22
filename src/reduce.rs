@@ -3,6 +3,10 @@ use crate::state::{EnvState, KeyState, ReasonableSynthState, State, UgenState};
 use crate::synth::ugen_env_amp;
 use crate::util;
 
+pub fn add_ugen_state(s: &mut State, new: UgenState) -> usize {
+  add_ugen(&mut s.ugen_state, new)
+}
+
 fn add_ugen(ns: &mut Vec<Option<UgenState>>, new: UgenState) -> usize {
   let first_free_index = ns.iter().position(|x| match x {
     None => true,
