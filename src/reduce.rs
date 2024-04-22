@@ -3,13 +3,6 @@ use crate::state::{EnvState, KeyState, ReasonableSynthState, State, UgenState};
 use crate::synth::ugen_env_amp;
 use crate::util;
 
-fn find_ugen(s: &State, pitch: u8) -> Option<usize> {
-  s.ugen_state.iter().position(|x| match x {
-    Some(UgenState::ReasonableSynth(rs)) => rs.pitch == pitch,
-    _ => false,
-  })
-}
-
 fn add_ugen(ns: &mut Vec<Option<UgenState>>, new: UgenState) -> usize {
   let first_free_index = ns.iter().position(|x| match x {
     None => true,
@@ -49,6 +42,14 @@ fn release_ugen(ugen: &mut Option<UgenState>) {
   }
 }
 
+fn ugen_ix_of_key_state(key_state: &KeyState) -> Option<usize> {
+  match key_state {
+    KeyState::On { ugen_ix } => Some(*ugen_ix),
+    KeyState::Held { ugen_ix } => Some(*ugen_ix),
+    KeyState::Off => None,
+  }
+}
+
 // Could have this function return pure data that represents the
 // change, then have subsequent function carry it out, so that we hold
 // state lock for shorter duration.
@@ -62,13 +63,15 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
       let pitch = *pitch;
       let freq = util::freq_of_pitch(pitch);
       // Is this ugen already being played?
-      let pre = find_ugen(&s, pitch);
+      let pre = ugen_ix_of_key_state(s.get_key_state_mut(pitch as usize));
       let vel = (*velocity as f32) / 1280.0;
 
       let ugen_ix = match pre {
         Some(i) => {
           match &mut s.ugen_state[i] {
-            None => panic!("Invariant Violation: we thought this ugen already existed"),
+            None => {
+              panic!("Invariant Violation: expected key_state pointed to live ReasonableSynth ugen")
+            }
             Some(UgenState::ReasonableSynth(ref mut ns)) => restrike_rs_ugen(ns, vel),
           };
           i
@@ -91,7 +94,7 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
     }
     Message::NoteOff { pitch, channel } => {
       let pitch = *pitch;
-      let pre = find_ugen(&s, pitch);
+      let pre = ugen_ix_of_key_state(s.get_key_state_mut(pitch as usize));
 
       match pre {
         None => println!("warning: NoteOff {} on a ugen already off", pitch),
