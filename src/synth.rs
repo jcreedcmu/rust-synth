@@ -1,13 +1,19 @@
 use rand::Rng;
 
 use crate::consts::SAMPLE_RATE_hz;
-use crate::state::{BassDrumSynthState, EnvState, ReasonableSynthState, UgenState};
+use crate::state::{BassDrumSynthState, EnvState, ReasonableSynthState, State, UgenState};
 
 pub const TABLE_SIZE: usize = 4000;
 
 pub struct Synth {
   saw_wavetable: Vec<f32>,
   noise_wavetable: Vec<f32>,
+  // low pass state
+
+  // XXX don't need to store len, really
+  lowp_len: usize,
+  lowp: Vec<f32>,
+  lowp_ix: usize,
 }
 
 impl Synth {
@@ -40,9 +46,14 @@ impl Synth {
     }
     noise_wavetable[TABLE_SIZE] = noise_wavetable[0];
 
+    let lowp_len = 5;
+
     Synth {
       saw_wavetable,
       noise_wavetable,
+      lowp_len,
+      lowp: vec![0.0; lowp_len],
+      lowp_ix: 0,
     }
   }
 
@@ -90,6 +101,26 @@ impl Synth {
         advance_ugen(ougen);
       },
     }
+  }
+
+  pub fn synth_frame(self: &mut Synth, s: &mut State) -> f32 {
+    let mut samp = 0.0;
+
+    for mut ugen in s.ugen_state.iter_mut() {
+      self.exec_maybe_ugen(&mut ugen, &mut samp);
+    }
+    let Synth {
+      ref mut lowp_ix,
+      lowp_len,
+      ref mut lowp,
+      ..
+    } = self;
+    *lowp_ix = (*lowp_ix + 1) % *lowp_len;
+    lowp[*lowp_ix] = samp;
+    let out: f32 = { lowp.iter().sum() };
+    let len: f32 = *lowp_len as f32;
+
+    out / len
   }
 }
 

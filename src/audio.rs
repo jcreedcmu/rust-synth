@@ -57,13 +57,10 @@ fn vi_to_u8(v: &[i16]) -> &[u8] {
 }
 
 impl AudioService {
-  pub fn new(card: u8, data: &Data, synth: Synth) -> Mostly<AudioService> {
+  pub fn new(card: u8, data: &Data, mut synth: Synth) -> Mostly<AudioService> {
     let _reservation = dbus_reserve(card)?;
 
     let sg = data.state.clone();
-    let lowp_len: usize = 5;
-    let mut lowp: Vec<f32> = vec![0.0; lowp_len];
-    let mut lowp_ix = 0;
 
     let mut file = File::create("/tmp/a.sw").unwrap();
     let (send, recv) = channel::<Vec<i16>>();
@@ -117,19 +114,8 @@ impl AudioService {
         }
 
         for ch in buf.chunks_mut(CHANNELS as usize) {
-          let mut samp = 0.0;
-
-          // XXX some of this should be pushed into synth. Certainly the lowpass
-          // filter belongs there.
-          for mut ugen in s.ugen_state.iter_mut() {
-            synth.exec_maybe_ugen(&mut ugen, &mut samp);
-          }
-          lowp_ix = (lowp_ix + 1) % lowp_len;
-          lowp[lowp_ix] = samp;
-          let out: f32 = { lowp.iter().sum() };
-          let len: f32 = lowp.len() as f32;
-
-          let samp_i16 = (out / len * 32767.0) as i16;
+          let out = synth.synth_frame(&mut s);
+          let samp_i16 = (out * 32767.0) as i16;
 
           ch[0] = samp_i16;
           ch[1] = samp_i16;
