@@ -1,16 +1,16 @@
 use crate::midi::Message;
-use crate::state::{EnvState, KeyState, NoteState, State};
-use crate::synth::note_env_amp;
+use crate::state::{EnvState, KeyState, State, UgenState};
+use crate::synth::ugen_env_amp;
 use crate::util;
 
-fn find_note(s: &State, pitch: u8) -> Option<usize> {
-  s.note_state.iter().position(|x| match x {
+fn find_ugen(s: &State, pitch: u8) -> Option<usize> {
+  s.ugen_state.iter().position(|x| match x {
     Some(y) => y.pitch == pitch,
     _ => false,
   })
 }
 
-fn add_note(ns: &mut Vec<Option<NoteState>>, new: NoteState) -> usize {
+fn add_ugen(ns: &mut Vec<Option<UgenState>>, new: UgenState) -> usize {
   let first_free_index = ns.iter().position(|x| match x {
     None => true,
     _ => false,
@@ -27,22 +27,22 @@ fn add_note(ns: &mut Vec<Option<NoteState>>, new: NoteState) -> usize {
   }
 }
 
-fn restrike_note(note: &mut NoteState, vel: f32) {
-  note.env_state = EnvState::On {
+fn restrike_ugen(ugen: &mut UgenState, vel: f32) {
+  ugen.env_state = EnvState::On {
     t_s: 0.0,
-    amp: note_env_amp(&note.env_state),
+    amp: ugen_env_amp(&ugen.env_state),
     vel,
   };
 }
 
-fn release_note(note: &mut Option<NoteState>) {
-  match note {
-    Some(NoteState {
+fn release_ugen(ugen: &mut Option<UgenState>) {
+  match ugen {
+    Some(UgenState {
       ref mut env_state, ..
     }) => {
       *env_state = EnvState::Release {
         t_s: 0.0,
-        amp: note_env_amp(env_state),
+        amp: ugen_env_amp(env_state),
       };
     }
     _ => (),
@@ -61,21 +61,21 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
     } => {
       let pitch = *pitch;
       let freq = util::freq_of_pitch(pitch);
-      // Is this note already being played?
-      let pre = find_note(&s, pitch);
+      // Is this ugen already being played?
+      let pre = find_ugen(&s, pitch);
       let vel = (*velocity as f32) / 1280.0;
 
-      let note_ix = match pre {
+      let ugen_ix = match pre {
         Some(i) => {
-          match &mut s.note_state[i] {
-            None => panic!("Invariant Violation: we thought this note already existed"),
-            Some(ref mut ns) => restrike_note(ns, vel),
+          match &mut s.ugen_state[i] {
+            None => panic!("Invariant Violation: we thought this ugen already existed"),
+            Some(ref mut ns) => restrike_ugen(ns, vel),
           };
           i
         }
-        None => add_note(
-          &mut s.note_state,
-          NoteState {
+        None => add_ugen(
+          &mut s.ugen_state,
+          UgenState {
             phase: 0.0,
             freq_hz: freq,
             pitch,
@@ -87,19 +87,19 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
           },
         ),
       };
-      *s.get_key_state_mut(pitch.into()) = KeyState::On { note_ix };
+      *s.get_key_state_mut(pitch.into()) = KeyState::On { ugen_ix };
     }
     Message::NoteOff { pitch, channel } => {
       let pitch = *pitch;
-      let pre = find_note(&s, pitch);
+      let pre = find_ugen(&s, pitch);
 
       match pre {
-        None => println!("warning: NoteOff {} on a note already off", pitch),
-        Some(note_ix) => {
+        None => println!("warning: NoteOff {} on a ugen already off", pitch),
+        Some(ugen_ix) => {
           if s.pedal {
-            *s.get_key_state_mut(pitch.into()) = KeyState::Held { note_ix };
+            *s.get_key_state_mut(pitch.into()) = KeyState::Held { ugen_ix };
           } else {
-            release_note(&mut (s.note_state[note_ix]));
+            release_ugen(&mut (s.ugen_state[ugen_ix]));
             *s.get_key_state_mut(pitch.into()) = KeyState::Off;
           }
         }
@@ -107,21 +107,21 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
     }
     Message::PedalOff { .. } => {
       s.pedal = false;
-      // Release all pedal-held notes
+      // Release all pedal-held ugens
 
-      let mut note_ixs: Vec<usize> = vec![];
+      let mut ugen_ixs: Vec<usize> = vec![];
 
       for ks in s.get_key_states() {
         match ks {
-          KeyState::Held { note_ix } => {
-            note_ixs.push(*note_ix);
+          KeyState::Held { ugen_ix } => {
+            ugen_ixs.push(*ugen_ix);
             *ks = KeyState::Off;
           }
           _ => (),
         }
       }
-      for note_ix in note_ixs.iter() {
-        release_note(&mut (s.note_state[*note_ix]));
+      for ugen_ix in ugen_ixs.iter() {
+        release_ugen(&mut (s.ugen_state[*ugen_ix]));
       }
     }
     Message::PedalOn { .. } => {

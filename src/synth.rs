@@ -1,5 +1,5 @@
 use crate::consts::SAMPLE_RATE_hz;
-use crate::state::{EnvState, NoteState};
+use crate::state::{EnvState, UgenState};
 
 pub const TABLE_SIZE: usize = 4000;
 
@@ -30,25 +30,25 @@ impl Synth {
     Synth { wavetable }
   }
 
-  pub fn exec_note(self: &Synth, onote: &mut Option<NoteState>, samp: &mut f32) {
-    match *onote {
+  pub fn exec_ugen(self: &Synth, ougen: &mut Option<UgenState>, samp: &mut f32) {
+    match *ougen {
       None => (),
-      Some(ref mut note) => {
-        let phase: f32 = note.phase;
-        let offset = note.phase.floor() as usize;
+      Some(ref mut ugen) => {
+        let phase: f32 = ugen.phase;
+        let offset = ugen.phase.floor() as usize;
         let fpart: f32 = (phase as f32) - (offset as f32);
 
         // linear interp
         let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
 
-        let scale = note_env_amp(&note.env_state);
+        let scale = ugen_env_amp(&ugen.env_state);
         *samp += (scale as f32) * table_val;
-        let base = note.freq_hz * (TABLE_SIZE as f32) / SAMPLE_RATE_hz;
-        note.phase += base;
-        wrap_not_mod(&mut note.phase, TABLE_SIZE as f32);
+        let base = ugen.freq_hz * (TABLE_SIZE as f32) / SAMPLE_RATE_hz;
+        ugen.phase += base;
+        wrap_not_mod(&mut ugen.phase, TABLE_SIZE as f32);
       }
     }
-    advance_note(onote);
+    advance_ugen(ougen);
   }
 }
 
@@ -57,7 +57,7 @@ const DECAY_s: f32 = 0.005;
 const SUSTAIN: f32 = 0.3; // dimensionless
 const RELEASE_s: f32 = 0.05;
 
-pub fn note_env_amp(env_state: &EnvState) -> f32 {
+pub fn ugen_env_amp(env_state: &EnvState) -> f32 {
   match *env_state {
     EnvState::On { t_s, amp, vel } => {
       if t_s < ATTACK_s {
@@ -74,22 +74,22 @@ pub fn note_env_amp(env_state: &EnvState) -> f32 {
   }
 }
 
-// Advance note state forward by 1 audio sample
-fn advance_note(note: &mut Option<NoteState>) {
-  match note {
-    Some(NoteState {
+// Advance ugen state forward by 1 audio sample
+fn advance_ugen(ugen: &mut Option<UgenState>) {
+  match ugen {
+    Some(UgenState {
       env_state: EnvState::On { ref mut t_s, .. },
       ..
     }) => {
       *t_s += 1.0 / SAMPLE_RATE_hz;
     }
-    Some(NoteState {
+    Some(UgenState {
       env_state: EnvState::Release { ref mut t_s, .. },
       ..
     }) => {
       *t_s += 1.0 / SAMPLE_RATE_hz;
       if *t_s > RELEASE_s {
-        *note = None;
+        *ugen = None;
       }
     }
     None => (),
