@@ -20,6 +20,7 @@ pub enum EnvState {
 #[derive(Clone, Debug)]
 pub struct BassDrumSynthState {
   pub t_s: f32,
+  pub phase: f32,
 }
 
 #[derive(Clone, Debug)]
