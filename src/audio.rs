@@ -52,10 +52,6 @@ fn dbus_reserve(card: u8) -> Result<Reservation, Box<dyn Error>> {
   Ok(Reservation { conn })
 }
 
-fn vf_to_u8(v: &[f32]) -> &[u8] {
-  unsafe { std::slice::from_raw_parts(v.as_ptr() as *const u8, v.len() * 4) }
-}
-
 fn vi_to_u8(v: &[i16]) -> &[u8] {
   unsafe { std::slice::from_raw_parts(v.as_ptr() as *const u8, v.len() * 2) }
 }
@@ -70,12 +66,12 @@ impl AudioService {
     let mut lowp_ix = 0;
 
     let mut file = File::create("/tmp/a.sw").unwrap();
-    let (send, recv) = std::sync::mpsc::channel::<Vec<i16>>();
+    let (send, recv) = channel::<Vec<i16>>();
     std::thread::spawn(move || {
       let mut n = 0;
       for ref x in recv.iter() {
         n += 1;
-        if n % 100 == 0 {
+        if n % 2000 == 0 {
           n = 0;
           println!("on channel recv'ed {}", x[0]);
         }
@@ -109,8 +105,6 @@ impl AudioService {
       .set_start_threshold(hwp.get_buffer_size().unwrap())
       .unwrap();
     pcm.sw_params(&swp).unwrap();
-
-    let mut phase: f32 = 0.;
 
     let mut iters: usize = 0;
     let mut buf = [0i16; BUF_SIZE];

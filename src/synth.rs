@@ -47,7 +47,7 @@ impl Synth {
   }
 
   // FIXME: do the dispatch with traits or something
-  fn exec_bass_synth(self: &Synth, state: &mut BassDrumSynthState, samp: &mut f32) {
+  fn exec_bass_synth(self: &Synth, state: &BassDrumSynthState, samp: &mut f32) {
     let table_phase: f32 = state.phase * (TABLE_SIZE as f32);
     let offset = table_phase.floor() as usize;
 
@@ -55,20 +55,10 @@ impl Synth {
     let table_val =
       fpart * self.noise_wavetable[offset + 1] + (1.0 - fpart) * self.noise_wavetable[offset];
 
-    let bass_drum_freq_hz: f32 = state.freq_hz / (TABLE_SIZE as f32);
     *samp += 0.05 * table_val;
-
-    let base = bass_drum_freq_hz / SAMPLE_RATE_hz;
-
-    // XXX This phase alteration should be in advance, not in exec, I think. Probably
-    // exec should take a non-mutable reference to ugen state.
-    state.phase += base;
-    if state.phase > 1. {
-      state.phase -= 1.;
-    }
   }
 
-  fn exec_reasonable_synth(self: &Synth, state: &mut ReasonableSynthState, samp: &mut f32) {
+  fn exec_reasonable_synth(self: &Synth, state: &ReasonableSynthState, samp: &mut f32) {
     let table_phase: f32 = state.phase * (TABLE_SIZE as f32);
     let offset = table_phase.floor() as usize;
 
@@ -80,29 +70,26 @@ impl Synth {
 
     let scale = ugen_env_amp(&state.env_state);
     *samp += (scale as f32) * table_val;
-    let base = state.freq_hz / SAMPLE_RATE_hz;
-
-    // XXX This phase alteration should be in advance, not in exec, I think. Probably
-    // exec should take a non-mutable reference to ugen state.
-    state.phase += base;
-    if state.phase > 1. {
-      state.phase -= 1.;
-    }
   }
 
-  fn exec_ugen(self: &Synth, ugen: &mut UgenState, samp: &mut f32) {
+  fn exec_ugen(self: &Synth, ugen: &UgenState, samp: &mut f32) {
     match *ugen {
-      UgenState::ReasonableSynth(ref mut state) => self.exec_reasonable_synth(state, samp),
-      UgenState::BassDrumSynth(ref mut state) => self.exec_bass_synth(state, samp),
+      UgenState::ReasonableSynth(ref state) => self.exec_reasonable_synth(state, samp),
+      UgenState::BassDrumSynth(ref state) => self.exec_bass_synth(state, samp),
     }
   }
 
   pub fn exec_maybe_ugen(self: &Synth, ougen: &mut Option<UgenState>, samp: &mut f32) {
     match *ougen {
       None => (),
-      Some(ref mut ugen) => self.exec_ugen(ugen, samp),
+      Some(ref ugen) => {
+        self.exec_ugen(ugen, samp);
+        // This is where we need &mut ougen. We do in fact want mut
+        // access to the *option* because advance may set it to None
+        // if the release of some ugen elapses.
+        advance_ugen(ougen);
+      },
     }
-    advance_ugen(ougen);
   }
 }
 
@@ -128,30 +115,57 @@ pub fn ugen_env_amp(env_state: &EnvState) -> f32 {
   }
 }
 
+// Advance ugen state forward by tick_s
+// returns true if we should terminate the ugen
+fn advance_envelope(env: &mut EnvState, tick_s: f32) -> bool {
+  match env {
+    EnvState::On { ref mut t_s, .. } => {
+      *t_s += tick_s;
+      false
+    },
+    EnvState::Release { ref mut t_s, .. } => {
+      *t_s += tick_s;
+      *t_s > RELEASE_s
+    },
+  }
+}
+
 // Advance ugen state forward by 1 audio sample
 fn advance_ugen(ugen: &mut Option<UgenState>) {
   let tick_s = 1.0 / SAMPLE_RATE_hz;
   match ugen {
     Some(UgenState::ReasonableSynth(ReasonableSynthState {
-      env_state: EnvState::On { ref mut t_s, .. },
+      freq_hz,
+      ref mut phase,
+      ref mut env_state,
       ..
     })) => {
-      *t_s += tick_s;
-    },
-    Some(UgenState::ReasonableSynth(ReasonableSynthState {
-      env_state: EnvState::Release { ref mut t_s, .. },
-      ..
-    })) => {
-      *t_s += tick_s;
-      if *t_s > RELEASE_s {
+      if advance_envelope(env_state, tick_s) {
         *ugen = None;
+      } else {
+        *phase += *freq_hz / SAMPLE_RATE_hz;
+        if *phase > 1. {
+          *phase -= 1.;
+        }
       }
     },
-    Some(UgenState::BassDrumSynth(BassDrumSynthState { ref mut t_s, .. })) => {
+    Some(UgenState::BassDrumSynth(BassDrumSynthState {
+      ref mut t_s,
+      ref mut phase,
+      freq_hz,
+      ..
+    })) => {
       *t_s += tick_s;
+
       const BASS_DRUM_DEBUG_RELEASE_s: f32 = 0.2;
       if *t_s > BASS_DRUM_DEBUG_RELEASE_s {
         *ugen = None;
+      } else {
+        let bass_drum_freq_hz: f32 = *freq_hz / (TABLE_SIZE as f32);
+        *phase += bass_drum_freq_hz / SAMPLE_RATE_hz;
+        if *phase > 1. {
+          *phase -= 1.;
+        }
       }
     },
     None => (),
