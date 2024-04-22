@@ -5,6 +5,9 @@ use alsa::pcm::{Access, Format, HwParams, PCM};
 use alsa::{Direction, ValueOr};
 use dbus::blocking as dbus;
 use std::error::Error;
+use std::fs::File;
+use std::io::Write;
+use std::sync::mpsc::channel;
 use std::sync::MutexGuard;
 
 pub struct AudioService {}
@@ -49,6 +52,14 @@ fn dbus_reserve(card: u8) -> Result<Reservation, Box<dyn Error>> {
   Ok(Reservation { conn })
 }
 
+fn vf_to_u8(v: &[f32]) -> &[u8] {
+  unsafe { std::slice::from_raw_parts(v.as_ptr() as *const u8, v.len() * 4) }
+}
+
+fn vi_to_u8(v: &[i16]) -> &[u8] {
+  unsafe { std::slice::from_raw_parts(v.as_ptr() as *const u8, v.len() * 2) }
+}
+
 impl AudioService {
   pub fn new(card: u8, data: &Data, synth: Synth) -> Mostly<AudioService> {
     let _reservation = dbus_reserve(card)?;
@@ -57,6 +68,21 @@ impl AudioService {
     let lowp_len: usize = 5;
     let mut lowp: Vec<f32> = vec![0.0; lowp_len];
     let mut lowp_ix = 0;
+
+    let mut file = File::create("/tmp/a.sw").unwrap();
+    let (send, recv) = std::sync::mpsc::channel::<Vec<i16>>();
+    std::thread::spawn(move || {
+      let mut n = 0;
+      for ref x in recv.iter() {
+        n += 1;
+        if n % 100 == 0 {
+          n = 0;
+          println!("on channel recv'ed {}", x[0]);
+        }
+        let bytes = vi_to_u8(x);
+        file.write_all(bytes).unwrap();
+      }
+    });
 
     // Initialize alsa
     let device_name = format!("hw:{card}");
@@ -99,6 +125,8 @@ impl AudioService {
         for ch in buf.chunks_mut(CHANNELS as usize) {
           let mut samp = 0.0;
 
+          // XXX some of this should be pushed into synth. Certainly the lowpass
+          // filter belongs there.
           for mut ugen in s.ugen_state.iter_mut() {
             synth.exec_maybe_ugen(&mut ugen, &mut samp);
           }
@@ -111,6 +139,9 @@ impl AudioService {
 
           ch[0] = samp_i16;
           ch[1] = samp_i16;
+        }
+        if s.write_to_file {
+          send.send(buf.to_vec()).unwrap();
         }
       }
       let _written = io.writei(&buf[..]);

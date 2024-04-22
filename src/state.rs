@@ -74,7 +74,7 @@ impl State {
       key_state: vec![KeyState::Off; NUM_KEYS],
       ugen_state: vec![],
       pedal: false,
-      write_to_file: false,
+      write_to_file: true,
     }
   }
 
