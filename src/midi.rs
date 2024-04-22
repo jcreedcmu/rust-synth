@@ -46,7 +46,7 @@ fn message_of_vec(vec: &[u8]) -> Option<Message> {
             pitch: vec[1],
           })
         }
-      }
+      },
       0xb0 => match vec[1] {
         0x40 => match vec[2] {
           0x00 => Some(PedalOff),

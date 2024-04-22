@@ -49,7 +49,7 @@ impl Synth {
     match *ugen {
       UgenState::ReasonableSynth(ref mut state) => {
         self.exec_reasonable_synth(state, samp);
-      }
+      },
     }
   }
 
@@ -79,7 +79,7 @@ pub fn ugen_env_amp(env_state: &EnvState) -> f32 {
       } else {
         SUSTAIN * vel
       }
-    }
+    },
     EnvState::Release { t_s, amp } => amp * (1.0 - (t_s / RELEASE_s)),
   }
 }
@@ -92,7 +92,7 @@ fn advance_ugen(ugen: &mut Option<UgenState>) {
       ..
     })) => {
       *t_s += 1.0 / SAMPLE_RATE_hz;
-    }
+    },
     Some(UgenState::ReasonableSynth(ReasonableSynthState {
       env_state: EnvState::Release { ref mut t_s, .. },
       ..
@@ -101,7 +101,7 @@ fn advance_ugen(ugen: &mut Option<UgenState>) {
       if *t_s > RELEASE_s {
         *ugen = None;
       }
-    }
+    },
     None => (),
   }
 }

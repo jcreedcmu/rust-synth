@@ -75,7 +75,7 @@ impl AudioService {
     let buffer_size = hwp.get_buffer_size();
     match buffer_size {
       Ok(s) => println!("buffer size is {s}"),
-      Err(_) => {}
+      Err(_) => {},
     }
 
     let swp = pcm.sw_params_current().unwrap();

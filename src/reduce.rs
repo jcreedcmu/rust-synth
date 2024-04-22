@@ -12,11 +12,11 @@ fn add_ugen(ns: &mut Vec<Option<UgenState>>, new: UgenState) -> usize {
     None => {
       ns.push(Some(new));
       ns.len() - 1
-    }
+    },
     Some(i) => {
       ns[i] = Some(new);
       i
-    }
+    },
   }
 }
 
@@ -37,7 +37,7 @@ fn release_ugen(ugen: &mut Option<UgenState>) {
         t_s: 0.0,
         amp: ugen_env_amp(env_state),
       };
-    }
+    },
     _ => (),
   }
 }
@@ -71,11 +71,11 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
           match &mut s.ugen_state[i] {
             None => {
               panic!("Invariant Violation: expected key_state pointed to live ReasonableSynth ugen")
-            }
+            },
             Some(UgenState::ReasonableSynth(ref mut ns)) => restrike_rs_ugen(ns, vel),
           };
           i
-        }
+        },
         None => add_ugen(
           &mut s.ugen_state,
           UgenState::ReasonableSynth(ReasonableSynthState {
@@ -91,7 +91,7 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
         ),
       };
       *s.get_key_state_mut(pitch.into()) = KeyState::On { ugen_ix };
-    }
+    },
     Message::NoteOff { pitch, channel } => {
       let pitch = *pitch;
       let pre = ugen_ix_of_key_state(s.get_key_state_mut(pitch as usize));
@@ -105,9 +105,9 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
             release_ugen(&mut (s.ugen_state[ugen_ix]));
             *s.get_key_state_mut(pitch.into()) = KeyState::Off;
           }
-        }
+        },
       }
-    }
+    },
     Message::PedalOff { .. } => {
       s.pedal = false;
       // Release all pedal-held ugens
@@ -119,16 +119,16 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
           KeyState::Held { ugen_ix } => {
             ugen_ixs.push(*ugen_ix);
             *ks = KeyState::Off;
-          }
+          },
           _ => (),
         }
       }
       for ugen_ix in ugen_ixs.iter() {
         release_ugen(&mut (s.ugen_state[*ugen_ix]));
       }
-    }
+    },
     Message::PedalOn { .. } => {
       s.pedal = true;
-    }
+    },
   }
 }
