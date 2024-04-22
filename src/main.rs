@@ -36,6 +36,30 @@ fn run() -> Result<(), Box<dyn Error>> {
     state: state.clone(),
   };
 
+  let sg3 = Data {
+    state: state.clone(),
+  };
+
+  let _ = std::thread::spawn(move || -> Result<(), Box<dyn Error + Send + Sync>> {
+    loop {
+      std::thread::sleep(std::time::Duration::from_millis(500));
+      {
+        let mut s: MutexGuard<State> = sg3.state.lock().unwrap();
+        if !s.going {
+          break;
+        }
+        add_ugen_state(
+          &mut s,
+          UgenState::BassDrumSynth(BassDrumSynthState {
+            t_s: 0.0,
+            phase: 0.0,
+          }),
+        );
+      }
+    }
+    Ok(())
+  });
+
   let _ = std::thread::spawn(move || -> Result<(), Box<dyn Error + Send + Sync>> {
     // XXX MidiService should just mut-borrow state?
     let ms = midi::MidiService::new(0, move |msg: &Message| {
@@ -62,7 +86,6 @@ fn run() -> Result<(), Box<dyn Error>> {
               phase: 0.0,
             }),
           );
-          // add kick
         },
         _ => println!("Didn't recognize {input}."),
       }
