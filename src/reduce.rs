@@ -1,7 +1,6 @@
 use crate::midi::Message;
 use crate::state::{KeyState, State};
 use crate::ugen::Ugen;
-use crate::ugen_factory::UgenFactory;
 use crate::util;
 
 pub fn add_ugen_state(s: &mut State, new: impl Ugen + 'static) -> usize {
@@ -44,7 +43,7 @@ fn ugen_ix_of_key_state(key_state: &KeyState) -> Option<usize> {
 // Could have this function return pure data that represents the
 // change, then have subsequent function carry it out, so that we hold
 // state lock for shorter duration.
-pub fn midi_reducer(msg: &Message, fac: &UgenFactory, s: &mut State) {
+pub fn midi_reducer(msg: &Message, s: &mut State) {
   match msg {
     Message::NoteOn {
       pitch,
@@ -58,7 +57,10 @@ pub fn midi_reducer(msg: &Message, fac: &UgenFactory, s: &mut State) {
       let vel = (*velocity as f32) / 1280.0;
 
       let ugen_ix = match pre {
-        None => add_ugen(&mut s.ugen_state, fac.new_reasonable(freq, vel)),
+        None => {
+          let ugen = s.new_reasonable(freq, vel);
+          add_ugen(&mut s.ugen_state, ugen)
+        },
         Some(ugen_ix) => match &mut s.ugen_state[ugen_ix] {
           None => panic!("Invariant Violation: expected key_state pointed to live ugen"),
           Some(ugen) => {

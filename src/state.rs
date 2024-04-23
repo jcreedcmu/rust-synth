@@ -1,8 +1,11 @@
 use std::slice::IterMut;
 use std::sync::{Arc, Mutex};
 
+use crate::bass_drum::BassDrumSynthState;
 use crate::consts::{BOTTOM_NOTE, NUM_KEYS};
+use crate::reasonable_synth::ReasonableSynthState;
 use crate::ugen::Ugen;
+use crate::wavetables::Wavetables;
 
 // This is the part of the state that tracks where a note is in its
 // ADSR envelope.
@@ -41,6 +44,8 @@ pub struct State {
   pub pedal: bool,
 
   pub write_to_file: bool,
+
+  pub wavetables: Wavetables,
 }
 
 pub struct Data {
@@ -55,6 +60,7 @@ impl State {
       ugen_state: vec![],
       pedal: false,
       write_to_file: true,
+      wavetables: Wavetables::new(),
     }
   }
 
@@ -64,5 +70,13 @@ impl State {
 
   pub fn get_key_states(self: &mut State) -> IterMut<'_, KeyState> {
     self.key_state.iter_mut()
+  }
+
+  pub fn new_reasonable(&self, freq_hz: f32, vel: f32) -> ReasonableSynthState {
+    ReasonableSynthState::new(freq_hz, vel, self.wavetables.saw_wavetable.clone())
+  }
+
+  pub fn new_drum(&self, freq_hz: f32) -> BassDrumSynthState {
+    BassDrumSynthState::new(freq_hz, self.wavetables.noise_wavetable.clone())
   }
 }

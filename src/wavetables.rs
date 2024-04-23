@@ -1,23 +1,16 @@
-use rand::Rng;
 use std::sync::Arc;
 
-use crate::{
-  bass_drum::BassDrumSynthState, reasonable_synth::ReasonableSynthState, synth::TABLE_SIZE,
-};
+use rand::Rng;
 
-#[derive(Clone)]
-pub struct UgenFactory {
-  saw_wavetable: Arc<Vec<f32>>,
-  noise_wavetable: Arc<Vec<f32>>,
+use crate::synth::TABLE_SIZE;
+
+#[derive(Debug)]
+pub struct Wavetables {
+  pub saw_wavetable: Arc<Vec<f32>>,
+  pub noise_wavetable: Arc<Vec<f32>>,
 }
 
-impl UgenFactory {
-  pub fn new_reasonable(&self, freq_hz: f32, vel: f32) -> ReasonableSynthState {
-    ReasonableSynthState::new(freq_hz, vel, self.saw_wavetable.clone())
-  }
-  pub fn new_drum(&self, freq_hz: f32) -> BassDrumSynthState {
-    BassDrumSynthState::new(freq_hz, self.noise_wavetable.clone())
-  }
+impl Wavetables {
   pub fn new() -> Self {
     // // SINE
     // wavetable[i] = (i as f64 / TABLE_SIZE as f64 * PI * 2.0).sin() as f32;

@@ -10,8 +10,8 @@ mod reduce;
 mod state;
 mod synth;
 mod ugen;
-mod ugen_factory;
 mod util;
+mod wavetables;
 
 use midi::{Message, MidiService};
 use reduce::add_ugen_state;
@@ -19,7 +19,6 @@ use state::{Data, State};
 use std::error::Error;
 use std::io::stdin;
 use std::sync::{Arc, Mutex, MutexGuard};
-use ugen_factory::UgenFactory;
 
 use crate::consts::AUDIO_CARD;
 
@@ -30,7 +29,7 @@ fn main() {
   }
 }
 
-fn mk_sequencer_thread(sg: Arc<Mutex<State>>, fac: UgenFactory) {
+fn mk_sequencer_thread(sg: Arc<Mutex<State>>) {
   std::thread::spawn(move || {
     let mut toggle: bool = true;
     loop {
@@ -40,22 +39,23 @@ fn mk_sequencer_thread(sg: Arc<Mutex<State>>, fac: UgenFactory) {
         if !s.going {
           break;
         }
-        add_ugen_state(&mut s, fac.new_drum(if toggle { 660.0 } else { 1760.0 }));
+        let ugen = s.new_drum(if toggle { 660.0 } else { 1760.0 });
+        add_ugen_state(&mut s, ugen);
         toggle = !toggle;
       }
     }
   });
 }
 
-fn mk_midi_service(sg: Arc<Mutex<State>>, fac: UgenFactory) -> Result<MidiService, Box<dyn Error>> {
+fn mk_midi_service(sg: Arc<Mutex<State>>) -> Result<MidiService, Box<dyn Error>> {
   // XXX MidiService should just mut-borrow state?
   midi::MidiService::new(0, move |msg: &Message| {
     let mut s: MutexGuard<State> = sg.lock().unwrap();
-    reduce::midi_reducer(msg, &fac, &mut s);
+    reduce::midi_reducer(msg, &mut s);
   })
 }
 
-fn mk_stdin_thread(sg: Arc<Mutex<State>>, fac: UgenFactory) {
+fn mk_stdin_thread(sg: Arc<Mutex<State>>) {
   std::thread::spawn(move || -> Result<(), Box<dyn Error + Send + Sync>> {
     loop {
       let mut input = String::new();
@@ -69,7 +69,8 @@ fn mk_stdin_thread(sg: Arc<Mutex<State>>, fac: UgenFactory) {
         },
         "k\n" => {
           let mut s: MutexGuard<State> = sg.lock().unwrap();
-          add_ugen_state(&mut s, fac.new_drum(440.0));
+          let ugen = s.new_drum(440.0);
+          add_ugen_state(&mut s, ugen);
         },
         _ => println!("Didn't recognize {input}."),
       }
@@ -80,11 +81,10 @@ fn mk_stdin_thread(sg: Arc<Mutex<State>>, fac: UgenFactory) {
 
 fn run() -> Result<(), Box<dyn Error>> {
   let state = Arc::new(Mutex::new(State::new()));
-  let fac = UgenFactory::new();
 
-  let ms = mk_midi_service(state.clone(), fac.clone())?;
-  mk_sequencer_thread(state.clone(), fac.clone());
-  mk_stdin_thread(state.clone(), fac.clone());
+  let ms = mk_midi_service(state.clone())?;
+  mk_sequencer_thread(state.clone());
+  mk_stdin_thread(state.clone());
 
   let ads = audio::AudioService::new(AUDIO_CARD, &Data { state }, synth::Synth::new())?;
   Ok(())
