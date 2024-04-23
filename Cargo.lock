@@ -1122,6 +1122,7 @@ dependencies = [
  "dbus",
  "midir",
  "rand",
+ "serde",
 ]
 
 [[package]]

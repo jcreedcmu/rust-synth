@@ -12,10 +12,11 @@ mod ugen;
 mod util;
 mod wavetables;
 
-use actix_web::{get, post, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use clap::Parser;
 use midi::{Message, MidiService};
 use reduce::add_ugen_state;
+use serde::Deserialize;
 use state::{Data, State};
 use std::error::Error;
 use std::io::stdin;
@@ -28,9 +29,14 @@ fn main() {
   }
 }
 
+#[derive(Deserialize, Debug)]
+struct WebMessage {
+  message: usize,
+}
+
 #[post("/api/action")]
-async fn action(req_body: String) -> impl Responder {
-  println!("req body: {}", req_body);
+async fn action(message: web::Json<WebMessage>) -> impl Responder {
+  println!("got: {:?}", message);
   HttpResponse::Ok().body("{}")
 }
 
