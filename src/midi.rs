@@ -95,9 +95,6 @@ impl MidiService {
   }
 }
 
-// pub fn input_port<F>(&self, name: &str, callback: F) -> Result<InputPort, OSStatus>
-//         where F: FnMut(&PacketList) + Send + 'static {
-
 #[derive(Debug)]
 pub enum MidiError {
   Os(i32),

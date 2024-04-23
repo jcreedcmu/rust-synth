@@ -1,7 +1,7 @@
 use rand::Rng;
 
 use crate::consts::{ATTACK_s, DECAY_s, RELEASE_s, SAMPLE_RATE_hz, SUSTAIN};
-use crate::state::{BassDrumSynthState, EnvState, State, UgenState};
+use crate::state::{EnvState, State, UgenState};
 
 pub const TABLE_SIZE: usize = 4000;
 
@@ -53,24 +53,14 @@ impl Synth {
     }
   }
 
-  // FIXME: do the dispatch with traits or something
-  fn exec_bass_synth(self: &Synth, state: &BassDrumSynthState, samp: &mut f32) {
-    let table_phase: f32 = state.phase * (TABLE_SIZE as f32);
-    let offset = table_phase.floor() as usize;
-
-    let fpart: f32 = (table_phase as f32) - (offset as f32);
-    let table_val =
-      fpart * self.noise_wavetable[offset + 1] + (1.0 - fpart) * self.noise_wavetable[offset];
-
-    *samp += 0.05 * table_val;
-  }
-
   fn exec_ugen(self: &Synth, ugen: &UgenState, samp: &mut f32) {
     match *ugen {
       UgenState::ReasonableSynth(ref state) => {
         *samp += state.exec(&self.saw_wavetable);
       },
-      UgenState::BassDrumSynth(ref state) => self.exec_bass_synth(state, samp),
+      UgenState::BassDrumSynth(ref state) => {
+        *samp += state.exec(&self.noise_wavetable);
+      },
     }
   }
 
@@ -134,23 +124,9 @@ fn advance_ugen(ugen: &mut Option<UgenState>) {
         *ugen = None;
       }
     },
-    Some(UgenState::BassDrumSynth(BassDrumSynthState {
-      ref mut t_s,
-      ref mut phase,
-      freq_hz,
-      ..
-    })) => {
-      *t_s += tick_s;
-
-      const BASS_DRUM_DEBUG_RELEASE_s: f32 = 0.2;
-      if *t_s > BASS_DRUM_DEBUG_RELEASE_s {
+    Some(UgenState::BassDrumSynth(ref mut s)) => {
+      if !s.advance(tick_s) {
         *ugen = None;
-      } else {
-        let bass_drum_freq_hz: f32 = *freq_hz / (TABLE_SIZE as f32);
-        *phase += bass_drum_freq_hz / SAMPLE_RATE_hz;
-        if *phase > 1. {
-          *phase -= 1.;
-        }
       }
     },
     None => (),

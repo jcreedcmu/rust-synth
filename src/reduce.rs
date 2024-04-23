@@ -1,5 +1,6 @@
 use crate::midi::Message;
-use crate::state::{EnvState, KeyState, ReasonableSynthState, State, UgenState};
+use crate::reasonable_synth::ReasonableSynthState;
+use crate::state::{EnvState, KeyState, State, UgenState};
 use crate::synth::ugen_env_amp;
 use crate::util;
 
@@ -82,16 +83,7 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
         },
         None => add_ugen(
           &mut s.ugen_state,
-          UgenState::ReasonableSynth(ReasonableSynthState {
-            phase: 0.0,
-            freq_hz: freq,
-            pitch,
-            env_state: EnvState::On {
-              amp: 0.0,
-              t_s: 0.0,
-              vel,
-            },
-          }),
+          UgenState::ReasonableSynth(ReasonableSynthState::new(freq, pitch, vel)),
         ),
       };
       *s.get_key_state_mut(pitch.into()) = KeyState::On { ugen_ix };

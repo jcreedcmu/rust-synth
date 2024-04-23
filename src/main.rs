@@ -2,16 +2,19 @@
 extern crate midir;
 
 mod audio;
+mod bass_drum;
 mod consts;
 mod midi;
+mod reasonable_synth;
 mod reduce;
 mod state;
 mod synth;
 mod util;
 
+use bass_drum::BassDrumSynthState;
 use midi::Message;
 use reduce::add_ugen_state;
-use state::{BassDrumSynthState, Data, State, UgenState};
+use state::{Data, State, UgenState};
 use std::error::Error;
 use std::io::stdin;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -51,11 +54,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         }
         add_ugen_state(
           &mut s,
-          UgenState::BassDrumSynth(BassDrumSynthState {
-            t_s: 0.0,
-            phase: 0.0,
-            freq_hz: if toggle { 660.0 } else { 1760.0 },
-          }),
+          UgenState::BassDrumSynth(BassDrumSynthState::new(if toggle { 660.0 } else { 1760.0 })),
         );
         toggle = !toggle;
       }

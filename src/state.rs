@@ -1,8 +1,9 @@
 use std::slice::IterMut;
 use std::sync::{Arc, Mutex};
 
-use crate::consts::{RELEASE_s, SAMPLE_RATE_hz, BOTTOM_NOTE, NUM_KEYS};
-use crate::synth::ugen_env_amp;
+use crate::bass_drum::BassDrumSynthState;
+use crate::consts::{BOTTOM_NOTE, NUM_KEYS};
+use crate::reasonable_synth::ReasonableSynthState;
 
 // This is the part of the state that tracks where a note is in its
 // ADSR envelope.
@@ -19,73 +20,9 @@ pub enum EnvState {
 }
 
 #[derive(Clone, Debug)]
-pub struct BassDrumSynthState {
-  pub t_s: f32,
-  pub freq_hz: f32,
-  pub phase: f32,
-}
-
-#[derive(Clone, Debug)]
-pub struct ReasonableSynthState {
-  pub pitch: u8,
-  pub freq_hz: f32,
-  pub phase: f32,
-  pub env_state: EnvState,
-}
-
-#[derive(Clone, Debug)]
 pub enum UgenState {
   ReasonableSynth(ReasonableSynthState),
   BassDrumSynth(BassDrumSynthState),
-}
-
-// Advance ugen state forward by tick_s
-// returns true if we should terminate the ugen
-pub fn advance_envelope(env: &mut EnvState, tick_s: f32) -> bool {
-  match env {
-    EnvState::On { ref mut t_s, .. } => {
-      *t_s += tick_s;
-      false
-    },
-    EnvState::Release { ref mut t_s, .. } => {
-      *t_s += tick_s;
-      *t_s > RELEASE_s
-    },
-  }
-}
-
-impl ReasonableSynthState {
-  pub fn exec(self: &ReasonableSynthState, wavetable: &Vec<f32>) -> f32 {
-    let table_phase: f32 = self.phase * ((wavetable.len() - 1) as f32);
-    let offset = table_phase.floor() as usize;
-
-    let fpart: f32 = (table_phase as f32) - (offset as f32);
-
-    // linear interp
-    let table_val = fpart * wavetable[offset + 1] + (1.0 - fpart) * wavetable[offset];
-
-    let scale = ugen_env_amp(&self.env_state);
-    (scale as f32) * table_val
-  }
-
-  // returns true if should continue note
-  pub fn advance(self: &mut ReasonableSynthState, tick_s: f32) -> bool {
-    let ReasonableSynthState {
-      freq_hz,
-      phase,
-      pitch,
-      env_state,
-    } = self;
-    if advance_envelope(env_state, tick_s) {
-      false
-    } else {
-      *phase += *freq_hz / SAMPLE_RATE_hz;
-      if *phase > 1. {
-        *phase -= 1.;
-      }
-      true
-    }
-  }
 }
 
 #[derive(Clone, Debug)]
