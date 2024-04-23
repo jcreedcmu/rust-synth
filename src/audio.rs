@@ -1,6 +1,6 @@
 use crate::synth::Synth;
 use crate::util::Mostly;
-use crate::{Data, State};
+use crate::{Args, Data, State};
 use alsa::pcm::{Access, Format, HwParams, PCM};
 use alsa::{Direction, ValueOr};
 use dbus::blocking as dbus;
@@ -15,9 +15,6 @@ pub struct AudioService {}
 
 const CHANNELS: u32 = 2;
 const BUF_SIZE: usize = 64;
-
-const PROFILING: bool = true;
-const PROFILING_INTERVAL: usize = 1000; // number of BUF_SIZE-long audio sample generation periods
 
 struct Reservation {
   conn: dbus::Connection,
@@ -61,8 +58,16 @@ fn vi_to_u8(v: &[i16]) -> &[u8] {
 }
 
 impl AudioService {
-  pub fn new(card: u8, data: &Data, mut synth: Synth) -> Mostly<AudioService> {
+  pub fn new(args: &Args, data: &Data, mut synth: Synth) -> Mostly<AudioService> {
+    let card = args.sound_card;
     let _reservation = dbus_reserve(card)?;
+
+    fn do_profile(args: &Args, iters: usize) -> bool {
+      match args.profile_interval {
+        None => false,
+        Some(interval) => iters % interval == 0,
+      }
+    }
 
     let sg = data.state.clone();
 
@@ -112,7 +117,7 @@ impl AudioService {
     let mut now: Instant = Instant::now();
     loop {
       {
-        if PROFILING && iters % PROFILING_INTERVAL == 0 {
+        if do_profile(args, iters) {
           now = Instant::now();
         }
         let mut s: MutexGuard<State> = sg.lock().unwrap();
@@ -131,9 +136,10 @@ impl AudioService {
           send.send(buf.to_vec()).unwrap();
         }
       }
-      if PROFILING && iters % PROFILING_INTERVAL == 0 {
+      if do_profile(args, iters) {
         println!("Elapsed: {:.2?}", now.elapsed());
         println!("Time: {:.2?}", now);
+        iters = 0;
       }
 
       iters += 1;

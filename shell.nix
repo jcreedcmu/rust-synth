@@ -2,6 +2,7 @@
   with pkgs; with builtins; let
     asoundShellHook = ''
     export ALSA_PLUGIN_DIR=${alsa-plugins}/lib/alsa-lib
+    export SOUND_CARD=2
     '';
   in
     mkShell {

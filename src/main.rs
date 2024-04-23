@@ -20,7 +20,7 @@ use std::error::Error;
 use std::io::stdin;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use crate::consts::AUDIO_CARD;
+use clap::Parser;
 
 fn main() {
   match run() {
@@ -78,13 +78,26 @@ fn mk_stdin_thread(sg: Arc<Mutex<State>>) {
   });
 }
 
+#[derive(Parser, Debug)]
+#[command(version, about)]
+pub struct Args {
+  // Sound card
+  #[arg(short = 'c', long, env)]
+  sound_card: u8,
+
+  // Profiling interval, measured in number of BUF_SIZE-long audio sample generation periods
+  #[arg(long, env)]
+  profile_interval: Option<usize>,
+}
+
 fn run() -> Result<(), Box<dyn Error>> {
+  let args = Args::parse();
   let state = Arc::new(Mutex::new(State::new()));
 
   let ms = mk_midi_service(state.clone())?;
   mk_sequencer_thread(state.clone());
   mk_stdin_thread(state.clone());
 
-  let ads = audio::AudioService::new(AUDIO_CARD, &Data { state }, synth::Synth::new())?;
+  let ads = audio::AudioService::new(&args, &Data { state }, synth::Synth::new())?;
   Ok(())
 }
