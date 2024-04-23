@@ -1,7 +1,7 @@
 use std::slice::IterMut;
 use std::sync::{Arc, Mutex};
 
-use crate::consts::{BOTTOM_NOTE, NUM_KEYS};
+use crate::consts::{RELEASE_s, SAMPLE_RATE_hz, BOTTOM_NOTE, NUM_KEYS};
 
 // This is the part of the state that tracks where a note is in its
 // ADSR envelope.
@@ -36,6 +36,42 @@ pub struct ReasonableSynthState {
 pub enum UgenState {
   ReasonableSynth(ReasonableSynthState),
   BassDrumSynth(BassDrumSynthState),
+}
+
+// Advance ugen state forward by tick_s
+// returns true if we should terminate the ugen
+pub fn advance_envelope(env: &mut EnvState, tick_s: f32) -> bool {
+  match env {
+    EnvState::On { ref mut t_s, .. } => {
+      *t_s += tick_s;
+      false
+    },
+    EnvState::Release { ref mut t_s, .. } => {
+      *t_s += tick_s;
+      *t_s > RELEASE_s
+    },
+  }
+}
+
+impl ReasonableSynthState {
+  // returns true if should continue note
+  pub fn advance(self: &mut ReasonableSynthState, tick_s: f32) -> bool {
+    let ReasonableSynthState {
+      freq_hz,
+      phase,
+      pitch,
+      env_state,
+    } = self;
+    if advance_envelope(env_state, tick_s) {
+      false
+    } else {
+      *phase += *freq_hz / SAMPLE_RATE_hz;
+      if *phase > 1. {
+        *phase -= 1.;
+      }
+      true
+    }
+  }
 }
 
 #[derive(Clone, Debug)]

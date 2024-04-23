@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use crate::consts::SAMPLE_RATE_hz;
+use crate::consts::{ATTACK_s, DECAY_s, RELEASE_s, SAMPLE_RATE_hz, SUSTAIN};
 use crate::state::{BassDrumSynthState, EnvState, ReasonableSynthState, State, UgenState};
 
 pub const TABLE_SIZE: usize = 4000;
@@ -48,7 +48,6 @@ impl Synth {
     Synth {
       saw_wavetable,
       noise_wavetable,
-      lowp_len,
       lowp: vec![0.0; lowp_len],
       lowp_ix: 0,
     }
@@ -121,11 +120,6 @@ impl Synth {
   }
 }
 
-const ATTACK_s: f32 = 0.005;
-const DECAY_s: f32 = 0.005;
-const SUSTAIN: f32 = 0.3; // dimensionless
-const RELEASE_s: f32 = 0.05;
-
 pub fn ugen_env_amp(env_state: &EnvState) -> f32 {
   match *env_state {
     EnvState::On { t_s, amp, vel } => {
@@ -143,38 +137,13 @@ pub fn ugen_env_amp(env_state: &EnvState) -> f32 {
   }
 }
 
-// Advance ugen state forward by tick_s
-// returns true if we should terminate the ugen
-fn advance_envelope(env: &mut EnvState, tick_s: f32) -> bool {
-  match env {
-    EnvState::On { ref mut t_s, .. } => {
-      *t_s += tick_s;
-      false
-    },
-    EnvState::Release { ref mut t_s, .. } => {
-      *t_s += tick_s;
-      *t_s > RELEASE_s
-    },
-  }
-}
-
 // Advance ugen state forward by 1 audio sample
 fn advance_ugen(ugen: &mut Option<UgenState>) {
   let tick_s = 1.0 / SAMPLE_RATE_hz;
   match ugen {
-    Some(UgenState::ReasonableSynth(ReasonableSynthState {
-      freq_hz,
-      ref mut phase,
-      ref mut env_state,
-      ..
-    })) => {
-      if advance_envelope(env_state, tick_s) {
+    Some(UgenState::ReasonableSynth(ref mut s)) => {
+      if !s.advance(tick_s) {
         *ugen = None;
-      } else {
-        *phase += *freq_hz / SAMPLE_RATE_hz;
-        if *phase > 1. {
-          *phase -= 1.;
-        }
       }
     },
     Some(UgenState::BassDrumSynth(BassDrumSynthState {
