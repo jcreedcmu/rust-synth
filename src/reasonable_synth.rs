@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::consts::{RELEASE_s, SAMPLE_RATE_hz};
 use crate::state::EnvState;
 use crate::synth::ugen_env_amp;
@@ -23,10 +25,11 @@ pub struct ReasonableSynthState {
   freq_hz: f32,
   phase: f32,
   env_state: EnvState,
+  wavetable: Arc<Vec<f32>>,
 }
 
 impl ReasonableSynthState {
-  pub fn new(freq_hz: f32, vel: f32) -> ReasonableSynthState {
+  pub fn new(freq_hz: f32, vel: f32, wavetable: Arc<Vec<f32>>) -> ReasonableSynthState {
     ReasonableSynthState {
       phase: 0.0,
       freq_hz,
@@ -35,6 +38,7 @@ impl ReasonableSynthState {
         t_s: 0.0,
         vel,
       },
+      wavetable,
     }
   }
 
@@ -59,14 +63,14 @@ impl ReasonableSynthState {
 }
 
 impl Ugen for ReasonableSynthState {
-  fn run(self: &ReasonableSynthState, wavetable: &Vec<f32>) -> f32 {
-    let table_phase: f32 = self.phase * ((wavetable.len() - 1) as f32);
+  fn run(self: &ReasonableSynthState, _wavetable: &Vec<f32>) -> f32 {
+    let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
     let offset = table_phase.floor() as usize;
 
     let fpart: f32 = (table_phase as f32) - (offset as f32);
 
     // linear interp
-    let table_val = fpart * wavetable[offset + 1] + (1.0 - fpart) * wavetable[offset];
+    let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
 
     let scale = ugen_env_amp(&self.env_state);
     (scale as f32) * table_val
@@ -78,6 +82,7 @@ impl Ugen for ReasonableSynthState {
       freq_hz,
       phase,
       env_state,
+      ..
     } = self;
     if advance_envelope(env_state, tick_s) {
       false

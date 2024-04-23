@@ -7,7 +7,6 @@ use crate::ugen::Ugen;
 pub const TABLE_SIZE: usize = 4000;
 
 pub struct Synth {
-  saw_wavetable: Vec<f32>,
   noise_wavetable: Vec<f32>,
   // low pass state
   lowp: Vec<f32>,
@@ -30,15 +29,6 @@ impl Synth {
     //   1.0
     // };
 
-    // Why did we make TABLE_SIZE + 1 with this wraparound? It seems I
-    // originally did it so that we can do linear interpolation
-    // without worrying about %. Not clear if this really matters for
-    // performance.
-    for i in 0..TABLE_SIZE {
-      saw_wavetable[i] = (2.0 * (i as f64 / TABLE_SIZE as f64) - 1.0) as f32;
-    }
-    saw_wavetable[TABLE_SIZE] = saw_wavetable[0];
-
     for i in 0..TABLE_SIZE {
       noise_wavetable[i] = rand::thread_rng().gen_range(-1.0f32..1.0f32);
     }
@@ -47,7 +37,6 @@ impl Synth {
     let lowp_len = 5;
 
     Synth {
-      saw_wavetable,
       noise_wavetable,
       lowp: vec![0.0; lowp_len],
       lowp_ix: 0,
@@ -56,7 +45,7 @@ impl Synth {
 
   fn run_ugen(self: &Synth, ugen: &UgenState) -> f32 {
     match *ugen {
-      UgenState::ReasonableSynth(ref u) => u.run(&self.saw_wavetable),
+      UgenState::ReasonableSynth(ref u) => u.run(&self.noise_wavetable),
       UgenState::BassDrumSynth(ref u) => u.run(&self.noise_wavetable),
     }
   }
