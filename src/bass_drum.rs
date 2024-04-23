@@ -56,4 +56,7 @@ impl Ugen for BassDrumSynthState {
       true
     }
   }
+
+  fn release(&mut self) {}
+  fn restrike(&mut self, _vel: f32) {}
 }

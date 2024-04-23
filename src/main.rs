@@ -15,7 +15,7 @@ mod util;
 
 use midi::Message;
 use reduce::add_ugen_state;
-use state::{Data, State, UgenState};
+use state::{Data, State};
 use std::error::Error;
 use std::io::stdin;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -58,10 +58,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         if !s.going {
           break;
         }
-        add_ugen_state(
-          &mut s,
-          UgenState::BassDrumSynth(fac3.new_drum(if toggle { 660.0 } else { 1760.0 })),
-        );
+        add_ugen_state(&mut s, fac3.new_drum(if toggle { 660.0 } else { 1760.0 }));
         toggle = !toggle;
       }
     }
@@ -87,7 +84,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         },
         "k\n" => {
           let mut s: MutexGuard<State> = sg2.state.lock().unwrap();
-          add_ugen_state(&mut s, UgenState::BassDrumSynth(fac2.new_drum(440.0)));
+          add_ugen_state(&mut s, fac2.new_drum(440.0));
         },
         _ => println!("Didn't recognize {input}."),
       }

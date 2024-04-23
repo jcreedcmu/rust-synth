@@ -1,9 +1,25 @@
 use std::sync::Arc;
 
-use crate::consts::{RELEASE_s, SAMPLE_RATE_hz};
+use crate::consts::{ATTACK_s, DECAY_s, RELEASE_s, SAMPLE_RATE_hz, SUSTAIN};
 use crate::state::EnvState;
-use crate::synth::ugen_env_amp;
 use crate::ugen::Ugen;
+
+fn ugen_env_amp(env_state: &EnvState) -> f32 {
+  match *env_state {
+    EnvState::On { t_s, amp, vel } => {
+      if t_s < ATTACK_s {
+        let a = t_s / ATTACK_s;
+        amp * (1.0 - a) + vel * a
+      } else if t_s < ATTACK_s + DECAY_s {
+        let a = (t_s - ATTACK_s) / DECAY_s;
+        vel * (1.0 - a) + vel * SUSTAIN * a
+      } else {
+        SUSTAIN * vel
+      }
+    },
+    EnvState::Release { t_s, amp } => amp * (1.0 - (t_s / RELEASE_s)),
+  }
+}
 
 // Advance ugen state forward by tick_s
 // returns true if we should terminate the ugen
@@ -29,7 +45,7 @@ pub struct ReasonableSynthState {
 }
 
 impl ReasonableSynthState {
-  pub fn new(freq_hz: f32, vel: f32, wavetable: Arc<Vec<f32>>) -> ReasonableSynthState {
+  pub fn new(freq_hz: f32, vel: f32, wavetable: Arc<Vec<f32>>) -> Self {
     ReasonableSynthState {
       phase: 0.0,
       freq_hz,
@@ -42,28 +58,13 @@ impl ReasonableSynthState {
     }
   }
 
-  pub fn restrike(self: &mut ReasonableSynthState, vel: f32) {
-    self.env_state = EnvState::On {
-      t_s: 0.0,
-      amp: self.get_current_amp(),
-      vel,
-    };
-  }
-
-  pub fn release(self: &mut ReasonableSynthState) {
-    self.env_state = EnvState::Release {
-      t_s: 0.0,
-      amp: self.get_current_amp(),
-    };
-  }
-
-  fn get_current_amp(self: &ReasonableSynthState) -> f32 {
+  fn get_current_amp(&self) -> f32 {
     ugen_env_amp(&self.env_state)
   }
 }
 
 impl Ugen for ReasonableSynthState {
-  fn run(self: &ReasonableSynthState) -> f32 {
+  fn run(&self) -> f32 {
     let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
     let offset = table_phase.floor() as usize;
 
@@ -77,7 +78,7 @@ impl Ugen for ReasonableSynthState {
   }
 
   // returns true if should continue note
-  fn advance(self: &mut ReasonableSynthState, tick_s: f32) -> bool {
+  fn advance(&mut self, tick_s: f32) -> bool {
     let ReasonableSynthState {
       freq_hz,
       phase,
@@ -93,5 +94,20 @@ impl Ugen for ReasonableSynthState {
       }
       true
     }
+  }
+
+  fn release(&mut self) {
+    self.env_state = EnvState::Release {
+      t_s: 0.0,
+      amp: self.get_current_amp(),
+    };
+  }
+
+  fn restrike(&mut self, vel: f32) {
+    self.env_state = EnvState::On {
+      t_s: 0.0,
+      amp: self.get_current_amp(),
+      vel,
+    };
   }
 }
