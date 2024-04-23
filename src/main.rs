@@ -11,13 +11,13 @@ mod synth;
 mod ugen;
 mod util;
 mod wavetables;
+mod webserver;
 
-use actix_web::{post, web, App, HttpResponse, HttpServer, Responder};
 use clap::Parser;
 use midi::{Message, MidiService};
 use reduce::add_ugen_state;
-use serde::Deserialize;
 use state::{Data, State};
+
 use std::error::Error;
 use std::io::stdin;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -29,43 +29,9 @@ fn main() {
   }
 }
 
-#[derive(Deserialize, Debug)]
-struct WebMessage {
-  message: usize,
-}
-
-fn do_thing(s: &mut State) {
-  let ugen = s.new_drum(1000.0);
-  add_ugen_state(s, ugen);
-}
-
-#[post("/api/action")]
-async fn action(
-  message: web::Json<WebMessage>,
-  extra: actix_web::web::Data<Arc<Mutex<State>>>,
-) -> impl Responder {
-  let mut s = extra.lock().unwrap();
-  do_thing(&mut s);
-  println!("got: {:?}", message);
-  HttpResponse::Ok().body("{}")
-}
-
-#[actix_web::main]
-async fn web_serve(sg: Arc<Mutex<State>>) -> std::io::Result<()> {
-  HttpServer::new(move || {
-    App::new()
-      .app_data(actix_web::web::Data::new(sg.clone()))
-      .service(action)
-      .service(actix_files::Files::new("/", "./public").index_file("index.html"))
-  })
-  .bind(("127.0.0.1", 8000))?
-  .run()
-  .await
-}
-
 fn mk_web_thread(sg: Arc<Mutex<State>>) {
   std::thread::spawn(move || {
-    web_serve(sg).unwrap();
+    webserver::serve(sg).unwrap();
   });
 }
 

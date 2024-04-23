@@ -48,6 +48,7 @@ pub struct State {
   pub wavetables: Wavetables,
 }
 
+// XXX I don't need this wrapper, do I?
 pub struct Data {
   pub state: Arc<Mutex<State>>,
 }
