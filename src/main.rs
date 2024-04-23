@@ -12,7 +12,7 @@ mod ugen;
 mod util;
 mod wavetables;
 
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{post, web, App, HttpResponse, HttpServer, Responder};
 use clap::Parser;
 use midi::{Message, MidiService};
 use reduce::add_ugen_state;
