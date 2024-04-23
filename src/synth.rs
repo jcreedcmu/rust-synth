@@ -1,5 +1,3 @@
-use rand::Rng;
-
 use crate::consts::{ATTACK_s, DECAY_s, RELEASE_s, SAMPLE_RATE_hz, SUSTAIN};
 use crate::state::{EnvState, State, UgenState};
 use crate::ugen::Ugen;
@@ -7,7 +5,6 @@ use crate::ugen::Ugen;
 pub const TABLE_SIZE: usize = 4000;
 
 pub struct Synth {
-  noise_wavetable: Vec<f32>,
   // low pass state
   lowp: Vec<f32>,
   lowp_ix: usize,
@@ -15,29 +12,9 @@ pub struct Synth {
 
 impl Synth {
   pub fn new() -> Synth {
-    // Initialise wavetable.
-    let mut saw_wavetable = vec![0.0; TABLE_SIZE + 1];
-    let mut noise_wavetable = vec![0.0; TABLE_SIZE + 1];
-
-    // // SINE
-    // wavetable[i] = (i as f64 / TABLE_SIZE as f64 * PI * 2.0).sin() as f32;
-
-    // // SQUARE
-    // wavetable[i] = if (i as f64 / TABLE_SIZE as f64) < 0.5 {
-    //   -1.0
-    // } else {
-    //   1.0
-    // };
-
-    for i in 0..TABLE_SIZE {
-      noise_wavetable[i] = rand::thread_rng().gen_range(-1.0f32..1.0f32);
-    }
-    noise_wavetable[TABLE_SIZE] = noise_wavetable[0];
-
     let lowp_len = 5;
 
     Synth {
-      noise_wavetable,
       lowp: vec![0.0; lowp_len],
       lowp_ix: 0,
     }
@@ -45,8 +22,8 @@ impl Synth {
 
   fn run_ugen(self: &Synth, ugen: &UgenState) -> f32 {
     match *ugen {
-      UgenState::ReasonableSynth(ref u) => u.run(&self.noise_wavetable),
-      UgenState::BassDrumSynth(ref u) => u.run(&self.noise_wavetable),
+      UgenState::ReasonableSynth(ref u) => u.run(),
+      UgenState::BassDrumSynth(ref u) => u.run(),
     }
   }
 
