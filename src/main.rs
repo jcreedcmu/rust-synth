@@ -83,11 +83,7 @@ fn run() -> Result<(), Box<dyn Error>> {
           let mut s: MutexGuard<State> = sg2.state.lock().unwrap();
           add_ugen_state(
             &mut s,
-            UgenState::BassDrumSynth(BassDrumSynthState {
-              t_s: 0.0,
-              phase: 0.0,
-              freq_hz: 440.0,
-            }),
+            UgenState::BassDrumSynth(BassDrumSynthState::new(440.0)),
           );
         },
         _ => println!("Didn't recognize {input}."),

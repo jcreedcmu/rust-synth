@@ -2,9 +2,9 @@ use crate::{consts::SAMPLE_RATE_hz, synth::TABLE_SIZE};
 
 #[derive(Clone, Debug)]
 pub struct BassDrumSynthState {
-  pub t_s: f32,
-  pub freq_hz: f32,
-  pub phase: f32,
+  t_s: f32,
+  freq_hz: f32,
+  phase: f32,
 }
 
 impl BassDrumSynthState {
