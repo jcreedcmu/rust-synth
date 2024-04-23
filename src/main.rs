@@ -12,6 +12,7 @@ mod ugen;
 mod util;
 mod wavetables;
 
+use actix_web::{get, post, App, HttpResponse, HttpServer, Responder};
 use clap::Parser;
 use midi::{Message, MidiService};
 use reduce::add_ugen_state;
@@ -27,42 +28,27 @@ fn main() {
   }
 }
 
-fn web_serve(sg: Arc<Mutex<State>>) {
-  println!("Now listening on localhost:8000");
+#[post("/api/action")]
+async fn action(req_body: String) -> impl Responder {
+  println!("req body: {}", req_body);
+  HttpResponse::Ok().body("{}")
+}
 
-  rouille::start_server("localhost:8000", move |request| {
-    {
-      // The `match_assets` function tries to find a file whose name corresponds to the URL
-      // of the request. The second parameter (`"."`) tells where the files to look for are
-      // located.
-      // In order to avoid potential security threats, `match_assets` will never return any
-      // file outside of this directory even if the URL is for example `/../../foo.txt`.
-      let response = rouille::match_assets(&request, "./public");
-
-      // If a file is found, the `match_assets` function will return a response with a 200
-      // status code and the content of the file. If no file is found, it will instead return
-      // an empty 404 response.
-      // Here we check whether if a file is found, and if so we return the response.
-      if response.is_success() {
-        return response;
-      }
-    }
-
-    // This point of the code is reached only if no static file matched the request URL.
-
-    // In a real website you probably want to serve non-static files here (with the `router!`
-    // macro for example), but here we just return a 404 response.
-    rouille::Response::html(
-      "404 error. Try <a href=\"/README.md\"`>README.md</a> or \
-                        <a href=\"/src/lib.rs\">src/lib.rs</a> for example.",
-    )
-    .with_status_code(404)
-  });
+#[actix_web::main]
+async fn web_serve(sg: Arc<Mutex<State>>) -> std::io::Result<()> {
+  HttpServer::new(|| {
+    App::new()
+      .service(action)
+      .service(actix_files::Files::new("/", "./public").index_file("index.html"))
+  })
+  .bind(("127.0.0.1", 8000))?
+  .run()
+  .await
 }
 
 fn mk_web_thread(sg: Arc<Mutex<State>>) {
   std::thread::spawn(move || {
-    web_serve(sg);
+    web_serve(sg).unwrap();
   });
 }
 
