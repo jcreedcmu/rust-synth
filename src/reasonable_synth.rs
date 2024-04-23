@@ -59,7 +59,7 @@ impl ReasonableSynthState {
 }
 
 impl Ugen for ReasonableSynthState {
-  fn exec(self: &ReasonableSynthState, wavetable: &Vec<f32>) -> f32 {
+  fn run(self: &ReasonableSynthState, wavetable: &Vec<f32>) -> f32 {
     let table_phase: f32 = self.phase * ((wavetable.len() - 1) as f32);
     let offset = table_phase.floor() as usize;
 

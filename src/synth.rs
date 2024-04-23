@@ -56,8 +56,8 @@ impl Synth {
 
   fn run_ugen(self: &Synth, ugen: &UgenState) -> f32 {
     match *ugen {
-      UgenState::ReasonableSynth(ref u) => u.exec(&self.saw_wavetable),
-      UgenState::BassDrumSynth(ref u) => u.exec(&self.noise_wavetable),
+      UgenState::ReasonableSynth(ref u) => u.run(&self.saw_wavetable),
+      UgenState::BassDrumSynth(ref u) => u.run(&self.noise_wavetable),
     }
   }
 
