@@ -19,9 +19,9 @@ pub fn advance_envelope(env: &mut EnvState, tick_s: f32) -> bool {
 
 #[derive(Clone, Debug)]
 pub struct ReasonableSynthState {
-  pub freq_hz: f32,
-  pub phase: f32,
-  pub env_state: EnvState,
+  freq_hz: f32,
+  phase: f32,
+  env_state: EnvState,
 }
 
 impl ReasonableSynthState {
@@ -35,6 +35,25 @@ impl ReasonableSynthState {
         vel,
       },
     }
+  }
+
+  pub fn restrike(self: &mut ReasonableSynthState, vel: f32) {
+    self.env_state = EnvState::On {
+      t_s: 0.0,
+      amp: self.get_current_amp(),
+      vel,
+    };
+  }
+
+  pub fn release(self: &mut ReasonableSynthState) {
+    self.env_state = EnvState::Release {
+      t_s: 0.0,
+      amp: self.get_current_amp(),
+    };
+  }
+
+  fn get_current_amp(self: &ReasonableSynthState) -> f32 {
+    ugen_env_amp(&self.env_state)
   }
 
   pub fn exec(self: &ReasonableSynthState, wavetable: &Vec<f32>) -> f32 {

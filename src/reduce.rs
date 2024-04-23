@@ -1,7 +1,6 @@
 use crate::midi::Message;
 use crate::reasonable_synth::ReasonableSynthState;
-use crate::state::{EnvState, KeyState, State, UgenState};
-use crate::synth::ugen_env_amp;
+use crate::state::{KeyState, State, UgenState};
 use crate::util;
 
 pub fn add_ugen_state(s: &mut State, new: UgenState) -> usize {
@@ -25,24 +24,9 @@ fn add_ugen(ns: &mut Vec<Option<UgenState>>, new: UgenState) -> usize {
   }
 }
 
-fn restrike_rs_ugen(ugen: &mut ReasonableSynthState, vel: f32) {
-  ugen.env_state = EnvState::On {
-    t_s: 0.0,
-    amp: ugen_env_amp(&ugen.env_state),
-    vel,
-  };
-}
-
 fn release_ugen(ugen: &mut Option<UgenState>) {
   match ugen {
-    Some(UgenState::ReasonableSynth(ReasonableSynthState {
-      ref mut env_state, ..
-    })) => {
-      *env_state = EnvState::Release {
-        t_s: 0.0,
-        amp: ugen_env_amp(env_state),
-      };
-    },
+    Some(UgenState::ReasonableSynth(ref mut s)) => s.release(),
     _ => (),
   }
 }
@@ -74,7 +58,7 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
       let ugen_ix = match pre {
         Some(i) => {
           match &mut s.ugen_state[i] {
-            Some(UgenState::ReasonableSynth(ref mut ns)) => restrike_rs_ugen(ns, vel),
+            Some(UgenState::ReasonableSynth(ref mut ns)) => ns.restrike(vel),
             _ => {
               panic!("Invariant Violation: expected key_state pointed to live ReasonableSynth ugen")
             },
