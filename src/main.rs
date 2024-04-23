@@ -10,15 +10,16 @@ mod reduce;
 mod state;
 mod synth;
 mod ugen;
+mod ugen_factory;
 mod util;
 
-use bass_drum::BassDrumSynthState;
 use midi::Message;
 use reduce::add_ugen_state;
 use state::{Data, State, UgenState};
 use std::error::Error;
 use std::io::stdin;
 use std::sync::{Arc, Mutex, MutexGuard};
+use ugen_factory::UgenFactory;
 
 use crate::consts::AUDIO_CARD;
 
@@ -44,6 +45,10 @@ fn run() -> Result<(), Box<dyn Error>> {
     state: state.clone(),
   };
 
+  let fac = UgenFactory::new();
+  let fac2 = fac.clone();
+  let fac3 = fac.clone();
+
   let _ = std::thread::spawn(move || -> Result<(), Box<dyn Error + Send + Sync>> {
     let mut toggle: bool = true;
     loop {
@@ -55,7 +60,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         }
         add_ugen_state(
           &mut s,
-          UgenState::BassDrumSynth(BassDrumSynthState::new(if toggle { 660.0 } else { 1760.0 })),
+          UgenState::BassDrumSynth(fac3.new_drum(if toggle { 660.0 } else { 1760.0 })),
         );
         toggle = !toggle;
       }
@@ -67,7 +72,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     // XXX MidiService should just mut-borrow state?
     let ms = midi::MidiService::new(0, move |msg: &Message| {
       let mut s: MutexGuard<State> = sg.state.lock().unwrap();
-      reduce::midi_reducer(msg, &mut s);
+      reduce::midi_reducer(msg, &fac, &mut s);
     });
 
     loop {
@@ -82,10 +87,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         },
         "k\n" => {
           let mut s: MutexGuard<State> = sg2.state.lock().unwrap();
-          add_ugen_state(
-            &mut s,
-            UgenState::BassDrumSynth(BassDrumSynthState::new(440.0)),
-          );
+          add_ugen_state(&mut s, UgenState::BassDrumSynth(fac2.new_drum(440.0)));
         },
         _ => println!("Didn't recognize {input}."),
       }

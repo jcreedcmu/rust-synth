@@ -1,6 +1,6 @@
 use crate::midi::Message;
-use crate::reasonable_synth::ReasonableSynthState;
 use crate::state::{KeyState, State, UgenState};
+use crate::ugen_factory::UgenFactory;
 use crate::util;
 
 pub fn add_ugen_state(s: &mut State, new: UgenState) -> usize {
@@ -42,7 +42,7 @@ fn ugen_ix_of_key_state(key_state: &KeyState) -> Option<usize> {
 // Could have this function return pure data that represents the
 // change, then have subsequent function carry it out, so that we hold
 // state lock for shorter duration.
-pub fn midi_reducer(msg: &Message, s: &mut State) {
+pub fn midi_reducer(msg: &Message, fac: &UgenFactory, s: &mut State) {
   match msg {
     Message::NoteOn {
       pitch,
@@ -67,7 +67,7 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
         },
         None => add_ugen(
           &mut s.ugen_state,
-          UgenState::ReasonableSynth(ReasonableSynthState::new(freq, vel)),
+          UgenState::ReasonableSynth(fac.new_reasonable(freq, vel)),
         ),
       };
       *s.get_key_state_mut(pitch.into()) = KeyState::On { ugen_ix };
