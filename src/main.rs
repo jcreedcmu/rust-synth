@@ -48,7 +48,6 @@ fn mk_sequencer_thread(sg: Arc<Mutex<State>>) {
 }
 
 fn mk_midi_service(sg: Arc<Mutex<State>>) -> Result<MidiService, Box<dyn Error>> {
-  // XXX MidiService should just mut-borrow state?
   midi::MidiService::new(0, move |msg: &Message| {
     let mut s: MutexGuard<State> = sg.lock().unwrap();
     reduce::midi_reducer(msg, &mut s);
