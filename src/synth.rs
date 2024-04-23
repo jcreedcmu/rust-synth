@@ -1,7 +1,7 @@
 use rand::Rng;
 
 use crate::consts::{ATTACK_s, DECAY_s, RELEASE_s, SAMPLE_RATE_hz, SUSTAIN};
-use crate::state::{BassDrumSynthState, EnvState, ReasonableSynthState, State, UgenState};
+use crate::state::{BassDrumSynthState, EnvState, State, UgenState};
 
 pub const TABLE_SIZE: usize = 4000;
 
@@ -65,23 +65,11 @@ impl Synth {
     *samp += 0.05 * table_val;
   }
 
-  fn exec_reasonable_synth(self: &Synth, state: &ReasonableSynthState, samp: &mut f32) {
-    let table_phase: f32 = state.phase * (TABLE_SIZE as f32);
-    let offset = table_phase.floor() as usize;
-
-    let fpart: f32 = (table_phase as f32) - (offset as f32);
-
-    // linear interp
-    let table_val =
-      fpart * self.saw_wavetable[offset + 1] + (1.0 - fpart) * self.saw_wavetable[offset];
-
-    let scale = ugen_env_amp(&state.env_state);
-    *samp += (scale as f32) * table_val;
-  }
-
   fn exec_ugen(self: &Synth, ugen: &UgenState, samp: &mut f32) {
     match *ugen {
-      UgenState::ReasonableSynth(ref state) => self.exec_reasonable_synth(state, samp),
+      UgenState::ReasonableSynth(ref state) => {
+        *samp += state.exec(&self.saw_wavetable);
+      },
       UgenState::BassDrumSynth(ref state) => self.exec_bass_synth(state, samp),
     }
   }

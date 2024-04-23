@@ -2,6 +2,7 @@ use std::slice::IterMut;
 use std::sync::{Arc, Mutex};
 
 use crate::consts::{RELEASE_s, SAMPLE_RATE_hz, BOTTOM_NOTE, NUM_KEYS};
+use crate::synth::ugen_env_amp;
 
 // This is the part of the state that tracks where a note is in its
 // ADSR envelope.
@@ -54,6 +55,19 @@ pub fn advance_envelope(env: &mut EnvState, tick_s: f32) -> bool {
 }
 
 impl ReasonableSynthState {
+  pub fn exec(self: &ReasonableSynthState, wavetable: &Vec<f32>) -> f32 {
+    let table_phase: f32 = self.phase * ((wavetable.len() - 1) as f32);
+    let offset = table_phase.floor() as usize;
+
+    let fpart: f32 = (table_phase as f32) - (offset as f32);
+
+    // linear interp
+    let table_val = fpart * wavetable[offset + 1] + (1.0 - fpart) * wavetable[offset];
+
+    let scale = ugen_env_amp(&self.env_state);
+    (scale as f32) * table_val
+  }
+
   // returns true if should continue note
   pub fn advance(self: &mut ReasonableSynthState, tick_s: f32) -> bool {
     let ReasonableSynthState {
