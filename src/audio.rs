@@ -9,11 +9,15 @@ use std::fs::File;
 use std::io::Write;
 use std::sync::mpsc::channel;
 use std::sync::MutexGuard;
+use std::time::Instant;
 
 pub struct AudioService {}
 
 const CHANNELS: u32 = 2;
 const BUF_SIZE: usize = 64;
+
+const PROFILING: bool = true;
+const PROFILING_INTERVAL: usize = 1000; // number of BUF_SIZE-long audio sample generation periods
 
 struct Reservation {
   conn: dbus::Connection,
@@ -105,9 +109,12 @@ impl AudioService {
 
     let mut iters: usize = 0;
     let mut buf = [0i16; BUF_SIZE];
-
+    let mut now: Instant = Instant::now();
     loop {
       {
+        if PROFILING && iters % PROFILING_INTERVAL == 0 {
+          now = Instant::now();
+        }
         let mut s: MutexGuard<State> = sg.lock().unwrap();
         if !s.going {
           break;
@@ -124,6 +131,13 @@ impl AudioService {
           send.send(buf.to_vec()).unwrap();
         }
       }
+      if PROFILING && iters % PROFILING_INTERVAL == 0 {
+        println!("Elapsed: {:.2?}", now.elapsed());
+        println!("Time: {:.2?}", now);
+      }
+
+      iters += 1;
+
       let _written = io.writei(&buf[..]);
     }
 
