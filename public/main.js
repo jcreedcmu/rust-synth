@@ -1,6 +1,6 @@
 function go() {
   const button = document.getElementById('action');
-  button.onclick = async () => {
+  button.onmousedown = async () => {
 	 const response = await fetch('/api/action', {
 		method: 'POST',
 		headers: {
@@ -8,7 +8,7 @@ function go() {
 		},
 		body: JSON.stringify({message: 123}),
 	 });
-	 const json = await response.json();
+	 const json = await response.text();
 	 console.log(json);
   }
 }

@@ -34,16 +34,27 @@ struct WebMessage {
   message: usize,
 }
 
+fn do_thing(s: &mut State) {
+  let ugen = s.new_drum(1000.0);
+  add_ugen_state(s, ugen);
+}
+
 #[post("/api/action")]
-async fn action(message: web::Json<WebMessage>) -> impl Responder {
+async fn action(
+  message: web::Json<WebMessage>,
+  extra: actix_web::web::Data<Arc<Mutex<State>>>,
+) -> impl Responder {
+  let mut s = extra.lock().unwrap();
+  do_thing(&mut s);
   println!("got: {:?}", message);
   HttpResponse::Ok().body("{}")
 }
 
 #[actix_web::main]
 async fn web_serve(sg: Arc<Mutex<State>>) -> std::io::Result<()> {
-  HttpServer::new(|| {
+  HttpServer::new(move || {
     App::new()
+      .app_data(actix_web::web::Data::new(sg.clone()))
       .service(action)
       .service(actix_files::Files::new("/", "./public").index_file("index.html"))
   })
