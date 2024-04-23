@@ -4,6 +4,10 @@ use actix_web::{post, web, App, HttpResponse, HttpServer, Responder};
 use serde::Deserialize;
 use std::sync::{Arc, Mutex};
 
+// Useful docs, example for app_data:
+// https://docs.rs/actix-web/latest/actix_web/web/struct.Data.html
+// https://github.com/actix/actix-web/discussions/2805
+
 #[derive(Deserialize, Debug)]
 struct WebMessage {
   message: usize,
