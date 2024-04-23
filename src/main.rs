@@ -12,11 +12,6 @@ mod ugen;
 mod util;
 mod wavetables;
 
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-
-use axum::routing::get;
-use axum::Router;
 use clap::Parser;
 use midi::{Message, MidiService};
 use reduce::add_ugen_state;
@@ -24,7 +19,6 @@ use state::{Data, State};
 use std::error::Error;
 use std::io::stdin;
 use std::sync::{Arc, Mutex, MutexGuard};
-use tower_http::services::{ServeDir, ServeFile};
 
 fn main() {
   match run() {
@@ -33,23 +27,37 @@ fn main() {
   }
 }
 
-async fn handler_404() -> impl IntoResponse {
-  (StatusCode::NOT_FOUND, "404 not found")
-}
+fn web_serve(sg: Arc<Mutex<State>>) {
+  println!("Now listening on localhost:8000");
 
-#[tokio::main]
-async fn web_serve(sg: Arc<Mutex<State>>) {
-  let app = Router::new().route("/", axum::routing::get(|| async { "Hello, World!" }));
-  // let serve_dir = ServeDir::new("public").not_found_service(ServeFile::new("public/index.html"));
+  rouille::start_server("localhost:8000", move |request| {
+    {
+      // The `match_assets` function tries to find a file whose name corresponds to the URL
+      // of the request. The second parameter (`"."`) tells where the files to look for are
+      // located.
+      // In order to avoid potential security threats, `match_assets` will never return any
+      // file outside of this directory even if the URL is for example `/../../foo.txt`.
+      let response = rouille::match_assets(&request, "./public");
 
-  // let app = Router::new()
-  //   .route("/foo", get(|| async { "Hi from /foo" }))
-  //   .fallback_service(serve_dir);
+      // If a file is found, the `match_assets` function will return a response with a 200
+      // status code and the content of the file. If no file is found, it will instead return
+      // an empty 404 response.
+      // Here we check whether if a file is found, and if so we return the response.
+      if response.is_success() {
+        return response;
+      }
+    }
 
-  let app = app.fallback(handler_404);
+    // This point of the code is reached only if no static file matched the request URL.
 
-  let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
-  axum::serve(listener, app).await.unwrap();
+    // In a real website you probably want to serve non-static files here (with the `router!`
+    // macro for example), but here we just return a 404 response.
+    rouille::Response::html(
+      "404 error. Try <a href=\"/README.md\"`>README.md</a> or \
+                        <a href=\"/src/lib.rs\">src/lib.rs</a> for example.",
+    )
+    .with_status_code(404)
+  });
 }
 
 fn mk_web_thread(sg: Arc<Mutex<State>>) {
