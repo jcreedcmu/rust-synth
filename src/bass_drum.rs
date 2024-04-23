@@ -1,4 +1,4 @@
-use crate::{consts::SAMPLE_RATE_hz, synth::TABLE_SIZE};
+use crate::{consts::SAMPLE_RATE_hz, synth::TABLE_SIZE, ugen::Ugen};
 
 #[derive(Clone, Debug)]
 pub struct BassDrumSynthState {
@@ -15,8 +15,10 @@ impl BassDrumSynthState {
       freq_hz,
     }
   }
+}
 
-  pub fn exec(self: &BassDrumSynthState, wavetable: &Vec<f32>) -> f32 {
+impl Ugen for BassDrumSynthState {
+  fn exec(self: &BassDrumSynthState, wavetable: &Vec<f32>) -> f32 {
     let table_phase: f32 = self.phase * ((wavetable.len() - 1) as f32);
     let offset = table_phase.floor() as usize;
 
@@ -29,7 +31,7 @@ impl BassDrumSynthState {
   }
 
   // returns true if should continue note
-  pub fn advance(self: &mut BassDrumSynthState, tick_s: f32) -> bool {
+  fn advance(self: &mut BassDrumSynthState, tick_s: f32) -> bool {
     let BassDrumSynthState {
       freq_hz,
       ref mut phase,

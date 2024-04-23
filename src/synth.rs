@@ -2,6 +2,7 @@ use rand::Rng;
 
 use crate::consts::{ATTACK_s, DECAY_s, RELEASE_s, SAMPLE_RATE_hz, SUSTAIN};
 use crate::state::{EnvState, State, UgenState};
+use crate::ugen::Ugen;
 
 pub const TABLE_SIZE: usize = 4000;
 
@@ -53,26 +54,21 @@ impl Synth {
     }
   }
 
-  fn exec_ugen(self: &Synth, ugen: &UgenState, samp: &mut f32) {
+  fn run_ugen(self: &Synth, ugen: &UgenState) -> f32 {
     match *ugen {
-      UgenState::ReasonableSynth(ref state) => {
-        *samp += state.exec(&self.saw_wavetable);
-      },
-      UgenState::BassDrumSynth(ref state) => {
-        *samp += state.exec(&self.noise_wavetable);
-      },
+      UgenState::ReasonableSynth(ref u) => u.exec(&self.saw_wavetable),
+      UgenState::BassDrumSynth(ref u) => u.exec(&self.noise_wavetable),
     }
   }
 
   pub fn exec_maybe_ugen(self: &Synth, ougen: &mut Option<UgenState>, samp: &mut f32) {
     match *ougen {
       None => (),
-      Some(ref ugen) => {
-        self.exec_ugen(ugen, samp);
-        // This is where we need &mut ougen. We do in fact want mut
-        // access to the *option* because advance may set it to None
-        // if the release of some ugen elapses.
-        advance_ugen(ougen);
+      Some(ref mut ugen) => {
+        *samp += self.run_ugen(ugen);
+        if !advance_ugen(ugen) {
+          *ougen = None;
+        };
       },
     }
   }
@@ -116,19 +112,10 @@ pub fn ugen_env_amp(env_state: &EnvState) -> f32 {
 }
 
 // Advance ugen state forward by 1 audio sample
-fn advance_ugen(ugen: &mut Option<UgenState>) {
+fn advance_ugen(ugen: &mut UgenState) -> bool {
   let tick_s = 1.0 / SAMPLE_RATE_hz;
   match ugen {
-    Some(UgenState::ReasonableSynth(ref mut s)) => {
-      if !s.advance(tick_s) {
-        *ugen = None;
-      }
-    },
-    Some(UgenState::BassDrumSynth(ref mut s)) => {
-      if !s.advance(tick_s) {
-        *ugen = None;
-      }
-    },
-    None => (),
+    UgenState::ReasonableSynth(ref mut s) => s.advance(tick_s),
+    UgenState::BassDrumSynth(ref mut s) => s.advance(tick_s),
   }
 }

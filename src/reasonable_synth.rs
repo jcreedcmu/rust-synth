@@ -1,6 +1,7 @@
 use crate::consts::{RELEASE_s, SAMPLE_RATE_hz};
 use crate::state::EnvState;
 use crate::synth::ugen_env_amp;
+use crate::ugen::Ugen;
 
 // Advance ugen state forward by tick_s
 // returns true if we should terminate the ugen
@@ -55,8 +56,10 @@ impl ReasonableSynthState {
   fn get_current_amp(self: &ReasonableSynthState) -> f32 {
     ugen_env_amp(&self.env_state)
   }
+}
 
-  pub fn exec(self: &ReasonableSynthState, wavetable: &Vec<f32>) -> f32 {
+impl Ugen for ReasonableSynthState {
+  fn exec(self: &ReasonableSynthState, wavetable: &Vec<f32>) -> f32 {
     let table_phase: f32 = self.phase * ((wavetable.len() - 1) as f32);
     let offset = table_phase.floor() as usize;
 
@@ -70,7 +73,7 @@ impl ReasonableSynthState {
   }
 
   // returns true if should continue note
-  pub fn advance(self: &mut ReasonableSynthState, tick_s: f32) -> bool {
+  fn advance(self: &mut ReasonableSynthState, tick_s: f32) -> bool {
     let ReasonableSynthState {
       freq_hz,
       phase,

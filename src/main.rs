@@ -9,6 +9,7 @@ mod reasonable_synth;
 mod reduce;
 mod state;
 mod synth;
+mod ugen;
 mod util;
 
 use bass_drum::BassDrumSynthState;
