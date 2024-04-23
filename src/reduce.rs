@@ -83,7 +83,7 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
         },
         None => add_ugen(
           &mut s.ugen_state,
-          UgenState::ReasonableSynth(ReasonableSynthState::new(freq, pitch, vel)),
+          UgenState::ReasonableSynth(ReasonableSynthState::new(freq, vel)),
         ),
       };
       *s.get_key_state_mut(pitch.into()) = KeyState::On { ugen_ix };

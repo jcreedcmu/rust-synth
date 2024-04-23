@@ -19,20 +19,16 @@ pub fn advance_envelope(env: &mut EnvState, tick_s: f32) -> bool {
 
 #[derive(Clone, Debug)]
 pub struct ReasonableSynthState {
-  // XXX I don't think I need pitch anymore, it was
-  // used to find ugen corresponding to key, but I solve that differently now
-  pub pitch: u8,
   pub freq_hz: f32,
   pub phase: f32,
   pub env_state: EnvState,
 }
 
 impl ReasonableSynthState {
-  pub fn new(freq_hz: f32, pitch: u8, vel: f32) -> ReasonableSynthState {
+  pub fn new(freq_hz: f32, vel: f32) -> ReasonableSynthState {
     ReasonableSynthState {
       phase: 0.0,
       freq_hz,
-      pitch,
       env_state: EnvState::On {
         amp: 0.0,
         t_s: 0.0,
@@ -59,7 +55,6 @@ impl ReasonableSynthState {
     let ReasonableSynthState {
       freq_hz,
       phase,
-      pitch,
       env_state,
     } = self;
     if advance_envelope(env_state, tick_s) {
