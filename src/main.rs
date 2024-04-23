@@ -1,5 +1,4 @@
 #![allow(unused_variables, unused_mut, dead_code, non_upper_case_globals)]
-extern crate midir;
 
 mod audio;
 mod bass_drum;
