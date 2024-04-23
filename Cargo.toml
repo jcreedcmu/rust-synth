@@ -7,7 +7,10 @@ edition = "2021"
 [dependencies]
 alsa = "0.9.0"
 anyhow = "1.0"
+axum = "0.7.5"
 clap = { version = "4.5.4", features = ["derive", "env"] }
 dbus = "0.9.7"
 midir = "0.9.1"
 rand = "0.8.5"
+tokio = { version = "1.37.0", features = ["rt-multi-thread"] }
+tower-http = { version = "0.5.2", features = ["fs"]}

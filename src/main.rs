@@ -12,20 +12,50 @@ mod ugen;
 mod util;
 mod wavetables;
 
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+
+use axum::routing::get;
+use axum::Router;
+use clap::Parser;
 use midi::{Message, MidiService};
 use reduce::add_ugen_state;
 use state::{Data, State};
 use std::error::Error;
 use std::io::stdin;
 use std::sync::{Arc, Mutex, MutexGuard};
-
-use clap::Parser;
+use tower_http::services::{ServeDir, ServeFile};
 
 fn main() {
   match run() {
     Ok(_) => (),
     Err(err) => println!("Error: {}", err),
   }
+}
+
+async fn handler_404() -> impl IntoResponse {
+  (StatusCode::NOT_FOUND, "404 not found")
+}
+
+#[tokio::main]
+async fn web_serve(sg: Arc<Mutex<State>>) {
+  let app = Router::new().route("/", axum::routing::get(|| async { "Hello, World!" }));
+  // let serve_dir = ServeDir::new("public").not_found_service(ServeFile::new("public/index.html"));
+
+  // let app = Router::new()
+  //   .route("/foo", get(|| async { "Hi from /foo" }))
+  //   .fallback_service(serve_dir);
+
+  let app = app.fallback(handler_404);
+
+  let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
+  axum::serve(listener, app).await.unwrap();
+}
+
+fn mk_web_thread(sg: Arc<Mutex<State>>) {
+  std::thread::spawn(move || {
+    web_serve(sg);
+  });
 }
 
 fn mk_sequencer_thread(sg: Arc<Mutex<State>>) {
@@ -96,6 +126,7 @@ fn run() -> Result<(), Box<dyn Error>> {
   let ms = mk_midi_service(state.clone())?;
   mk_sequencer_thread(state.clone());
   mk_stdin_thread(state.clone());
+  mk_web_thread(state.clone());
 
   let ads = audio::AudioService::new(&args, &Data { state }, synth::Synth::new())?;
   Ok(())
