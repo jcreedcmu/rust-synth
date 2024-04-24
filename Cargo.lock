@@ -1123,6 +1123,7 @@ dependencies = [
  "midir",
  "rand",
  "serde",
+ "tokio",
 ]
 
 [[package]]

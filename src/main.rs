@@ -31,9 +31,7 @@ fn main() {
 }
 
 fn mk_web_thread(sg: Arc<Mutex<State>>) {
-  std::thread::spawn(move || {
-    webserver::serve(sg).unwrap();
-  });
+  webserver::start(sg);
 }
 
 fn mk_sequencer_thread(sg: Arc<Mutex<State>>) {

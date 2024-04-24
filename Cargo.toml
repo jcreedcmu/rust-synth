@@ -13,3 +13,4 @@ dbus = "0.9.7"
 midir = "0.9.1"
 rand = "0.8.5"
 serde = { version = "1.0", features = ["derive"] }
+tokio = "1.37.0"
