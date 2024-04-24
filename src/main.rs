@@ -18,6 +18,7 @@ use clap::Parser;
 use midi::{Message, MidiService};
 use reduce::add_ugen_state;
 use state::{Data, State};
+use webserver::{WebAction, WebMessage};
 
 use std::error::Error;
 use std::io::stdin;
@@ -30,8 +31,23 @@ fn main() {
   }
 }
 
+fn reduce_web_message(m: &WebMessage, s: &mut State) {
+  match m.message {
+    WebAction::Drum => {
+      let ugen = s.new_drum(1000.0);
+      add_ugen_state(s, ugen);
+    },
+    WebAction::Quit => {
+      s.going = false;
+    },
+  }
+}
+
 fn mk_web_thread(sg: Arc<Mutex<State>>) {
-  webserver::start(sg);
+  webserver::start(move |msg| {
+    let mut s: MutexGuard<State> = sg.lock().unwrap();
+    reduce_web_message(&msg, &mut s);
+  });
 }
 
 fn mk_sequencer_thread(sg: Arc<Mutex<State>>) {
