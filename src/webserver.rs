@@ -1,5 +1,5 @@
 use actix::StreamHandler;
-use actix_web::{post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 use serde::Deserialize;
 use tokio::sync::mpsc::{channel, Sender};
@@ -17,15 +17,6 @@ pub enum WebAction {
 #[derive(Deserialize, Debug)]
 pub struct WebMessage {
   pub message: WebAction,
-}
-
-#[post("/api/action")]
-async fn action(
-  message: web::Json<WebMessage>,
-  tx: actix_web::web::Data<Sender<WebMessage>>,
-) -> impl Responder {
-  tx.send(message.into_inner()).await.unwrap();
-  HttpResponse::Ok().body("{}")
 }
 
 struct MyWs {
@@ -47,8 +38,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
     match msg {
       Ok(ws::Message::Text(text)) => {
         match parse(text.as_bytes()) {
-          Err(_) => {
-            println!("JSON parsing error: {}", text);
+          Err(err) => {
+            println!("Tried to parse {} but {}", text, err);
           },
           Ok(m) => {
             // XXX this fails if buffer is full
@@ -71,7 +62,7 @@ async fn ws_index(
 ) -> Result<HttpResponse, actix_web::Error> {
   let tx = tx.as_ref().clone();
   let resp = ws::start(MyWs { tx }, &req, stream);
-  println!("{:?}", resp);
+  println!("starting websocket server: {:?}", resp);
   resp
 }
 
@@ -81,7 +72,6 @@ pub async fn serve(tx: Sender<WebMessage>) -> std::io::Result<()> {
     App::new()
       .app_data(actix_web::web::Data::new(tx.clone()))
       .route("/ws/", web::get().to(ws_index))
-      .service(action)
       .service(actix_files::Files::new("/", "./public").index_file("index.html"))
   })
   .bind(("127.0.0.1", 8000))?
