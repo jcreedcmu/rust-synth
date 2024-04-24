@@ -4,6 +4,8 @@ use crate::envelope::EnvState;
 use crate::synth::TABLE_SIZE;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
+const BASS_DRUM_DEBUG_RELEASE_s: f32 = 0.2;
+
 #[derive(Clone, Debug)]
 pub struct BassDrumSynthState {
   t_s: f32,
@@ -19,7 +21,11 @@ impl BassDrumSynthState {
       t_s: 0.0,
       phase: 0.0,
       freq_hz,
-      env_state: EnvState::Release { amp: 1.0, t_s: 0.0 },
+      env_state: EnvState::Release {
+        amp: 1.0,
+        t_s: 0.0,
+        dur_s: BASS_DRUM_DEBUG_RELEASE_s,
+      },
       wavetable,
     }
   }
@@ -35,19 +41,18 @@ impl Ugen for BassDrumSynthState {
     // linear interp
     let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
 
-    0.05 * table_val
+    0.05 * table_val * self.env_state.amp()
   }
 
   // returns true if should continue note
   // returns true if should continue note
   fn advance(&mut self, tick_s: f32) -> bool {
-    const BASS_DRUM_DEBUG_RELEASE_s: f32 = 0.2;
     let bass_drum_freq_hz: f32 = self.freq_hz / (TABLE_SIZE as f32);
     self.phase += bass_drum_freq_hz / SAMPLE_RATE_hz;
     if self.phase > 1. {
       self.phase -= 1.;
     }
-    self.env_state.advance(tick_s, BASS_DRUM_DEBUG_RELEASE_s)
+    self.env_state.advance(tick_s)
   }
 
   fn release(&mut self) {}

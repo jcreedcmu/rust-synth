@@ -1,25 +1,8 @@
 use std::sync::Arc;
 
-use crate::consts::{ATTACK_s, DECAY_s, RELEASE_s, SAMPLE_RATE_hz, SUSTAIN};
+use crate::consts::{RELEASE_s, SAMPLE_RATE_hz};
 use crate::envelope::EnvState;
 use crate::ugen::Ugen;
-
-fn ugen_env_amp(env_state: &EnvState) -> f32 {
-  match *env_state {
-    EnvState::On { t_s, amp, vel } => {
-      if t_s < ATTACK_s {
-        let a = t_s / ATTACK_s;
-        amp * (1.0 - a) + vel * a
-      } else if t_s < ATTACK_s + DECAY_s {
-        let a = (t_s - ATTACK_s) / DECAY_s;
-        vel * (1.0 - a) + vel * SUSTAIN * a
-      } else {
-        SUSTAIN * vel
-      }
-    },
-    EnvState::Release { t_s, amp } => amp * (1.0 - (t_s / RELEASE_s)),
-  }
-}
 
 #[derive(Clone, Debug)]
 pub struct ReasonableSynthState {
@@ -42,10 +25,6 @@ impl ReasonableSynthState {
       wavetable,
     }
   }
-
-  fn get_current_amp(&self) -> f32 {
-    ugen_env_amp(&self.env_state)
-  }
 }
 
 impl Ugen for ReasonableSynthState {
@@ -58,7 +37,7 @@ impl Ugen for ReasonableSynthState {
     // linear interp
     let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
 
-    let scale = ugen_env_amp(&self.env_state);
+    let scale = self.env_state.amp();
     (scale as f32) * table_val
   }
 
@@ -68,20 +47,21 @@ impl Ugen for ReasonableSynthState {
     if self.phase > 1. {
       self.phase -= 1.;
     }
-    self.env_state.advance(tick_s, RELEASE_s)
+    self.env_state.advance(tick_s)
   }
 
   fn release(&mut self) {
     self.env_state = EnvState::Release {
       t_s: 0.0,
-      amp: self.get_current_amp(),
+      amp: self.env_state.amp(),
+      dur_s: RELEASE_s,
     };
   }
 
   fn restrike(&mut self, vel: f32) {
     self.env_state = EnvState::On {
       t_s: 0.0,
-      amp: self.get_current_amp(),
+      amp: self.env_state.amp(),
       vel,
     };
   }
