@@ -10,10 +10,19 @@
 #[macro_use]
 extern crate rouille;
 
+use std::fs::File;
 use std::thread;
 
 use rouille::websocket;
-use rouille::Response;
+use rouille::{Request, Response};
+
+fn fallback(request: &Request) -> Response {
+  let response = rouille::match_assets(request, "./public");
+  if response.is_success() {
+    return response;
+  }
+  Response::text("404 Not found").with_status_code(404)
+}
 
 fn main() {
   // This example demonstrates how to use websockets with rouille.
@@ -26,60 +35,28 @@ fn main() {
   rouille::start_server("localhost:8000", move |request| {
     router!(request,
         (GET) (/) => {
-            // The / route outputs an HTML client so that the user can try the websockets.
-            // Note that in a real website you should probably use some templating system, or
-            // at least load the HTML from a file.
-            Response::html("<script type=\"text/javascript\">
-                    var socket = new WebSocket(\"ws://localhost:8000/ws\", \"echo\");
-                    function send(data) {{
-                        socket.send(data);
-                    }}
-                    socket.onmessage = function(event) {{
-                        document.getElementById('result').innerHTML += event.data + '<br />';
-                    }}
-                    </script>
-                    <p>This example sends back everything you send to the server.</p>
-                    <p><form onsubmit=\"send(document.getElementById('msg').value); return false;\">
-                    <input type=\"text\" id=\"msg\" />
-                    <button type=\"submit\">Send</button>
-                    </form></p>
-                    <p>Received: </p>
-                    <p id=\"result\"></p>")
+        let file = File::open("./public/index.html").unwrap();
+        let response = Response::from_file("text/html", file);
+        response
         },
-
-        (GET) (/ws) => {
-            // This is the websockets route.
-
-            // In order to start using websockets we call `websocket::start`.
-            // The function returns an error if the client didn't request websockets, in which
-            // case we return an error 400 to the client thanks to the `try_or_400!` macro.
-            //
-            // The function returns a response to send back as part of the `start_server`
-            // function, and a `websocket` variable of type `Receiver<Websocket>`.
-            // Once the response has been sent back to the client, the `Receiver` will be
-            // filled by rouille with a `Websocket` object representing the websocket.
-            let (response, websocket) = try_or_400!(websocket::start(&request, Some("echo")));
-
-            // Because of the nature of I/O in Rust, we need to spawn a separate thread for
-            // each websocket.
-            thread::spawn(move || {
-                // This line will block until the `response` above has been returned.
-                let ws = websocket.recv().unwrap();
-                // We use a separate function for better readability.
-                websocket_handling_thread(ws);
-            });
-
-            response
-        },
-
-        // Default 404 route as with all examples.
-        _ => Response::text("404 Not found").with_status_code(404)
+        (GET) (/ws) => { start_ws(request) },
+        _ => fallback(request)
     )
   });
 }
 
+fn start_ws(request: &Request) -> Response {
+  let (response, websocket) = try_or_400!(websocket::start::<String>(&request, None));
+  thread::spawn(move || {
+    let ws = websocket.recv().unwrap();
+    handle_ws(ws);
+  });
+
+  response
+}
+
 // Function run in a separate thread.
-fn websocket_handling_thread(mut websocket: websocket::Websocket) {
+fn handle_ws(mut websocket: websocket::Websocket) {
   // We wait for a new message to come from the websocket.
   while let Some(message) = websocket.next() {
     match message {
