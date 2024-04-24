@@ -6,6 +6,7 @@ use crate::drum::DrumSynthState;
 use crate::reasonable_synth::ReasonableSynthState;
 use crate::ugen::Ugen;
 use crate::wavetables::Wavetables;
+use crate::webserver::SynthMessage;
 
 #[derive(Clone, Debug)]
 pub enum KeyState {
@@ -32,6 +33,8 @@ pub struct State {
   pub write_to_file: bool,
 
   pub wavetables: Wavetables,
+
+  pub websocket: Option<tokio::sync::mpsc::Sender<SynthMessage>>,
 }
 
 // XXX I don't need this wrapper, do I?
@@ -48,6 +51,7 @@ impl State {
       pedal: false,
       write_to_file: true,
       wavetables: Wavetables::new(),
+      websocket: None,
     }
   }
 

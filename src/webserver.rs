@@ -8,6 +8,8 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 // https://docs.rs/actix-web/latest/actix_web/web/struct.Data.html
 // https://github.com/actix/actix-web/discussions/2805
 
+const CHANNEL_CAPACITY: usize = 100;
+
 #[derive(Deserialize, Debug)]
 pub enum WebAction {
   Quit,
@@ -77,14 +79,22 @@ async fn ws_index(
 }
 
 struct Channels {
-  tx: Sender<WebMessage>,
+  tx: Sender<WebOrSubMessage>,
   rx: Receiver<SynthMessage>,
 }
 
 #[actix_web::main]
 pub async fn serve(tx: Sender<WebOrSubMessage>) -> std::io::Result<()> {
   HttpServer::new(move || {
-    let data = actix_web::web::Data::new(tx.clone());
+    let (txs, mut rxs) = channel::<SynthMessage>(CHANNEL_CAPACITY);
+
+    // XXX bad error handling
+    tx.try_send(WebOrSubMessage::SubMessage(txs)).unwrap();
+
+    let data = actix_web::web::Data::new(Channels {
+      tx: tx.clone(),
+      rx: rxs,
+    });
     App::new()
       .app_data(data)
       .route("/ws/", web::get().to(ws_index))
@@ -99,12 +109,12 @@ pub fn start<C>(k: C)
 where
   C: Fn(&WebOrSubMessage) + Send + 'static,
 {
-  let (txw, mut rxw) = channel::<WebOrSubMessage>(100);
+  let (tx, mut rx) = channel::<WebOrSubMessage>(CHANNEL_CAPACITY);
   std::thread::spawn(move || {
-    serve(txw).unwrap();
+    serve(tx).unwrap();
   });
   std::thread::spawn(move || loop {
-    match rxw.blocking_recv() {
+    match rx.blocking_recv() {
       None => break,
       Some(msg) => k(&msg),
     }

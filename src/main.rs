@@ -48,8 +48,8 @@ fn reduce_web_or_sub_message(m: &WebOrSubMessage, s: &mut State) {
     WebOrSubMessage::WebMessage(m) => {
       reduce_web_message(m, s);
     },
-    WebOrSubMessage::SubMessage(_) => {
-      () // stub
+    WebOrSubMessage::SubMessage(tx) => {
+      s.websocket = Some(tx.clone());
     },
   }
 }
