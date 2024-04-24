@@ -37,11 +37,11 @@ struct Channels {
   rx: Receiver<SynthMessage>,
 }
 
-struct MyWs {
+struct WebsocketSession {
   ch: Channels,
 }
 
-impl actix::Actor for MyWs {
+impl actix::Actor for WebsocketSession {
   type Context = ws::WebsocketContext<Self>;
 }
 
@@ -51,7 +51,7 @@ fn parse(text: &[u8]) -> Result<WebMessage, Box<dyn std::error::Error>> {
   )?)?)
 }
 
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebsocketSession {
   fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
     match msg {
       Ok(ws::Message::Text(text)) => {
@@ -90,7 +90,7 @@ async fn ws_index(
   // XXX bad error handling
   tx.send(WebOrSubMessage::SubMessage(txs)).await.unwrap();
 
-  let resp = ws::start(MyWs { ch }, &req, stream);
+  let resp = ws::start(WebsocketSession { ch }, &req, stream);
   println!("starting websocket server: {:?}", resp);
   resp
 }
