@@ -1,8 +1,8 @@
 use std::slice::IterMut;
 use std::sync::{Arc, Mutex};
 
-use crate::bass_drum::BassDrumSynthState;
 use crate::consts::{BOTTOM_NOTE, NUM_KEYS};
+use crate::drum::DrumSynthState;
 use crate::reasonable_synth::ReasonableSynthState;
 use crate::ugen::Ugen;
 use crate::wavetables::Wavetables;
@@ -63,7 +63,7 @@ impl State {
     ReasonableSynthState::new(freq_hz, vel, self.wavetables.saw_wavetable.clone())
   }
 
-  pub fn new_drum(&self, freq_hz: f32) -> BassDrumSynthState {
-    BassDrumSynthState::new(freq_hz, self.wavetables.noise_wavetable.clone())
+  pub fn new_drum(&self, freq_hz: f32) -> DrumSynthState {
+    DrumSynthState::new(freq_hz, self.wavetables.noise_wavetable.clone())
   }
 }

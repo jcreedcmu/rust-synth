@@ -1,8 +1,8 @@
 #![allow(unused_variables, unused_mut, dead_code, non_upper_case_globals)]
 
 mod audio;
-mod bass_drum;
 mod consts;
+mod drum;
 mod envelope;
 mod midi;
 mod reasonable_synth;

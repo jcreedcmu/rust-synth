@@ -1,4 +1,4 @@
-use crate::consts::{ATTACK_s, DECAY_s, RELEASE_s, SUSTAIN};
+use crate::consts::{ATTACK_s, DECAY_s, SUSTAIN};
 
 // This is the part of the state that tracks where a note is in its
 // ADSR envelope.
