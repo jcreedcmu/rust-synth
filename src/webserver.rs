@@ -9,13 +9,26 @@ use std::sync::{Arc, Mutex};
 // https://github.com/actix/actix-web/discussions/2805
 
 #[derive(Deserialize, Debug)]
-struct WebMessage {
-  message: usize,
+enum WebAction {
+  Quit,
+  Drum,
 }
 
-fn do_thing(s: &mut State) {
-  let ugen = s.new_drum(1000.0);
-  add_ugen_state(s, ugen);
+#[derive(Deserialize, Debug)]
+struct WebMessage {
+  message: WebAction,
+}
+
+fn do_thing(m: &WebMessage, s: &mut State) {
+  match m.message {
+    WebAction::Drum => {
+      let ugen = s.new_drum(1000.0);
+      add_ugen_state(s, ugen);
+    },
+    WebAction::Quit => {
+      s.going = false;
+    },
+  }
 }
 
 #[post("/api/action")]
@@ -24,7 +37,7 @@ async fn action(
   extra: actix_web::web::Data<Arc<Mutex<State>>>,
 ) -> impl Responder {
   let mut s = extra.lock().unwrap();
-  do_thing(&mut s);
+  do_thing(&message, &mut s);
   println!("got: {:?}", message);
   HttpResponse::Ok().body("{}")
 }
