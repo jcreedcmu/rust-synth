@@ -32,8 +32,13 @@ pub enum WebOrSubMessage {
   SubMessage(Sender<SynthMessage>),
 }
 
-struct MyWs {
+struct Channels {
   tx: Sender<WebOrSubMessage>,
+  rx: Receiver<SynthMessage>,
+}
+
+struct MyWs {
+  ch: Channels,
 }
 
 impl actix::Actor for MyWs {
@@ -56,7 +61,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
           },
           Ok(m) => {
             // XXX this fails if buffer is full
-            self.tx.try_send(WebOrSubMessage::WebMessage(m)).unwrap();
+            self.ch.tx.try_send(WebOrSubMessage::WebMessage(m)).unwrap();
           },
         }
       },
@@ -74,30 +79,26 @@ async fn ws_index(
   tx: actix_web::web::Data<Sender<WebOrSubMessage>>,
 ) -> Result<HttpResponse, actix_web::Error> {
   println!("trying to start websocket server");
-  let tx = tx.as_ref().clone();
-  let resp = ws::start(MyWs { tx }, &req, stream);
+
+  let (txs, mut rxs) = channel::<SynthMessage>(CHANNEL_CAPACITY);
+
+  let ch = Channels {
+    rx: rxs,
+    tx: tx.as_ref().clone(),
+  };
+
+  // XXX bad error handling
+  tx.send(WebOrSubMessage::SubMessage(txs)).await.unwrap();
+
+  let resp = ws::start(MyWs { ch }, &req, stream);
   println!("starting websocket server: {:?}", resp);
   resp
-}
-
-struct Channels {
-  tx: Sender<WebOrSubMessage>,
-  rx: Receiver<SynthMessage>,
 }
 
 #[actix_web::main]
 pub async fn serve(tx: Sender<WebOrSubMessage>) -> std::io::Result<()> {
   HttpServer::new(move || {
-    let (txs, mut rxs) = channel::<SynthMessage>(CHANNEL_CAPACITY);
-    println!("here1");
-    // XXX bad error handling
-    tx.try_send(WebOrSubMessage::SubMessage(txs)).unwrap();
-    println!("here2");
-    let data = actix_web::web::Data::new(Channels {
-      tx: tx.clone(),
-      rx: rxs,
-    });
-    println!("here3");
+    let data = actix_web::web::Data::new(tx.clone());
     App::new()
       .app_data(data)
       .route("/ws/", web::get().to(ws_index))
