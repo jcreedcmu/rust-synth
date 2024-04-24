@@ -1,8 +1,8 @@
 use actix::StreamHandler;
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
-use serde::Deserialize;
-use tokio::sync::mpsc::{channel, Sender};
+use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 // Useful docs, example for app_data:
 // https://docs.rs/actix-web/latest/actix_web/web/struct.Data.html
@@ -19,8 +19,18 @@ pub struct WebMessage {
   pub message: WebAction,
 }
 
+#[derive(Serialize, Debug)]
+pub enum SynthMessage {
+  Ping,
+}
+
+pub enum WebOrSubMessage {
+  WebMessage(WebMessage),
+  SubMessage(Sender<SynthMessage>),
+}
+
 struct MyWs {
-  tx: Sender<WebMessage>,
+  tx: Sender<WebOrSubMessage>,
 }
 
 impl actix::Actor for MyWs {
@@ -43,7 +53,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
           },
           Ok(m) => {
             // XXX this fails if buffer is full
-            self.tx.try_send(m).unwrap();
+            self.tx.try_send(WebOrSubMessage::WebMessage(m)).unwrap();
           },
         }
       },
@@ -58,7 +68,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
 async fn ws_index(
   req: HttpRequest,
   stream: web::Payload,
-  tx: actix_web::web::Data<Sender<WebMessage>>,
+  tx: actix_web::web::Data<Sender<WebOrSubMessage>>,
 ) -> Result<HttpResponse, actix_web::Error> {
   let tx = tx.as_ref().clone();
   let resp = ws::start(MyWs { tx }, &req, stream);
@@ -66,11 +76,17 @@ async fn ws_index(
   resp
 }
 
+struct Channels {
+  tx: Sender<WebMessage>,
+  rx: Receiver<SynthMessage>,
+}
+
 #[actix_web::main]
-pub async fn serve(tx: Sender<WebMessage>) -> std::io::Result<()> {
+pub async fn serve(tx: Sender<WebOrSubMessage>) -> std::io::Result<()> {
   HttpServer::new(move || {
+    let data = actix_web::web::Data::new(tx.clone());
     App::new()
-      .app_data(actix_web::web::Data::new(tx.clone()))
+      .app_data(data)
       .route("/ws/", web::get().to(ws_index))
       .service(actix_files::Files::new("/", "./public").index_file("index.html"))
   })
@@ -81,14 +97,14 @@ pub async fn serve(tx: Sender<WebMessage>) -> std::io::Result<()> {
 
 pub fn start<C>(k: C)
 where
-  C: Fn(&WebMessage) + Send + 'static,
+  C: Fn(&WebOrSubMessage) + Send + 'static,
 {
-  let (tx, mut rx) = channel::<WebMessage>(100);
+  let (txw, mut rxw) = channel::<WebOrSubMessage>(100);
   std::thread::spawn(move || {
-    serve(tx).unwrap();
+    serve(txw).unwrap();
   });
   std::thread::spawn(move || loop {
-    match rx.blocking_recv() {
+    match rxw.blocking_recv() {
       None => break,
       Some(msg) => k(&msg),
     }

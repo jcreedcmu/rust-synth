@@ -18,7 +18,7 @@ use clap::Parser;
 use midi::{Message, MidiService};
 use reduce::add_ugen_state;
 use state::{Data, State};
-use webserver::{WebAction, WebMessage};
+use webserver::{WebAction, WebMessage, WebOrSubMessage};
 
 use std::error::Error;
 use std::io::stdin;
@@ -43,10 +43,21 @@ fn reduce_web_message(m: &WebMessage, s: &mut State) {
   }
 }
 
+fn reduce_web_or_sub_message(m: &WebOrSubMessage, s: &mut State) {
+  match m {
+    WebOrSubMessage::WebMessage(m) => {
+      reduce_web_message(m, s);
+    },
+    WebOrSubMessage::SubMessage(_) => {
+      () // stub
+    },
+  }
+}
+
 fn mk_web_thread(sg: Arc<Mutex<State>>) {
   webserver::start(move |msg| {
     let mut s: MutexGuard<State> = sg.lock().unwrap();
-    reduce_web_message(&msg, &mut s);
+    reduce_web_or_sub_message(&msg, &mut s);
   });
 }
 
