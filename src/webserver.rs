@@ -28,22 +28,36 @@ async fn action(
   HttpResponse::Ok().body("{}")
 }
 
-struct MyWs;
+struct MyWs {
+  tx: Sender<WebMessage>,
+}
 
 impl actix::Actor for MyWs {
   type Context = ws::WebsocketContext<Self>;
 }
 
+fn parse(text: &[u8]) -> Result<WebMessage, Box<dyn std::error::Error>> {
+  Ok(serde_json::from_str::<WebMessage>(std::str::from_utf8(
+    text,
+  )?)?)
+}
+
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
   fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
     match msg {
-      Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
       Ok(ws::Message::Text(text)) => {
-        println!("### text {}", text);
+        match parse(text.as_bytes()) {
+          Err(_) => {
+            println!("JSON parsing error: {}", text);
+          },
+          Ok(m) => {
+            // XXX this fails if buffer is full
+            self.tx.try_send(m).unwrap();
+          },
+        }
       },
-      Ok(ws::Message::Binary(bin)) => {
-        println!("### binary");
-        ctx.binary(bin);
+      Ok(m) => {
+        println!("### websocket message received but not handled: {:?}", m);
       },
       _ => (),
     }
@@ -55,7 +69,8 @@ async fn ws_index(
   stream: web::Payload,
   tx: actix_web::web::Data<Sender<WebMessage>>,
 ) -> Result<HttpResponse, actix_web::Error> {
-  let resp = ws::start(MyWs {}, &req, stream);
+  let tx = tx.as_ref().clone();
+  let resp = ws::start(MyWs { tx }, &req, stream);
   println!("{:?}", resp);
   resp
 }

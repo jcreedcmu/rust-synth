@@ -1,28 +1,22 @@
 function go() {
+
+  const ws = new WebSocket('/ws/')
+  ws.onopen = () => {
+	 console.log('ws opened on browser')
+  }
+
+  ws.onmessage = (message) => {
+	 console.log(`message received`, message.data)
+  }
+
   const action = document.getElementById('action');
   action.onmousedown = async () => {
-	 const response = await fetch('/api/action', {
-		method: 'POST',
-		headers: {
-        "Content-Type": "application/json",
-		},
-		body: JSON.stringify({message: "Drum"}),
-	 });
-	 const json = await response.text();
-	 console.log(json);
+	 ws.send(JSON.stringify({message: "Drum"}));
   }
 
   const quit = document.getElementById('quit');
   quit.onmousedown = async () => {
-	 const response = await fetch('/api/action', {
-		method: 'POST',
-		headers: {
-        "Content-Type": "application/json",
-		},
-		body: JSON.stringify({message: "Quit"}),
-	 });
-	 const json = await response.text();
-	 console.log(json);
+	 ws.send(JSON.stringify({message: "Quit"}));
   }
 
 }

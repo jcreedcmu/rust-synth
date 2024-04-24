@@ -1194,6 +1194,7 @@ dependencies = [
  "midir",
  "rand",
  "serde",
+ "serde_json",
  "tokio",
 ]
 
