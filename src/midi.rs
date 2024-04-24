@@ -2,6 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 use midir::{Ignore, MidiInput};
+use serde::Serialize;
 
 pub struct MidiService {
   conn_in: midir::MidiInputConnection<()>,
@@ -9,7 +10,7 @@ pub struct MidiService {
 
 type Pitch = u8;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Clone)]
 pub enum Message {
   NoteOn {
     pitch: Pitch,

@@ -1,3 +1,4 @@
+use crate::midi;
 use actix::StreamHandler;
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
@@ -23,7 +24,7 @@ pub struct WebMessage {
 
 #[derive(Serialize, Debug)]
 pub enum SynthMessage {
-  Ping,
+  Ping(midi::Message),
 }
 
 pub enum WebOrSubMessage {
@@ -72,6 +73,7 @@ async fn ws_index(
   stream: web::Payload,
   tx: actix_web::web::Data<Sender<WebOrSubMessage>>,
 ) -> Result<HttpResponse, actix_web::Error> {
+  println!("trying to start websocket server");
   let tx = tx.as_ref().clone();
   let resp = ws::start(MyWs { tx }, &req, stream);
   println!("starting websocket server: {:?}", resp);
@@ -87,14 +89,15 @@ struct Channels {
 pub async fn serve(tx: Sender<WebOrSubMessage>) -> std::io::Result<()> {
   HttpServer::new(move || {
     let (txs, mut rxs) = channel::<SynthMessage>(CHANNEL_CAPACITY);
-
+    println!("here1");
     // XXX bad error handling
     tx.try_send(WebOrSubMessage::SubMessage(txs)).unwrap();
-
+    println!("here2");
     let data = actix_web::web::Data::new(Channels {
       tx: tx.clone(),
       rx: rxs,
     });
+    println!("here3");
     App::new()
       .app_data(data)
       .route("/ws/", web::get().to(ws_index))

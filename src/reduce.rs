@@ -2,6 +2,7 @@ use crate::midi::Message;
 use crate::state::{KeyState, State};
 use crate::ugen::Ugen;
 use crate::util;
+use crate::webserver::SynthMessage;
 
 pub fn add_ugen_state(s: &mut State, new: impl Ugen + 'static) -> usize {
   add_ugen(&mut s.ugen_state, new)
@@ -44,6 +45,10 @@ fn ugen_ix_of_key_state(key_state: &KeyState) -> Option<usize> {
 // change, then have subsequent function carry it out, so that we hold
 // state lock for shorter duration.
 pub fn midi_reducer(msg: &Message, s: &mut State) {
+  match &s.websocket {
+    None => (),
+    Some(ws) => ws.try_send(SynthMessage::Ping(msg.clone())).unwrap(),
+  }
   match msg {
     Message::NoteOn {
       pitch,
