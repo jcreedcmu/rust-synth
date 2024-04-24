@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::consts::{ATTACK_s, DECAY_s, RELEASE_s, SAMPLE_RATE_hz, SUSTAIN};
-use crate::state::EnvState;
+use crate::envelope::EnvState;
 use crate::ugen::Ugen;
 
 fn ugen_env_amp(env_state: &EnvState) -> f32 {
@@ -18,21 +18,6 @@ fn ugen_env_amp(env_state: &EnvState) -> f32 {
       }
     },
     EnvState::Release { t_s, amp } => amp * (1.0 - (t_s / RELEASE_s)),
-  }
-}
-
-// Advance ugen state forward by tick_s
-// returns true if we should terminate the ugen
-pub fn advance_envelope(env: &mut EnvState, tick_s: f32) -> bool {
-  match env {
-    EnvState::On { ref mut t_s, .. } => {
-      *t_s += tick_s;
-      false
-    },
-    EnvState::Release { ref mut t_s, .. } => {
-      *t_s += tick_s;
-      *t_s > RELEASE_s
-    },
   }
 }
 
@@ -79,21 +64,11 @@ impl Ugen for ReasonableSynthState {
 
   // returns true if should continue note
   fn advance(&mut self, tick_s: f32) -> bool {
-    let ReasonableSynthState {
-      freq_hz,
-      phase,
-      env_state,
-      ..
-    } = self;
-    if advance_envelope(env_state, tick_s) {
-      false
-    } else {
-      *phase += *freq_hz / SAMPLE_RATE_hz;
-      if *phase > 1. {
-        *phase -= 1.;
-      }
-      true
+    self.phase += self.freq_hz / SAMPLE_RATE_hz;
+    if self.phase > 1. {
+      self.phase -= 1.;
     }
+    self.env_state.advance(tick_s, RELEASE_s)
   }
 
   fn release(&mut self) {

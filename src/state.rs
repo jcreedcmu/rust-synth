@@ -7,20 +7,6 @@ use crate::reasonable_synth::ReasonableSynthState;
 use crate::ugen::Ugen;
 use crate::wavetables::Wavetables;
 
-// This is the part of the state that tracks where a note is in its
-// ADSR envelope.
-#[derive(Clone, Debug)]
-pub enum EnvState {
-  // Note is activeply sounding. Its pre-existing amplitude at onset
-  // time is `amp`. The goal amplitude, at the peak of attack, is
-  // `vel`. The amount of time elapsed since its onset is `t_s`.
-  On { amp: f32, t_s: f32, vel: f32 },
-  // Note is no longer activeply sounding. Its pre-existing amplitude
-  // at time of release is `amp`. The amount of time elapsed since its
-  // release is `t_s`.
-  Release { amp: f32, t_s: f32 },
-}
-
 #[derive(Clone, Debug)]
 pub enum KeyState {
   Off,

@@ -3,6 +3,7 @@
 mod audio;
 mod bass_drum;
 mod consts;
+mod envelope;
 mod midi;
 mod reasonable_synth;
 mod reduce;
