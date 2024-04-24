@@ -1,8 +1,15 @@
 use std::sync::Arc;
 
-use crate::consts::{RELEASE_s, SAMPLE_RATE_hz};
-use crate::envelope::EnvState;
+use crate::consts::SAMPLE_RATE_hz;
+use crate::envelope::{Adsr, EnvPos, EnvState};
 use crate::ugen::Ugen;
+
+const reasonable_adsr: Adsr = Adsr {
+  attack_s: 0.005,
+  decay_s: 0.005,
+  sustain: 0.3,
+  release_s: 0.05,
+};
 
 #[derive(Clone, Debug)]
 pub struct ReasonableSynthState {
@@ -17,10 +24,14 @@ impl ReasonableSynthState {
     ReasonableSynthState {
       phase: 0.0,
       freq_hz,
-      env_state: EnvState::On {
-        amp: 0.0,
-        t_s: 0.0,
-        vel,
+      env_state: EnvState {
+        adsr: reasonable_adsr,
+        pos: EnvPos::On {
+          amp: 0.0,
+          t_s: 0.0,
+          vel,
+          hold: true,
+        },
       },
       wavetable,
     }
@@ -51,18 +62,18 @@ impl Ugen for ReasonableSynthState {
   }
 
   fn release(&mut self) {
-    self.env_state = EnvState::Release {
+    self.env_state.pos = EnvPos::Release {
       t_s: 0.0,
       amp: self.env_state.amp(),
-      dur_s: RELEASE_s,
     };
   }
 
   fn restrike(&mut self, vel: f32) {
-    self.env_state = EnvState::On {
+    self.env_state.pos = EnvPos::On {
       t_s: 0.0,
       amp: self.env_state.amp(),
       vel,
+      hold: true,
     };
   }
 }
