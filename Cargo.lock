@@ -767,6 +767,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "libloading"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
+dependencies = [
+ "cfg-if",
+ "windows-targets 0.52.5",
+]
+
+[[package]]
 name = "linux-raw-sys"
 version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1252,6 +1262,7 @@ dependencies = [
  "alsa 0.9.0",
  "clap",
  "dbus",
+ "libloading",
  "midir",
  "rand",
  "rocket",

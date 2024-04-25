@@ -125,8 +125,20 @@ pub struct Args {
   profile_interval: Option<usize>,
 }
 
+fn call_dynamic() -> Result<[u32; 3], Box<dyn std::error::Error>> {
+  unsafe {
+    let lib = libloading::Library::new("./dyn/dyn.so")?;
+    let func: libloading::Symbol<unsafe extern "C" fn(&mut [u32; 3]) -> ()> = lib.get(b"dyn")?;
+    let mut x: [u32; 3] = [1, 2, 3];
+    func(&mut x);
+    Ok(x)
+  }
+}
+
 fn run() -> Result<(), Box<dyn Error>> {
   let args = Args::parse();
+
+  println!("dyn call: {:?}", call_dynamic().unwrap());
 
   let mut state = State::new();
 

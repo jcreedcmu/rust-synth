@@ -8,6 +8,7 @@ edition = "2021"
 alsa = "0.9.0"
 clap = { version = "4.5.4", features = ["derive", "env"] }
 dbus = "0.9.7"
+libloading = "0.8.3"
 midir = "0.9.1"
 rand = "0.8.5"
 rocket = "0.5.0"
