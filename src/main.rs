@@ -4,6 +4,7 @@ mod audio;
 mod consts;
 mod drum;
 mod envelope;
+mod lowpass;
 mod midi;
 mod reasonable_synth;
 mod reduce;
