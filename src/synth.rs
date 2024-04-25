@@ -26,7 +26,7 @@ impl Synth {
       None => (),
       Some(ref mut ugen) => {
         ugen.run(bus);
-        if !ugen.advance(tick_s) {
+        if !ugen.advance(tick_s, bus) {
           *ougen = None;
         };
       },

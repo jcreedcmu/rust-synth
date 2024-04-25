@@ -55,7 +55,7 @@ impl Ugen for ReasonableSynthState {
   }
 
   // returns true if should continue note
-  fn advance(&mut self, tick_s: f32) -> bool {
+  fn advance(&mut self, tick_s: f32, bus: &Vec<f32>) -> bool {
     self.phase += self.freq_hz / SAMPLE_RATE_hz;
     if self.phase > 1. {
       self.phase -= 1.;

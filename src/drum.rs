@@ -57,7 +57,7 @@ impl Ugen for DrumSynthState {
   }
 
   // returns true if should continue note
-  fn advance(&mut self, tick_s: f32) -> bool {
+  fn advance(&mut self, tick_s: f32, bus: &Vec<f32>) -> bool {
     let drum_freq_hz: f32 = self.freq_hz / (TABLE_SIZE as f32);
     self.phase += drum_freq_hz / SAMPLE_RATE_hz;
     if self.phase > 1. {

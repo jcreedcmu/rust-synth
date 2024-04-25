@@ -4,7 +4,7 @@ use crate::reasonable_synth::ReasonableSynthState;
 
 pub trait Ugen: std::fmt::Debug + Sync + Send {
   fn run(&self, bus: &mut Vec<f32>);
-  fn advance(&mut self, tick_s: f32) -> bool;
+  fn advance(&mut self, tick_s: f32, bus: &Vec<f32>) -> bool;
   fn release(&mut self);
   fn restrike(&mut self, vel: f32);
 }
@@ -26,11 +26,11 @@ impl Ugen for UgenState {
     }
   }
 
-  fn advance(&mut self, tick_s: f32) -> bool {
+  fn advance(&mut self, tick_s: f32, bus: &Vec<f32>) -> bool {
     match self {
-      UgenState::DrumSynth(s) => s.advance(tick_s),
-      UgenState::ReasonableSynth(s) => s.advance(tick_s),
-      UgenState::Lowpass(s) => s.advance(tick_s),
+      UgenState::DrumSynth(s) => s.advance(tick_s, bus),
+      UgenState::ReasonableSynth(s) => s.advance(tick_s, bus),
+      UgenState::Lowpass(s) => s.advance(tick_s, bus),
     }
   }
 
