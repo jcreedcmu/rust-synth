@@ -3,7 +3,7 @@ use crate::lowpass::LowpassState;
 use crate::reasonable_synth::ReasonableSynthState;
 
 pub trait Ugen: std::fmt::Debug + Sync + Send {
-  fn run(&self) -> f32;
+  fn run(&self, bus: &mut Vec<f32>);
   fn advance(&mut self, tick_s: f32) -> bool;
   fn release(&mut self);
   fn restrike(&mut self, vel: f32);
@@ -18,11 +18,11 @@ pub enum UgenState {
 
 // some boilerplate to wire things up
 impl Ugen for UgenState {
-  fn run(&self) -> f32 {
+  fn run(&self, bus: &mut Vec<f32>) {
     match self {
-      UgenState::DrumSynth(s) => s.run(),
-      UgenState::ReasonableSynth(s) => s.run(),
-      UgenState::Lowpass(s) => s.run(),
+      UgenState::DrumSynth(s) => s.run(bus),
+      UgenState::ReasonableSynth(s) => s.run(bus),
+      UgenState::Lowpass(s) => s.run(bus),
     }
   }
 

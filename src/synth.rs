@@ -1,4 +1,4 @@
-use crate::consts::SAMPLE_RATE_hz;
+use crate::consts::{SAMPLE_RATE_hz, BUS_DRY, BUS_OUT};
 use crate::state::State;
 use crate::ugen::{Ugen, UgenState};
 
@@ -20,12 +20,12 @@ impl Synth {
     }
   }
 
-  pub fn exec_maybe_ugen(self: &Synth, ougen: &mut Option<UgenState>, samp: &mut f32) {
+  pub fn exec_maybe_ugen(self: &Synth, ougen: &mut Option<UgenState>, bus: &mut Vec<f32>) {
     let tick_s = 1.0 / SAMPLE_RATE_hz;
     match *ougen {
       None => (),
       Some(ref mut ugen) => {
-        *samp += ugen.run();
+        ugen.run(bus);
         if !ugen.advance(tick_s) {
           *ougen = None;
         };
@@ -40,7 +40,7 @@ impl Synth {
     }
 
     for mut ugen in s.ugen_state.iter_mut() {
-      self.exec_maybe_ugen(&mut ugen, &mut s.audio_bus[1]);
+      self.exec_maybe_ugen(&mut ugen, &mut s.audio_bus);
     }
     let Synth {
       ref mut lowp_ix,
@@ -50,9 +50,9 @@ impl Synth {
 
     let lowp_len = lowp.len();
     *lowp_ix = (*lowp_ix + 1) % lowp_len;
-    lowp[*lowp_ix] = s.audio_bus[1];
+    lowp[*lowp_ix] = s.audio_bus[BUS_DRY];
     let out: f32 = lowp.iter().sum::<f32>() / (lowp_len as f32);
 
-    s.audio_bus[0] = out;
+    s.audio_bus[BUS_OUT] = out;
   }
 }

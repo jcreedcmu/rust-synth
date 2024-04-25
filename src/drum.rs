@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::consts::BUS_DRY;
 use crate::envelope::{Adsr, EnvPos, EnvState};
 use crate::synth::TABLE_SIZE;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
@@ -13,6 +14,7 @@ const drum_adsr: Adsr = Adsr {
 
 #[derive(Clone, Debug)]
 pub struct DrumSynthState {
+  dst: usize,
   t_s: f32,
   freq_hz: f32,
   phase: f32,
@@ -23,6 +25,7 @@ pub struct DrumSynthState {
 impl DrumSynthState {
   pub fn new(freq_hz: f32, wavetable: Arc<Vec<f32>>) -> DrumSynthState {
     DrumSynthState {
+      dst: BUS_DRY,
       t_s: 0.0,
       phase: 0.0,
       freq_hz,
@@ -41,7 +44,7 @@ impl DrumSynthState {
 }
 
 impl Ugen for DrumSynthState {
-  fn run(self: &DrumSynthState) -> f32 {
+  fn run(&self, bus: &mut Vec<f32>) {
     let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
     let offset = table_phase.floor() as usize;
 
@@ -50,7 +53,7 @@ impl Ugen for DrumSynthState {
     // linear interp
     let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
 
-    0.15 * table_val * self.env_state.amp()
+    bus[self.dst] += 0.15 * table_val * self.env_state.amp();
   }
 
   // returns true if should continue note

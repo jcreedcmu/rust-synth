@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::consts::SAMPLE_RATE_hz;
+use crate::consts::{SAMPLE_RATE_hz, BUS_DRY};
 use crate::envelope::{Adsr, EnvPos, EnvState};
 use crate::ugen::Ugen;
 
@@ -13,6 +13,7 @@ const reasonable_adsr: Adsr = Adsr {
 
 #[derive(Clone, Debug)]
 pub struct ReasonableSynthState {
+  dst: usize,
   freq_hz: f32,
   phase: f32,
   env_state: EnvState,
@@ -22,6 +23,7 @@ pub struct ReasonableSynthState {
 impl ReasonableSynthState {
   pub fn new(freq_hz: f32, vel: f32, wavetable: Arc<Vec<f32>>) -> Self {
     ReasonableSynthState {
+      dst: BUS_DRY,
       phase: 0.0,
       freq_hz,
       env_state: EnvState {
@@ -39,7 +41,7 @@ impl ReasonableSynthState {
 }
 
 impl Ugen for ReasonableSynthState {
-  fn run(&self) -> f32 {
+  fn run(&self, bus: &mut Vec<f32>) {
     let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
     let offset = table_phase.floor() as usize;
 
@@ -49,7 +51,7 @@ impl Ugen for ReasonableSynthState {
     let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
 
     let scale = self.env_state.amp();
-    (scale as f32) * table_val
+    bus[self.dst] += (scale as f32) * table_val
   }
 
   // returns true if should continue note

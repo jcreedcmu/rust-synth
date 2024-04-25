@@ -20,12 +20,11 @@ impl LowpassState {
 }
 
 impl Ugen for LowpassState {
-  fn run(&self) -> f32 {
+  fn run(&self, bus: &mut Vec<f32>) {
     // let len = self.buffer.len();
     // *self.ix = (*self.ix + 1) % len;
     // lowp[*lowp_ix] = s.audio_bus[1];
     // let out: f32 = lowp.iter().sum::<f32>() / (len as f32);
-    0.
   }
 
   fn advance(&mut self, tick_s: f32) -> bool {
