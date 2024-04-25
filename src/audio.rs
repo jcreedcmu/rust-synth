@@ -1,6 +1,6 @@
 use crate::synth::Synth;
 use crate::util::Mostly;
-use crate::{Args, State, WrapState};
+use crate::{Args, State, StateGuard};
 use alsa::pcm::{Access, Format, HwParams, PCM};
 use alsa::{Direction, ValueOr};
 use dbus::blocking as dbus;
@@ -58,7 +58,7 @@ fn vi_to_u8(v: &[i16]) -> &[u8] {
 }
 
 impl AudioService {
-  pub fn new(args: &Args, state: &WrapState, mut synth: Synth) -> Mostly<AudioService> {
+  pub fn new(args: &Args, state: &StateGuard, mut synth: Synth) -> Mostly<AudioService> {
     let card = args.sound_card;
     let reservation = dbus_reserve(card);
     match reservation {

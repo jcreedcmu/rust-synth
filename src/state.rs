@@ -37,7 +37,7 @@ pub struct State {
   pub websocket: Option<tokio::sync::mpsc::Sender<SynthMessage>>,
 }
 
-pub type WrapState = Arc<Mutex<State>>;
+pub type StateGuard = Arc<Mutex<State>>;
 
 impl State {
   pub fn new() -> State {

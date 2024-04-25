@@ -17,7 +17,7 @@ mod webserver;
 use clap::Parser;
 use midi::{Message, MidiService};
 use reduce::add_ugen_state;
-use state::{State, WrapState};
+use state::{State, StateGuard};
 use webserver::{WebAction, WebMessage, WebOrSubMessage};
 
 use std::error::Error;
@@ -54,14 +54,14 @@ fn reduce_web_or_sub_message(m: &WebOrSubMessage, s: &mut State) {
   }
 }
 
-fn mk_web_thread(sg: Arc<Mutex<State>>) {
+fn mk_web_thread(sg: StateGuard) {
   webserver::start(move |msg| {
     let mut s: MutexGuard<State> = sg.lock().unwrap();
     reduce_web_or_sub_message(&msg, &mut s);
   });
 }
 
-fn mk_sequencer_thread(sg: Arc<Mutex<State>>) {
+fn mk_sequencer_thread(sg: StateGuard) {
   std::thread::spawn(move || {
     let mut toggle: bool = true;
     loop {
@@ -79,14 +79,14 @@ fn mk_sequencer_thread(sg: Arc<Mutex<State>>) {
   });
 }
 
-fn mk_midi_service(sg: Arc<Mutex<State>>) -> Result<MidiService, Box<dyn Error>> {
+fn mk_midi_service(sg: StateGuard) -> Result<MidiService, Box<dyn Error>> {
   midi::MidiService::new(0, move |msg: &Message| {
     let mut s: MutexGuard<State> = sg.lock().unwrap();
     reduce::midi_reducer(msg, &mut s);
   })
 }
 
-fn mk_stdin_thread(sg: Arc<Mutex<State>>) {
+fn mk_stdin_thread(sg: StateGuard) {
   std::thread::spawn(move || -> Result<(), Box<dyn Error + Send + Sync>> {
     loop {
       let mut input = String::new();
