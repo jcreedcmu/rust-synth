@@ -48,10 +48,22 @@ async fn ws_serve(
   state: &rocket::State<Sender<WebOrSubMessage>>,
 ) -> rocket_ws::Channel<'static> {
   let tx = state.inner().clone();
+  let (txs, mut rxs) = channel::<SynthMessage>(CHANNEL_CAPACITY);
+
+  state.send(WebOrSubMessage::SubMessage(txs)).await.unwrap();
 
   ws.channel(move |mut stream: DuplexStream| {
+    let (mut sink, mut src) = stream.split();
     Box::pin(async move {
-      while let Some(message) = stream.next().await {
+      // handle messages from synth to client
+      tokio::spawn(async move {
+        while let Some(message) = rxs.recv().await {
+          let json_str = serde_json::to_string(&message).unwrap();
+          sink.send(RocketWsMessage::Text(json_str)).await.unwrap();
+        }
+      });
+      while let Some(message) = src.next().await {
+        // handle message from client to synth
         match message {
           Err(e) => {
             println!("Getting next websocket message, got error {:?}", e);
