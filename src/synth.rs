@@ -12,7 +12,7 @@ pub struct Synth {
 
 impl Synth {
   pub fn new() -> Synth {
-    let lowp_len = 5;
+    let lowp_len = 8;
 
     Synth {
       lowp: vec![0.0; lowp_len],
@@ -51,8 +51,7 @@ impl Synth {
     let lowp_len = lowp.len();
     *lowp_ix = (*lowp_ix + 1) % lowp_len;
     lowp[*lowp_ix] = s.audio_bus[1];
-    let out: f32 = { lowp.iter().sum() };
-    let len: f32 = lowp_len as f32;
+    let out: f32 = lowp.iter().sum::<f32>() / (lowp_len as f32);
 
     s.audio_bus[0] = out;
   }
