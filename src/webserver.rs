@@ -42,7 +42,13 @@ fn world() -> &'static str {
 }
 
 #[get("/ws")]
-fn echo(ws: WebSocket) -> Stream!['static] {
+async fn echo(ws: WebSocket, state: &rocket::State<Sender<WebOrSubMessage>>) -> Stream!['static] {
+  state
+    .send(WebOrSubMessage::WebMessage(WebMessage {
+      message: WebAction::Drum,
+    }))
+    .await
+    .unwrap();
   ws.stream(|io| io)
 }
 
@@ -51,6 +57,7 @@ fn serve(tx: Sender<WebOrSubMessage>) -> Result<(), rocket::Error> {
     let _rocket = rocket::build()
       .mount("/", rocket::fs::FileServer::from("./public"))
       .mount("/", routes![world, echo])
+      .manage(tx)
       .launch()
       .await?;
     Ok(())
