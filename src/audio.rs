@@ -60,7 +60,11 @@ fn vi_to_u8(v: &[i16]) -> &[u8] {
 impl AudioService {
   pub fn new(args: &Args, data: &Data, mut synth: Synth) -> Mostly<AudioService> {
     let card = args.sound_card;
-    let _reservation = dbus_reserve(card)?;
+    let reservation = dbus_reserve(card);
+    match reservation {
+      Err(e) => println!("Warning: {:?}", e),
+      _ => (),
+    };
 
     fn do_profile(args: &Args, iters: usize) -> bool {
       match args.profile_interval {
