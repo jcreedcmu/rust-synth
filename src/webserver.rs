@@ -1,4 +1,5 @@
 use crate::midi;
+use rocket::{get, routes};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{Receiver, Sender};
 
@@ -32,8 +33,23 @@ struct WebsocketSession {
   ch: Channels,
 }
 
+#[get("/world")]
+fn world() -> &'static str {
+  "Hello, world!"
+}
+
+#[rocket::main]
+async fn serve() -> Result<(), rocket::Error> {
+  let _rocket = rocket::build().mount("/", routes![world]).launch().await?;
+
+  Ok(())
+}
+
 pub fn start<C>(k: C)
 where
   C: Fn(&WebOrSubMessage) + Send + 'static,
 {
+  std::thread::spawn(move || {
+    serve().unwrap();
+  });
 }

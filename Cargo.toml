@@ -14,6 +14,7 @@ clap = { version = "4.5.4", features = ["derive", "env"] }
 dbus = "0.9.7"
 midir = "0.9.1"
 rand = "0.8.5"
+rocket = "0.5.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.116"
 tokio = "1.37.0"
