@@ -1,5 +1,6 @@
 use crate::midi;
 use rocket::{get, routes};
+use rocket_ws::{Stream, WebSocket};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{Receiver, Sender};
 
@@ -38,9 +39,17 @@ fn world() -> &'static str {
   "Hello, world!"
 }
 
+#[get("/ws")]
+fn echo(ws: WebSocket) -> Stream!['static] {
+  ws.stream(|io| io)
+}
+
 #[rocket::main]
 async fn serve() -> Result<(), rocket::Error> {
-  let _rocket = rocket::build().mount("/", routes![world]).launch().await?;
+  let _rocket = rocket::build()
+    .mount("/", routes![world, echo])
+    .launch()
+    .await?;
 
   Ok(())
 }
