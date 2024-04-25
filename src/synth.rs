@@ -33,23 +33,27 @@ impl Synth {
     }
   }
 
-  pub fn synth_frame(self: &mut Synth, s: &mut State) -> f32 {
-    let mut samp = 0.0;
+  pub fn synth_frame(self: &mut Synth, s: &mut State) {
+    // clear the audio busses
+    for m in s.audio_bus.iter_mut() {
+      *m = 0.;
+    }
 
     for mut ugen in s.ugen_state.iter_mut() {
-      self.exec_maybe_ugen(&mut ugen, &mut samp);
+      self.exec_maybe_ugen(&mut ugen, &mut s.audio_bus[1]);
     }
     let Synth {
       ref mut lowp_ix,
       ref mut lowp,
       ..
     } = self;
+
     let lowp_len = lowp.len();
     *lowp_ix = (*lowp_ix + 1) % lowp_len;
-    lowp[*lowp_ix] = samp;
+    lowp[*lowp_ix] = s.audio_bus[1];
     let out: f32 = { lowp.iter().sum() };
     let len: f32 = lowp_len as f32;
 
-    out / len
+    s.audio_bus[0] = out;
   }
 }

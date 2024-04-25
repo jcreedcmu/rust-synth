@@ -1,7 +1,7 @@
 use std::slice::IterMut;
 use std::sync::{Arc, Mutex};
 
-use crate::consts::{BOTTOM_NOTE, NUM_KEYS};
+use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE, NUM_KEYS};
 use crate::drum::DrumSynthState;
 use crate::reasonable_synth::ReasonableSynthState;
 use crate::ugen::Ugen;
@@ -21,6 +21,9 @@ pub struct State {
 
   // This is NUM_KEYS long, one keystate for every physical key.
   key_state: Vec<KeyState>,
+
+  // audio bus
+  pub audio_bus: Vec<f32>,
 
   // This has a varying length as synthesis goes on. Every time we
   // need to allocate a ugen, we try to reuse existing `None`s, but
@@ -44,6 +47,7 @@ impl State {
     State {
       going: true,
       key_state: vec![KeyState::Off; NUM_KEYS],
+      audio_bus: vec![0.; AUDIO_BUS_LENGTH],
       ugen_state: vec![],
       pedal: false,
       write_to_file: true,
