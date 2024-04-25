@@ -5,10 +5,6 @@ authors = ["Jason Reed <jcreed@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-actix = "0.13.3"
-actix-files = "0.6.5"
-actix-web = "4.5.1"
-actix-web-actors = "4.3.0"
 alsa = "0.9.0"
 clap = { version = "4.5.4", features = ["derive", "env"] }
 dbus = "0.9.7"
