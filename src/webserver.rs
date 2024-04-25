@@ -47,6 +47,7 @@ fn echo(ws: WebSocket) -> Stream!['static] {
 #[rocket::main]
 async fn serve() -> Result<(), rocket::Error> {
   let _rocket = rocket::build()
+    .mount("/", rocket::fs::FileServer::from("./public"))
     .mount("/", routes![world, echo])
     .launch()
     .await?;
