@@ -1,6 +1,6 @@
 use crate::midi;
 use rocket::{get, routes};
-use rocket_ws::{Stream, WebSocket};
+use rocket_ws::{stream::DuplexStream, Stream, WebSocket};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
@@ -36,27 +36,36 @@ struct WebsocketSession {
   ch: Channels,
 }
 
-#[get("/world")]
-fn world() -> &'static str {
-  "Hello, world!"
-}
+use rocket::futures::{SinkExt, StreamExt};
 
 #[get("/ws")]
-async fn echo(ws: WebSocket, state: &rocket::State<Sender<WebOrSubMessage>>) -> Stream!['static] {
+async fn ws_serve(
+  ws: WebSocket,
+  state: &rocket::State<Sender<WebOrSubMessage>>,
+) -> rocket_ws::Channel<'static> {
   state
     .send(WebOrSubMessage::WebMessage(WebMessage {
       message: WebAction::Drum,
     }))
     .await
     .unwrap();
-  ws.stream(|io| io)
+
+  ws.channel(move |mut stream: DuplexStream| {
+    Box::pin(async move {
+      while let Some(message) = stream.next().await {
+        let _ = stream.send(message?).await;
+      }
+
+      Ok(())
+    })
+  })
 }
 
 fn serve(tx: Sender<WebOrSubMessage>) -> Result<(), rocket::Error> {
   ::rocket::async_main(async move {
     let _rocket = rocket::build()
       .mount("/", rocket::fs::FileServer::from("./public"))
-      .mount("/", routes![world, echo])
+      .mount("/", routes![ws_serve])
       .manage(tx)
       .launch()
       .await?;
