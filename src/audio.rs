@@ -61,9 +61,8 @@ impl AudioService {
   pub fn new(args: &Args, state: &StateGuard, mut synth: Synth) -> Mostly<AudioService> {
     let card = args.sound_card;
     let reservation = dbus_reserve(card);
-    match reservation {
-      Err(e) => println!("Warning: {:?}", e),
-      _ => (),
+    if let Err(e) = reservation {
+      println!("Warning: {:?}", e);
     };
 
     fn do_profile(args: &Args, iters: usize) -> bool {
