@@ -16,8 +16,10 @@ mod wavetables;
 mod webserver;
 
 use clap::Parser;
+use consts::{BUS_DRY, BUS_OUT};
+use lowpass::LowpassState;
 use midi::{Message, MidiService};
-use reduce::add_ugen_state;
+use reduce::{add_fixed_ugen_state, add_ugen_state};
 use state::{State, StateGuard};
 use webserver::{WebAction, WebMessage, WebOrSubMessage};
 
@@ -125,7 +127,15 @@ pub struct Args {
 
 fn run() -> Result<(), Box<dyn Error>> {
   let args = Args::parse();
-  let state = Arc::new(Mutex::new(State::new()));
+
+  let mut state = State::new();
+
+  add_fixed_ugen_state(
+    &mut state,
+    ugen::UgenState::Lowpass(LowpassState::new(BUS_DRY, BUS_OUT)),
+  );
+
+  let state = Arc::new(Mutex::new(state));
 
   let ms = mk_midi_service(state.clone())?;
   mk_sequencer_thread(state.clone());

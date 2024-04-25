@@ -30,6 +30,9 @@ pub struct State {
   // push a new one if necessary.
   pub ugen_state: UgensState,
 
+  // Effects go here
+  pub fixed_ugens: UgensState,
+
   // Is the sustain pedal on?
   pub pedal: bool,
 
@@ -49,6 +52,7 @@ impl State {
       key_state: vec![KeyState::Off; NUM_KEYS],
       audio_bus: vec![0.; AUDIO_BUS_LENGTH],
       ugen_state: vec![],
+      fixed_ugens: vec![],
       pedal: false,
       write_to_file: true,
       wavetables: Wavetables::new(),

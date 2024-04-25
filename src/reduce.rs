@@ -4,6 +4,10 @@ use crate::ugen::{Ugen, UgenState, UgensState};
 use crate::util;
 use crate::webserver::SynthMessage;
 
+pub fn add_fixed_ugen_state(s: &mut State, new: UgenState) -> usize {
+  add_ugen(&mut s.fixed_ugens, new)
+}
+
 pub fn add_ugen_state(s: &mut State, new: UgenState) -> usize {
   add_ugen(&mut s.ugen_state, new)
 }

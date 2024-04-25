@@ -1,23 +1,14 @@
-use crate::consts::{SAMPLE_RATE_hz, BUS_DRY, BUS_OUT};
+use crate::consts::SAMPLE_RATE_hz;
 use crate::state::State;
 use crate::ugen::{Ugen, UgenState};
 
 pub const TABLE_SIZE: usize = 4000;
 
-pub struct Synth {
-  // low pass state
-  lowp: Vec<f32>,
-  lowp_ix: usize,
-}
+pub struct Synth;
 
 impl Synth {
-  pub fn new() -> Synth {
-    let lowp_len = 8;
-
-    Synth {
-      lowp: vec![0.0; lowp_len],
-      lowp_ix: 0,
-    }
+  pub fn new() -> Self {
+    Synth
   }
 
   pub fn exec_maybe_ugen(self: &Synth, ougen: &mut Option<UgenState>, bus: &mut Vec<f32>) {
@@ -42,17 +33,9 @@ impl Synth {
     for mut ugen in s.ugen_state.iter_mut() {
       self.exec_maybe_ugen(&mut ugen, &mut s.audio_bus);
     }
-    let Synth {
-      ref mut lowp_ix,
-      ref mut lowp,
-      ..
-    } = self;
 
-    let lowp_len = lowp.len();
-    *lowp_ix = (*lowp_ix + 1) % lowp_len;
-    lowp[*lowp_ix] = s.audio_bus[BUS_DRY];
-    let out: f32 = lowp.iter().sum::<f32>() / (lowp_len as f32);
-
-    s.audio_bus[BUS_OUT] = out;
+    for mut ugen in s.fixed_ugens.iter_mut() {
+      self.exec_maybe_ugen(&mut ugen, &mut s.audio_bus);
+    }
   }
 }
