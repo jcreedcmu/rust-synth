@@ -37,10 +37,7 @@ pub struct State {
   pub websocket: Option<tokio::sync::mpsc::Sender<SynthMessage>>,
 }
 
-// XXX I don't need this wrapper, do I?
-pub struct Data {
-  pub state: Arc<Mutex<State>>,
-}
+pub type WrapState = Arc<Mutex<State>>;
 
 impl State {
   pub fn new() -> State {

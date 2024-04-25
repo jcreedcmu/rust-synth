@@ -1,6 +1,6 @@
 use crate::synth::Synth;
 use crate::util::Mostly;
-use crate::{Args, Data, State};
+use crate::{Args, State, WrapState};
 use alsa::pcm::{Access, Format, HwParams, PCM};
 use alsa::{Direction, ValueOr};
 use dbus::blocking as dbus;
@@ -58,7 +58,7 @@ fn vi_to_u8(v: &[i16]) -> &[u8] {
 }
 
 impl AudioService {
-  pub fn new(args: &Args, data: &Data, mut synth: Synth) -> Mostly<AudioService> {
+  pub fn new(args: &Args, state: &WrapState, mut synth: Synth) -> Mostly<AudioService> {
     let card = args.sound_card;
     let reservation = dbus_reserve(card);
     match reservation {
@@ -73,7 +73,7 @@ impl AudioService {
       }
     }
 
-    let sg = data.state.clone();
+    let sg = state.clone();
 
     let mut file = File::create("/tmp/a.sw").unwrap();
     let (send, recv) = channel::<Vec<i16>>();

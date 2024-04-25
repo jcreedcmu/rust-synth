@@ -17,7 +17,7 @@ mod webserver;
 use clap::Parser;
 use midi::{Message, MidiService};
 use reduce::add_ugen_state;
-use state::{Data, State};
+use state::{State, WrapState};
 use webserver::{WebAction, WebMessage, WebOrSubMessage};
 
 use std::error::Error;
@@ -131,6 +131,6 @@ fn run() -> Result<(), Box<dyn Error>> {
   mk_stdin_thread(state.clone());
   mk_web_thread(state.clone());
 
-  let ads = audio::AudioService::new(&args, &Data { state }, synth::Synth::new())?;
+  let ads = audio::AudioService::new(&args, &state, synth::Synth::new())?;
   Ok(())
 }
