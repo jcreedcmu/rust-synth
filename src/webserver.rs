@@ -2,7 +2,9 @@ use crate::midi;
 use rocket::{get, routes};
 use rocket_ws::{Stream, WebSocket};
 use serde::{Deserialize, Serialize};
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::mpsc::{channel, Receiver, Sender};
+
+const CHANNEL_CAPACITY: usize = 100;
 
 #[derive(Deserialize, Debug)]
 pub enum WebAction {
@@ -44,22 +46,29 @@ fn echo(ws: WebSocket) -> Stream!['static] {
   ws.stream(|io| io)
 }
 
-#[rocket::main]
-async fn serve() -> Result<(), rocket::Error> {
-  let _rocket = rocket::build()
-    .mount("/", rocket::fs::FileServer::from("./public"))
-    .mount("/", routes![world, echo])
-    .launch()
-    .await?;
-
-  Ok(())
+fn serve(tx: Sender<WebOrSubMessage>) -> Result<(), rocket::Error> {
+  ::rocket::async_main(async move {
+    let _rocket = rocket::build()
+      .mount("/", rocket::fs::FileServer::from("./public"))
+      .mount("/", routes![world, echo])
+      .launch()
+      .await?;
+    Ok(())
+  })
 }
 
 pub fn start<C>(k: C)
 where
   C: Fn(&WebOrSubMessage) + Send + 'static,
 {
+  let (tx, mut rx) = channel::<WebOrSubMessage>(CHANNEL_CAPACITY);
   std::thread::spawn(move || {
-    serve().unwrap();
+    serve(tx).unwrap();
+  });
+  std::thread::spawn(move || loop {
+    match rx.blocking_recv() {
+      None => break,
+      Some(msg) => k(&msg),
+    }
   });
 }
