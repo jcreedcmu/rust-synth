@@ -1,6 +1,6 @@
 use crate::consts::SAMPLE_RATE_hz;
 use crate::state::State;
-use crate::ugen::Ugen;
+use crate::ugen::{Ugen, UgenState};
 
 pub const TABLE_SIZE: usize = 4000;
 
@@ -20,7 +20,7 @@ impl Synth {
     }
   }
 
-  pub fn exec_maybe_ugen(self: &Synth, ougen: &mut Option<Box<dyn Ugen>>, samp: &mut f32) {
+  pub fn exec_maybe_ugen(self: &Synth, ougen: &mut Option<UgenState>, samp: &mut f32) {
     let tick_s = 1.0 / SAMPLE_RATE_hz;
     match *ougen {
       None => (),

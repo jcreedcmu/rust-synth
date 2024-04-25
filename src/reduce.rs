@@ -1,19 +1,19 @@
 use crate::midi::Message;
 use crate::state::{KeyState, State};
-use crate::ugen::Ugen;
+use crate::ugen::{Ugen, UgenState, UgensState};
 use crate::util;
 use crate::webserver::SynthMessage;
 
-pub fn add_ugen_state(s: &mut State, new: impl Ugen + 'static) -> usize {
+pub fn add_ugen_state(s: &mut State, new: UgenState) -> usize {
   add_ugen(&mut s.ugen_state, new)
 }
 
-fn add_ugen(ns: &mut Vec<Option<Box<dyn Ugen>>>, new: impl Ugen + 'static) -> usize {
+fn add_ugen(ns: &mut UgensState, new: UgenState) -> usize {
   let first_free_index = ns.iter().position(|x| match x {
     None => true,
     _ => false,
   });
-  let ougen: Option<Box<dyn Ugen>> = Some(Box::new(new));
+  let ougen: Option<UgenState> = Some(new);
   match first_free_index {
     None => {
       ns.push(ougen);
@@ -26,7 +26,7 @@ fn add_ugen(ns: &mut Vec<Option<Box<dyn Ugen>>>, new: impl Ugen + 'static) -> us
   }
 }
 
-fn release_maybe_ugen(ougen: &mut Option<Box<dyn Ugen>>) {
+fn release_maybe_ugen(ougen: &mut Option<UgenState>) {
   match ougen {
     None => (),
     Some(ugen) => ugen.release(),

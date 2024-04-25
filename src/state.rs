@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE, NUM_KEYS};
 use crate::drum::DrumSynthState;
 use crate::reasonable_synth::ReasonableSynthState;
-use crate::ugen::Ugen;
+use crate::ugen::{UgenState, UgensState};
 use crate::wavetables::Wavetables;
 use crate::webserver::SynthMessage;
 
@@ -28,7 +28,7 @@ pub struct State {
   // This has a varying length as synthesis goes on. Every time we
   // need to allocate a ugen, we try to reuse existing `None`s, but
   // push a new one if necessary.
-  pub ugen_state: Vec<Option<Box<dyn Ugen>>>,
+  pub ugen_state: UgensState,
 
   // Is the sustain pedal on?
   pub pedal: bool,
@@ -64,11 +64,18 @@ impl State {
     self.key_state.iter_mut()
   }
 
-  pub fn new_reasonable(&self, freq_hz: f32, vel: f32) -> ReasonableSynthState {
-    ReasonableSynthState::new(freq_hz, vel, self.wavetables.saw_wavetable.clone())
+  pub fn new_reasonable(&self, freq_hz: f32, vel: f32) -> UgenState {
+    UgenState::ReasonableSynth(ReasonableSynthState::new(
+      freq_hz,
+      vel,
+      self.wavetables.saw_wavetable.clone(),
+    ))
   }
 
-  pub fn new_drum(&self, freq_hz: f32) -> DrumSynthState {
-    DrumSynthState::new(freq_hz, self.wavetables.noise_wavetable.clone())
+  pub fn new_drum(&self, freq_hz: f32) -> UgenState {
+    UgenState::DrumSynth(DrumSynthState::new(
+      freq_hz,
+      self.wavetables.noise_wavetable.clone(),
+    ))
   }
 }
