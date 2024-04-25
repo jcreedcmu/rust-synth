@@ -1,6 +1,6 @@
 use crate::midi;
 use rocket::{get, routes};
-use rocket_ws::{stream::DuplexStream, Stream, WebSocket};
+use rocket_ws::{stream::DuplexStream, Message as RocketWsMessage, WebSocket};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
@@ -38,22 +38,37 @@ struct WebsocketSession {
 
 use rocket::futures::{SinkExt, StreamExt};
 
+fn parse(text: &String) -> Result<WebMessage, Box<dyn std::error::Error + Sync + Send>> {
+  Ok(serde_json::from_str::<WebMessage>(text.as_str())?)
+}
+
 #[get("/ws")]
 async fn ws_serve(
   ws: WebSocket,
   state: &rocket::State<Sender<WebOrSubMessage>>,
 ) -> rocket_ws::Channel<'static> {
-  state
-    .send(WebOrSubMessage::WebMessage(WebMessage {
-      message: WebAction::Drum,
-    }))
-    .await
-    .unwrap();
+  let tx = state.inner().clone();
 
   ws.channel(move |mut stream: DuplexStream| {
     Box::pin(async move {
       while let Some(message) = stream.next().await {
-        let _ = stream.send(message?).await;
+        match message {
+          Err(e) => {
+            println!("Getting next websocket message, got error {:?}", e);
+          },
+          Ok(m) => {
+            if let RocketWsMessage::Text(t) = &m {
+              match parse(t) {
+                Err(e) => {
+                  println!("Parsing msg {}, got JSON parse error {:?}", t, e);
+                },
+                Ok(m) => {
+                  tx.send(WebOrSubMessage::WebMessage(m)).await.unwrap();
+                },
+              }
+            }
+          },
+        }
       }
 
       Ok(())
