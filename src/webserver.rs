@@ -1,8 +1,9 @@
 use crate::midi;
+use rocket::futures::{SinkExt, StreamExt};
 use rocket::{get, routes};
 use rocket_ws::{stream::DuplexStream, Message as RocketWsMessage, WebSocket};
 use serde::{Deserialize, Serialize};
-use tokio::sync::mpsc::{channel, Receiver, Sender};
+use tokio::sync::mpsc::{channel, Sender};
 
 const CHANNEL_CAPACITY: usize = 100;
 
@@ -12,34 +13,28 @@ pub enum WebAction {
   Drum,
 }
 
+// Messages sent from the web client to the synth
+
 #[derive(Deserialize, Debug)]
 pub struct WebMessage {
   pub message: WebAction,
 }
 
-#[derive(Serialize, Debug)]
-pub enum SynthMessage {
-  Ping(midi::Message),
-}
+// Messages to the synth, either
+// - from the web client, or
+// - a converse-direction message subscription request, sent once when
+//   we're setting up the websocket connection
 
 pub enum WebOrSubMessage {
   WebMessage(WebMessage),
   SubMessage(Sender<SynthMessage>),
 }
 
-struct Channels {
-  tx: Sender<WebOrSubMessage>,
-  rx: Receiver<SynthMessage>,
-}
+// Messages sent from the synthe to the web client
 
-struct WebsocketSession {
-  ch: Channels,
-}
-
-use rocket::futures::{SinkExt, StreamExt};
-
-fn parse(text: &String) -> Result<WebMessage, Box<dyn std::error::Error + Sync + Send>> {
-  Ok(serde_json::from_str::<WebMessage>(text.as_str())?)
+#[derive(Serialize, Debug)]
+pub enum SynthMessage {
+  Ping(midi::Message),
 }
 
 #[get("/ws")]
@@ -47,35 +42,41 @@ async fn ws_serve(
   ws: WebSocket,
   state: &rocket::State<Sender<WebOrSubMessage>>,
 ) -> rocket_ws::Channel<'static> {
-  let tx = state.inner().clone();
-  let (txs, mut rxs) = channel::<SynthMessage>(CHANNEL_CAPACITY);
+  let web_tx = state.inner().clone();
+  let (synth_tx, mut synth_rx) = channel::<SynthMessage>(CHANNEL_CAPACITY);
 
-  state.send(WebOrSubMessage::SubMessage(txs)).await.unwrap();
+  // Send a "subscription request", i.e. ask the synth to send us messages
+  // instead of any clients that might have come before us.
+  web_tx
+    .send(WebOrSubMessage::SubMessage(synth_tx))
+    .await
+    .unwrap();
 
   ws.channel(move |mut stream: DuplexStream| {
     let (mut sink, mut src) = stream.split();
     Box::pin(async move {
-      // handle messages from synth to client
       tokio::spawn(async move {
-        while let Some(message) = rxs.recv().await {
+        // handle messages from synth to client
+        while let Some(message) = synth_rx.recv().await {
           let json_str = serde_json::to_string(&message).unwrap();
           sink.send(RocketWsMessage::Text(json_str)).await.unwrap();
         }
       });
+
+      // handle messages from client to synth
       while let Some(message) = src.next().await {
-        // handle message from client to synth
         match message {
           Err(e) => {
             println!("Getting next websocket message, got error {:?}", e);
           },
           Ok(m) => {
             if let RocketWsMessage::Text(t) = &m {
-              match parse(t) {
+              match serde_json::from_str::<WebMessage>(t.as_str()) {
                 Err(e) => {
                   println!("Parsing msg {}, got JSON parse error {:?}", t, e);
                 },
                 Ok(m) => {
-                  tx.send(WebOrSubMessage::WebMessage(m)).await.unwrap();
+                  web_tx.send(WebOrSubMessage::WebMessage(m)).await.unwrap();
                 },
               }
             }
@@ -104,12 +105,12 @@ pub fn start<C>(k: C)
 where
   C: Fn(&WebOrSubMessage) + Send + 'static,
 {
-  let (tx, mut rx) = channel::<WebOrSubMessage>(CHANNEL_CAPACITY);
+  let (web_tx, mut web_rx) = channel::<WebOrSubMessage>(CHANNEL_CAPACITY);
   std::thread::spawn(move || {
-    serve(tx).unwrap();
+    serve(web_tx).unwrap();
   });
   std::thread::spawn(move || loop {
-    match rx.blocking_recv() {
+    match web_rx.blocking_recv() {
       None => break,
       Some(msg) => k(&msg),
     }

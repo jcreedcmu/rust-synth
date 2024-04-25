@@ -5,7 +5,7 @@ use crate::envelope::{Adsr, EnvPos, EnvState};
 use crate::ugen::Ugen;
 
 const reasonable_adsr: Adsr = Adsr {
-  attack_s: 0.005,
+  attack_s: 0.001,
   decay_s: 0.005,
   sustain: 0.3,
   release_s: 0.05,
