@@ -1,5 +1,5 @@
 use crate::consts::SAMPLE_RATE_hz;
-use crate::state::{AudioBusses, State};
+use crate::state::{AudioBusses, ControlBlocks, State};
 use crate::ugen::{Ugen, UgenState};
 
 pub const TABLE_SIZE: usize = 4000;
@@ -11,12 +11,17 @@ impl Synth {
     Synth
   }
 
-  pub fn exec_maybe_ugen(self: &Synth, ougen: &mut Option<UgenState>, bus: &mut AudioBusses) {
+  pub fn exec_maybe_ugen(
+    self: &Synth,
+    ougen: &mut Option<UgenState>,
+    bus: &mut AudioBusses,
+    ctl: &ControlBlocks,
+  ) {
     let tick_s = 1.0 / SAMPLE_RATE_hz;
     match *ougen {
       None => (),
       Some(ref mut ugen) => {
-        if !ugen.run(bus, tick_s) {
+        if !ugen.run(bus, tick_s, ctl) {
           *ougen = None;
         };
       },
@@ -32,11 +37,11 @@ impl Synth {
     }
 
     for mut ugen in s.ugen_state.iter_mut() {
-      self.exec_maybe_ugen(&mut ugen, &mut s.audio_bus);
+      self.exec_maybe_ugen(&mut ugen, &mut s.audio_bus, &s.control_blocks);
     }
 
     for mut ugen in s.fixed_ugens.iter_mut() {
-      self.exec_maybe_ugen(&mut ugen, &mut s.audio_bus);
+      self.exec_maybe_ugen(&mut ugen, &mut s.audio_bus, &s.control_blocks);
     }
   }
 }

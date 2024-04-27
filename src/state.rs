@@ -21,6 +21,8 @@ pub enum ControlBlock {
   Drum(DrumControlBlock),
 }
 
+pub type ControlBlocks = Vec<ControlBlock>;
+
 /// Outer vector is list of different busses. Inner vectors each
 /// contain one monophonic buffer's worth of audio on
 /// each bus.
@@ -52,7 +54,7 @@ pub struct State {
 
   pub write_to_file: bool,
 
-  pub control_blocks: Vec<ControlBlock>,
+  pub control_blocks: ControlBlocks,
   pub wavetables: Wavetables,
 
   pub websocket: Option<tokio::sync::mpsc::Sender<SynthMessage>>,

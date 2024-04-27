@@ -1,12 +1,10 @@
 use crate::drum::DrumSynthState;
 use crate::lowpass::LowpassState;
 use crate::reasonable_synth::ReasonableSynthState;
-use crate::state::AudioBusses;
+use crate::state::{AudioBusses, ControlBlocks};
 
 pub trait Ugen: std::fmt::Debug + Sync + Send {
-  type ControlBlock;
-
-  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32) -> bool;
+  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool;
   fn release(&mut self);
   fn restrike(&mut self, vel: f32);
 }
@@ -20,13 +18,11 @@ pub enum UgenState {
 
 // some boilerplate to wire things up
 impl Ugen for UgenState {
-  type ControlBlock = ();
-
-  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32) -> bool {
+  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool {
     match self {
-      UgenState::DrumSynth(s) => s.run(bus, tick_s),
-      UgenState::ReasonableSynth(s) => s.run(bus, tick_s),
-      UgenState::Lowpass(s) => s.run(bus, tick_s),
+      UgenState::DrumSynth(s) => s.run(bus, tick_s, ctl),
+      UgenState::ReasonableSynth(s) => s.run(bus, tick_s, ctl),
+      UgenState::Lowpass(s) => s.run(bus, tick_s, ctl),
     }
   }
 
