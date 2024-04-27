@@ -14,6 +14,8 @@
         alsa-plugins
         alsa-utils
         dbus
+        sox
+        vorbis-tools
       ];
       shellHook = asoundShellHook;
 }
