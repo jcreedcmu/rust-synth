@@ -82,7 +82,6 @@ async fn ws_serve(
                   println!("Parsing msg {}, got JSON parse error {:?}", t, e);
                 },
                 Ok(m) => {
-                  println!("Got msg {}", t);
                   web_tx.send(WebOrSubMessage::WebMessage(m)).await.unwrap();
                 },
               }

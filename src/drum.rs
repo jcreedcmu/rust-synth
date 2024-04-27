@@ -19,16 +19,18 @@ pub struct DrumSynthState {
   freq_hz: f32,
   freq2_hz: f32,
   phase: f32,
+  vol: f32,
   env_state: EnvState,
   wavetable: Arc<Vec<f32>>,
 }
 
 impl DrumSynthState {
-  pub fn new(freq_hz: f32, freq2_hz: f32, wavetable: Arc<Vec<f32>>) -> DrumSynthState {
+  pub fn new(freq_hz: f32, freq2_hz: f32, vol: f32, wavetable: Arc<Vec<f32>>) -> DrumSynthState {
     DrumSynthState {
       dst: BUS_DRY,
       t_s: 0.0,
       phase: 0.0,
+      vol,
       freq_hz,
       freq2_hz,
       env_state: EnvState {
@@ -55,7 +57,7 @@ impl Ugen for DrumSynthState {
     // linear interp
     let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
 
-    bus[self.dst] += 0.15 * table_val * self.env_state.amp();
+    bus[self.dst] += 0.15 * table_val * self.env_state.amp() * self.vol;
   }
 
   // returns true if should continue note

@@ -44,7 +44,7 @@ fn reduce_web_message(m: &WebMessage, s: &mut State) {
       s.going = false;
     },
     WebAction::SetVolume { vol } => {
-      () // XXX do nothing for now
+      s.drum_vol = (vol as f32) / 100.0;
     },
   }
 }

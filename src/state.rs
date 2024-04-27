@@ -33,6 +33,9 @@ pub struct State {
   // Effects go here
   pub fixed_ugens: UgensState,
 
+  // drum volume
+  pub drum_vol: f32,
+
   // Is the sustain pedal on?
   pub pedal: bool,
 
@@ -53,6 +56,7 @@ impl State {
       audio_bus: vec![0.; AUDIO_BUS_LENGTH],
       ugen_state: vec![],
       fixed_ugens: vec![],
+      drum_vol: 1.,
       pedal: false,
       write_to_file: true,
       wavetables: Wavetables::new(),
@@ -80,6 +84,7 @@ impl State {
     UgenState::DrumSynth(DrumSynthState::new(
       freq_hz,
       freq2_hz,
+      self.drum_vol,
       self.wavetables.noise_wavetable.clone(),
     ))
   }

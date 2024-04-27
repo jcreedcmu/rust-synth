@@ -12,9 +12,9 @@ export function init(props: AppProps) {
 
 function App(props: AppProps): JSX.Element {
   const onInput = (e: Event) => {
-    console.log((e.target as HTMLInputElement).value);
+    props.send({ message: { t: 'setVolume', vol: parseInt((e.target as HTMLInputElement).value) } });
   };
   return <div>
-    <input type="range" min="1" max="100" value="50" onInput={onInput} />
+    <input type="range" min="0" max="100" value="100" onInput={onInput} />
   </div>;
 }
