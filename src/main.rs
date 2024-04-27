@@ -37,7 +37,7 @@ fn main() {
 fn reduce_web_message(m: &WebMessage, s: &mut State) {
   match m.message {
     WebAction::Drum => {
-      let ugen = s.new_drum(1000.0);
+      let ugen = s.new_drum(1000.0, 2000.0);
       add_ugen_state(s, ugen);
     },
     WebAction::Quit => {
@@ -74,7 +74,10 @@ fn mk_sequencer_thread(sg: StateGuard) {
         if !s.going {
           break;
         }
-        let ugen = s.new_drum(if toggle { 660.0 } else { 1760.0 });
+        let ugen = s.new_drum(
+          if toggle { 660.0 } else { 1760.0 },
+          if toggle { 10.0 } else { 1760.0 },
+        );
         add_ugen_state(&mut s, ugen);
         toggle = !toggle;
       }
@@ -103,7 +106,7 @@ fn mk_stdin_thread(sg: StateGuard) {
         },
         "k\n" => {
           let mut s: MutexGuard<State> = sg.lock().unwrap();
-          let ugen = s.new_drum(440.0);
+          let ugen = s.new_drum(440.0, 440.0);
           add_ugen_state(&mut s, ugen);
         },
         _ => println!("Didn't recognize {input}."),

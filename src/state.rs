@@ -76,9 +76,10 @@ impl State {
     ))
   }
 
-  pub fn new_drum(&self, freq_hz: f32) -> UgenState {
+  pub fn new_drum(&self, freq_hz: f32, freq2_hz: f32) -> UgenState {
     UgenState::DrumSynth(DrumSynthState::new(
       freq_hz,
+      freq2_hz,
       self.wavetables.noise_wavetable.clone(),
     ))
   }

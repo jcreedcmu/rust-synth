@@ -37,7 +37,18 @@ pub struct EnvState {
 }
 
 impl EnvState {
-  // Advance ugen state forward by tick_s
+  pub fn attack_len_s(&self) -> f32 {
+    self.adsr.attack_s + self.adsr.decay_s
+  }
+
+  pub fn time_s(&self) -> f32 {
+    match self.pos {
+      EnvPos::On { t_s, .. } => t_s,
+      EnvPos::Release { .. } => self.attack_len_s(),
+    }
+  }
+
+  // advance ugen state forward by tick_s
   // returns true if we should keep going, false if we should terminate the ugen
   pub fn advance(&mut self, tick_s: f32) -> bool {
     match self.pos {
