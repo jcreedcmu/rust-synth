@@ -8,5 +8,10 @@ export function init(props: AppProps) {
 }
 
 function App(props: AppProps): JSX.Element {
-  return <span>hello</span>;
+  const onInput = (e: Event) => {
+    console.log((e.target as HTMLInputElement).value);
+  };
+  return <div>
+    <input type="range" min="1" max="100" value="50" onInput={onInput} />
+  </div>;
 }
