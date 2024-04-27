@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::consts::{SAMPLE_RATE_hz, BUS_DRY};
 use crate::envelope::{Adsr, EnvPos, EnvState};
-use crate::ugen::Ugen;
+use crate::ugen::{AudioBusses, Ugen};
 
 const reasonable_adsr: Adsr = Adsr {
   attack_s: 0.001,
@@ -46,7 +46,7 @@ impl ReasonableSynthState {
 impl Ugen for ReasonableSynthState {
   type ControlBlock = ReasonableControlBlock;
 
-  fn run(&self, bus: &mut Vec<f32>) {
+  fn run(&self, bus: &mut AudioBusses) {
     let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
     let offset = table_phase.floor() as usize;
 
@@ -60,7 +60,7 @@ impl Ugen for ReasonableSynthState {
   }
 
   // returns true if should continue note
-  fn advance(&mut self, tick_s: f32, bus: &Vec<f32>) -> bool {
+  fn advance(&mut self, tick_s: f32, bus: &AudioBusses) -> bool {
     self.phase += self.freq_hz / SAMPLE_RATE_hz;
     if self.phase > 1. {
       self.phase -= 1.;

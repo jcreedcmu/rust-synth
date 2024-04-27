@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::consts::BUS_DRY;
 use crate::envelope::{Adsr, EnvPos, EnvState};
 use crate::synth::TABLE_SIZE;
+use crate::ugen::AudioBusses;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
 const drum_adsr: Adsr = Adsr {
@@ -53,7 +54,7 @@ impl DrumSynthState {
 impl Ugen for DrumSynthState {
   type ControlBlock = DrumControlBlock;
 
-  fn run(&self, bus: &mut Vec<f32>) {
+  fn run(&self, bus: &mut AudioBusses) {
     let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
     let offset = table_phase.floor() as usize;
 
@@ -66,7 +67,7 @@ impl Ugen for DrumSynthState {
   }
 
   // returns true if should continue note
-  fn advance(&mut self, tick_s: f32, bus: &Vec<f32>) -> bool {
+  fn advance(&mut self, tick_s: f32, bus: &AudioBusses) -> bool {
     let a = self.env_state.time_s() / self.env_state.attack_len_s();
     let eff_freq_hz = a * self.freq2_hz + (1.0 - a) * self.freq_hz;
     let drum_freq_hz: f32 = eff_freq_hz / (TABLE_SIZE as f32);
