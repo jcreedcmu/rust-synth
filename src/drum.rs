@@ -12,6 +12,9 @@ const drum_adsr: Adsr = Adsr {
   release_s: 0.25,
 };
 
+#[derive(Debug)]
+pub struct DrumControlBlock {}
+
 #[derive(Clone, Debug)]
 pub struct DrumSynthState {
   dst: usize,

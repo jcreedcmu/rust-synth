@@ -2,8 +2,8 @@ use std::slice::IterMut;
 use std::sync::{Arc, Mutex};
 
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE, NUM_KEYS};
-use crate::drum::DrumSynthState;
-use crate::reasonable_synth::ReasonableSynthState;
+use crate::drum::{DrumControlBlock, DrumSynthState};
+use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
 use crate::ugen::{UgenState, UgensState};
 use crate::wavetables::Wavetables;
 use crate::webserver::SynthMessage;
@@ -13,6 +13,12 @@ pub enum KeyState {
   Off,
   On { ugen_ix: usize },   // index into ugen_state vector
   Held { ugen_ix: usize }, // only on because pedal held
+}
+
+#[derive(Debug)]
+pub enum ControlBlock {
+  Reasonable(ReasonableControlBlock),
+  Drum(DrumControlBlock),
 }
 
 #[derive(Debug)]
@@ -41,6 +47,7 @@ pub struct State {
 
   pub write_to_file: bool,
 
+  pub control_blocks: Vec<ControlBlock>,
   pub wavetables: Wavetables,
 
   pub websocket: Option<tokio::sync::mpsc::Sender<SynthMessage>>,
@@ -56,6 +63,7 @@ impl State {
       audio_bus: vec![0.; AUDIO_BUS_LENGTH],
       ugen_state: vec![],
       fixed_ugens: vec![],
+      control_blocks: vec![],
       drum_vol: 1.,
       pedal: false,
       write_to_file: true,

@@ -11,6 +11,9 @@ const reasonable_adsr: Adsr = Adsr {
   release_s: 0.05,
 };
 
+#[derive(Debug)]
+pub struct ReasonableControlBlock {}
+
 #[derive(Clone, Debug)]
 pub struct ReasonableSynthState {
   dst: usize,
