@@ -1,3 +1,12 @@
+type WebAction =
+  | 'Quit'
+  | 'Drum'
+  ;
+
+type SynthMessage = {
+  message: WebAction
+};
+
 function go() {
 
   const ws = new WebSocket('/ws/')
@@ -9,15 +18,15 @@ function go() {
     console.log(`message received`, message.data);
   }
 
-  const action = document.getElementById('action')!;
-  action.onmousedown = async () => {
-    ws.send(JSON.stringify({ message: "Drum" }));
+  function send(sm: SynthMessage) {
+    ws.send(JSON.stringify(sm));
   }
 
+  const action = document.getElementById('action')!;
+  action.onmousedown = () => { send({ message: 'Drum' }); };
+
   const quit = document.getElementById('quit')!;
-  quit.onmousedown = async () => {
-    ws.send(JSON.stringify({ message: "Quit" }));
-  }
+  quit.onmousedown = () => { send({ message: 'Quit' }); };
 
 }
 
