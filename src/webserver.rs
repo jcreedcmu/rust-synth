@@ -7,7 +7,7 @@ use tokio::sync::mpsc::{channel, Sender};
 
 const CHANNEL_CAPACITY: usize = 100;
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum WebAction {
   Quit,
   Drum,
@@ -15,7 +15,7 @@ pub enum WebAction {
 
 // Messages sent from the web client to the synth
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct WebMessage {
   pub message: WebAction,
 }
@@ -115,4 +115,18 @@ where
       Some(msg) => k(&msg),
     }
   });
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::webserver::{WebAction, WebMessage};
+  #[test]
+  fn web_message_serialization() {
+    let message = WebMessage {
+      message: WebAction::Quit,
+    };
+    let json_str = serde_json::to_string(&message).unwrap();
+
+    assert_eq!(json_str, r###"{"message":"Quit"}"###);
+  }
 }
