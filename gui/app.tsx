@@ -1,7 +1,10 @@
 import { render, JSX } from 'preact';
 import { useState } from 'preact/hooks';
+import { WebMessage } from './protocol';
 
-type AppProps = {};
+type AppProps = {
+  send: (msg: WebMessage) => void,
+};
 
 export function init(props: AppProps) {
   render(<App {...props} />, document.querySelector('.app') as any);

@@ -8,6 +8,8 @@ use tokio::sync::mpsc::{channel, Sender};
 const CHANNEL_CAPACITY: usize = 100;
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "t")]
+#[serde(rename_all = "lowercase")]
 pub enum WebAction {
   Quit,
   Drum,
@@ -16,6 +18,7 @@ pub enum WebAction {
 // Messages sent from the web client to the synth
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
 pub struct WebMessage {
   pub message: WebAction,
 }
@@ -76,6 +79,7 @@ async fn ws_serve(
                   println!("Parsing msg {}, got JSON parse error {:?}", t, e);
                 },
                 Ok(m) => {
+                  println!("Got msg {}", t);
                   web_tx.send(WebOrSubMessage::WebMessage(m)).await.unwrap();
                 },
               }
@@ -127,6 +131,6 @@ mod tests {
     };
     let json_str = serde_json::to_string(&message).unwrap();
 
-    assert_eq!(json_str, r###"{"message":"Quit"}"###);
+    assert_eq!(json_str, r###"{"message":{"t":"quit"}}"###);
   }
 }

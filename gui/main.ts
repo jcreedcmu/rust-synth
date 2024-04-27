@@ -1,13 +1,5 @@
 import { init } from "./app";
-
-type WebAction =
-  | 'Quit'
-  | 'Drum'
-  ;
-
-type SynthMessage = {
-  message: WebAction
-};
+import { WebMessage } from "./protocol";
 
 function go() {
 
@@ -20,17 +12,17 @@ function go() {
     console.log(`message received`, message.data);
   }
 
-  function send(sm: SynthMessage) {
+  function send(sm: WebMessage) {
     ws.send(JSON.stringify(sm));
   }
 
   const action = document.getElementById('action')!;
-  action.onmousedown = () => { send({ message: 'Drum' }); };
+  action.onmousedown = () => { send({ message: { t: 'drum' } }); };
 
   const quit = document.getElementById('quit')!;
-  quit.onmousedown = () => { send({ message: 'Quit' }); };
+  quit.onmousedown = () => { send({ message: { t: 'quit' } }); };
 
-  init({});
+  init({ send });
 }
 
 go();
