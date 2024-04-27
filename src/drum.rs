@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::consts::BUS_DRY;
 use crate::envelope::{Adsr, EnvPos, EnvState};
-use crate::state::{AudioBusses, ControlBlock, ControlBlocks};
+use crate::state::{AudioBusses, ControlBlock, ControlBlocks, DEFAULT_DRUM_CONTROL_BLOCK};
 use crate::synth::TABLE_SIZE;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
@@ -14,7 +14,9 @@ const drum_adsr: Adsr = Adsr {
 };
 
 #[derive(Debug)]
-pub struct DrumControlBlock {}
+pub struct DrumControlBlock {
+  pub vol: f32,
+}
 
 #[derive(Clone, Debug)]
 pub struct DrumSynthState {
@@ -23,19 +25,17 @@ pub struct DrumSynthState {
   freq_hz: f32,
   freq2_hz: f32,
   phase: f32,
-  vol: f32,
   env_state: EnvState,
   wavetable: Arc<Vec<f32>>,
   ci: usize,
 }
 
 impl DrumSynthState {
-  pub fn new(freq_hz: f32, freq2_hz: f32, vol: f32, wavetable: Arc<Vec<f32>>) -> DrumSynthState {
+  pub fn new(freq_hz: f32, freq2_hz: f32, wavetable: Arc<Vec<f32>>) -> DrumSynthState {
     DrumSynthState {
       dst: BUS_DRY,
       t_s: 0.0,
       phase: 0.0,
-      vol,
       freq_hz,
       freq2_hz,
       env_state: EnvState {
@@ -48,7 +48,7 @@ impl DrumSynthState {
         adsr: drum_adsr,
       },
       wavetable,
-      ci: 0,
+      ci: DEFAULT_DRUM_CONTROL_BLOCK,
     }
   }
 
@@ -62,7 +62,7 @@ impl DrumSynthState {
       // linear interp
       let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
 
-      *out += 0.15 * table_val * self.env_state.amp() * self.vol;
+      *out += 0.15 * table_val * self.env_state.amp() * ctl.vol;
 
       // advance
       let a = self.env_state.time_s() / self.env_state.attack_len_s();

@@ -46,9 +46,6 @@ pub struct State {
   // Effects go here
   pub fixed_ugens: UgensState,
 
-  // drum volume
-  pub drum_vol: f32,
-
   // Is the sustain pedal on?
   pub pedal: bool,
 
@@ -62,10 +59,12 @@ pub struct State {
 
 pub type StateGuard = Arc<Mutex<State>>;
 
+pub const DEFAULT_DRUM_CONTROL_BLOCK: usize = 0;
+
 impl State {
   pub fn new(buf_size: usize) -> State {
     let mut control_blocks: ControlBlocks = vec![];
-    control_blocks.push(ControlBlock::Drum(DrumControlBlock {}));
+    control_blocks.push(ControlBlock::Drum(DrumControlBlock { vol: 1. }));
     State {
       going: true,
       key_state: vec![KeyState::Off; NUM_KEYS],
@@ -73,7 +72,6 @@ impl State {
       ugen_state: vec![],
       fixed_ugens: vec![],
       control_blocks,
-      drum_vol: 1.,
       pedal: false,
       write_to_file: true,
       wavetables: Wavetables::new(),
@@ -101,7 +99,6 @@ impl State {
     UgenState::DrumSynth(DrumSynthState::new(
       freq_hz,
       freq2_hz,
-      self.drum_vol,
       self.wavetables.noise_wavetable.clone(),
     ))
   }
