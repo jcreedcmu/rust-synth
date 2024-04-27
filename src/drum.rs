@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use crate::consts::BUS_DRY;
 use crate::envelope::{Adsr, EnvPos, EnvState};
+use crate::state::AudioBusses;
 use crate::synth::TABLE_SIZE;
-use crate::ugen::AudioBusses;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
 const drum_adsr: Adsr = Adsr {
@@ -54,28 +54,31 @@ impl DrumSynthState {
 impl Ugen for DrumSynthState {
   type ControlBlock = DrumControlBlock;
 
-  fn run(&self, bus: &mut AudioBusses) {
-    let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
-    let offset = table_phase.floor() as usize;
+  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32) -> bool {
+    for out in bus[self.dst].iter_mut() {
+      let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
+      let offset = table_phase.floor() as usize;
 
-    let fpart: f32 = (table_phase as f32) - (offset as f32);
+      let fpart: f32 = (table_phase as f32) - (offset as f32);
 
-    // linear interp
-    let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
+      // linear interp
+      let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
 
-    bus[self.dst] += 0.15 * table_val * self.env_state.amp() * self.vol;
-  }
+      *out += 0.15 * table_val * self.env_state.amp() * self.vol;
 
-  // returns true if should continue note
-  fn advance(&mut self, tick_s: f32, bus: &AudioBusses) -> bool {
-    let a = self.env_state.time_s() / self.env_state.attack_len_s();
-    let eff_freq_hz = a * self.freq2_hz + (1.0 - a) * self.freq_hz;
-    let drum_freq_hz: f32 = eff_freq_hz / (TABLE_SIZE as f32);
-    self.phase += drum_freq_hz / SAMPLE_RATE_hz;
-    if self.phase > 1. {
-      self.phase -= 1.;
+      // advance
+      let a = self.env_state.time_s() / self.env_state.attack_len_s();
+      let eff_freq_hz = a * self.freq2_hz + (1.0 - a) * self.freq_hz;
+      let drum_freq_hz: f32 = eff_freq_hz / (TABLE_SIZE as f32);
+      self.phase += drum_freq_hz / SAMPLE_RATE_hz;
+      if self.phase > 1. {
+        self.phase -= 1.;
+      }
+      if !self.env_state.advance(tick_s) {
+        return false;
+      }
     }
-    self.env_state.advance(tick_s)
+    true
   }
 
   fn release(&mut self) {}

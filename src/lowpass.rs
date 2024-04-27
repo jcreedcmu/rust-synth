@@ -1,4 +1,4 @@
-use crate::ugen::{AudioBusses, Ugen};
+use crate::{state::AudioBusses, ugen::Ugen};
 
 #[derive(Clone, Debug)]
 pub struct LowpassState {
@@ -22,14 +22,15 @@ impl LowpassState {
 impl Ugen for LowpassState {
   type ControlBlock = ();
 
-  fn run(&self, bus: &mut AudioBusses) {
-    bus[self.dst] = self.buffer.iter().sum::<f32>() / (self.buffer.len() as f32);
-  }
-
-  fn advance(&mut self, tick_s: f32, bus: &AudioBusses) -> bool {
+  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32) -> bool {
     let len = self.buffer.len();
-    self.ix = (self.ix + 1) % len;
-    self.buffer[self.ix] = bus[self.src];
+    for bus_ix in 0..bus[0].len() {
+      bus[self.dst][bus_ix] = self.buffer.iter().sum::<f32>() / (self.buffer.len() as f32);
+
+      // advance
+      self.ix = (self.ix + 1) % len;
+      self.buffer[self.ix] = bus[self.src][bus_ix];
+    }
     true
   }
 

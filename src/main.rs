@@ -15,6 +15,7 @@ mod util;
 mod wavetables;
 mod webserver;
 
+use audio::{BUF_SIZE, CHANNELS};
 use clap::Parser;
 use consts::{BUS_DRY, BUS_OUT};
 use lowpass::LowpassState;
@@ -134,7 +135,9 @@ pub struct Args {
 fn run() -> Result<(), Box<dyn Error>> {
   let args = Args::parse();
 
-  let mut state = State::new();
+  let mono_buf_size = BUF_SIZE / (CHANNELS as usize);
+  let mut state = State::new(mono_buf_size);
+  println!("mono buf size: {}", state.audio_bus[0].len());
 
   add_fixed_ugen_state(
     &mut state,

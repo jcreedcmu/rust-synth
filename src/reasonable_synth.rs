@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use crate::consts::{SAMPLE_RATE_hz, BUS_DRY};
 use crate::envelope::{Adsr, EnvPos, EnvState};
-use crate::ugen::{AudioBusses, Ugen};
+use crate::state::AudioBusses;
+use crate::ugen::Ugen;
 
 const reasonable_adsr: Adsr = Adsr {
   attack_s: 0.001,
@@ -46,26 +47,29 @@ impl ReasonableSynthState {
 impl Ugen for ReasonableSynthState {
   type ControlBlock = ReasonableControlBlock;
 
-  fn run(&self, bus: &mut AudioBusses) {
-    let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
-    let offset = table_phase.floor() as usize;
+  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32) -> bool {
+    for out in bus[self.dst].iter_mut() {
+      let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
+      let offset = table_phase.floor() as usize;
 
-    let fpart: f32 = (table_phase as f32) - (offset as f32);
+      let fpart: f32 = (table_phase as f32) - (offset as f32);
 
-    // linear interp
-    let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
+      // linear interp
+      let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
 
-    let scale = self.env_state.amp();
-    bus[self.dst] += (scale as f32) * table_val
-  }
+      let scale = self.env_state.amp();
+      *out += (scale as f32) * table_val;
 
-  // returns true if should continue note
-  fn advance(&mut self, tick_s: f32, bus: &AudioBusses) -> bool {
-    self.phase += self.freq_hz / SAMPLE_RATE_hz;
-    if self.phase > 1. {
-      self.phase -= 1.;
+      // advance
+      self.phase += self.freq_hz / SAMPLE_RATE_hz;
+      if self.phase > 1. {
+        self.phase -= 1.;
+      }
+      if !self.env_state.advance(tick_s) {
+        return false;
+      }
     }
-    self.env_state.advance(tick_s)
+    true
   }
 
   fn release(&mut self) {

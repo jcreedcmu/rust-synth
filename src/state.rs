@@ -21,6 +21,11 @@ pub enum ControlBlock {
   Drum(DrumControlBlock),
 }
 
+/// Outer vector is list of different busses. Inner vectors each
+/// contain one monophonic buffer's worth of audio on
+/// each bus.
+pub type AudioBusses = Vec<Vec<f32>>;
+
 #[derive(Debug)]
 pub struct State {
   pub going: bool,
@@ -29,7 +34,7 @@ pub struct State {
   key_state: Vec<KeyState>,
 
   // audio bus
-  pub audio_bus: Vec<f32>,
+  pub audio_bus: AudioBusses,
 
   // This has a varying length as synthesis goes on. Every time we
   // need to allocate a ugen, we try to reuse existing `None`s, but
@@ -56,11 +61,11 @@ pub struct State {
 pub type StateGuard = Arc<Mutex<State>>;
 
 impl State {
-  pub fn new() -> State {
+  pub fn new(buf_size: usize) -> State {
     State {
       going: true,
       key_state: vec![KeyState::Off; NUM_KEYS],
-      audio_bus: vec![0.; AUDIO_BUS_LENGTH],
+      audio_bus: vec![vec![0.; buf_size]; AUDIO_BUS_LENGTH],
       ugen_state: vec![],
       fixed_ugens: vec![],
       control_blocks: vec![],

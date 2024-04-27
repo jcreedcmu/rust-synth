@@ -1,14 +1,12 @@
 use crate::drum::DrumSynthState;
 use crate::lowpass::LowpassState;
 use crate::reasonable_synth::ReasonableSynthState;
-
-pub type AudioBusses = Vec<f32>;
+use crate::state::AudioBusses;
 
 pub trait Ugen: std::fmt::Debug + Sync + Send {
   type ControlBlock;
 
-  fn run(&self, bus: &mut AudioBusses);
-  fn advance(&mut self, tick_s: f32, bus: &AudioBusses) -> bool;
+  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32) -> bool;
   fn release(&mut self);
   fn restrike(&mut self, vel: f32);
 }
@@ -24,19 +22,11 @@ pub enum UgenState {
 impl Ugen for UgenState {
   type ControlBlock = ();
 
-  fn run(&self, bus: &mut AudioBusses) {
+  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32) -> bool {
     match self {
-      UgenState::DrumSynth(s) => s.run(bus),
-      UgenState::ReasonableSynth(s) => s.run(bus),
-      UgenState::Lowpass(s) => s.run(bus),
-    }
-  }
-
-  fn advance(&mut self, tick_s: f32, bus: &AudioBusses) -> bool {
-    match self {
-      UgenState::DrumSynth(s) => s.advance(tick_s, bus),
-      UgenState::ReasonableSynth(s) => s.advance(tick_s, bus),
-      UgenState::Lowpass(s) => s.advance(tick_s, bus),
+      UgenState::DrumSynth(s) => s.run(bus, tick_s),
+      UgenState::ReasonableSynth(s) => s.run(bus, tick_s),
+      UgenState::Lowpass(s) => s.run(bus, tick_s),
     }
   }
 

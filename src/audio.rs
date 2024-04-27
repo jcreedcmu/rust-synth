@@ -1,3 +1,4 @@
+use crate::consts::{BUS_DRY, BUS_OUT};
 use crate::synth::Synth;
 use crate::util::Mostly;
 use crate::{Args, State, StateGuard};
@@ -13,8 +14,8 @@ use std::time::Instant;
 
 pub struct AudioService {}
 
-const CHANNELS: u32 = 2;
-const BUF_SIZE: usize = 64;
+pub const CHANNELS: u32 = 2;
+pub const BUF_SIZE: usize = 64;
 
 struct Reservation {
   conn: dbus::Connection,
@@ -128,14 +129,16 @@ impl AudioService {
           break;
         }
 
-        for ch in buf.chunks_mut(CHANNELS as usize) {
-          synth.synth_frame(&mut s);
+        synth.synth_buf(&mut s);
 
-          let samp_i16 = (s.audio_bus[0] * 32767.0) as i16;
+        for (ix, ch) in buf.chunks_mut(CHANNELS as usize).enumerate() {
+          let samp_f32 = &s.audio_bus[BUS_DRY][ix];
+          let samp_i16 = (samp_f32 * 32767.0) as i16;
 
           ch[0] = samp_i16;
           ch[1] = samp_i16;
         }
+
         if s.write_to_file {
           send.send(buf.to_vec()).unwrap();
         }
