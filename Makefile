@@ -5,4 +5,4 @@ run:
 	cargo run
 
 count:
-	wc -l src/*.rs
+	wc -l src/*.rs gui/*.tsx?

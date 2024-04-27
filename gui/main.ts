@@ -1,3 +1,5 @@
+import { init } from "./app";
+
 type WebAction =
   | 'Quit'
   | 'Drum'
@@ -28,6 +30,7 @@ function go() {
   const quit = document.getElementById('quit')!;
   quit.onmousedown = () => { send({ message: 'Quit' }); };
 
+  init({});
 }
 
 go();
