@@ -137,7 +137,6 @@ fn run() -> Result<(), Box<dyn Error>> {
 
   let mono_buf_size = BUF_SIZE / (CHANNELS as usize);
   let mut state = State::new(mono_buf_size);
-  println!("mono buf size: {}", state.audio_bus[0].len());
 
   add_fixed_ugen_state(
     &mut state,
