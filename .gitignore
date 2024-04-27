@@ -1,2 +1,5 @@
 /target
 **/*.rs.bk
+bundle.js
+bundle.js.map
+node_modules

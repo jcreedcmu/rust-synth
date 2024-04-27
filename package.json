@@ -1,0 +1,16 @@
+{
+  "name": "rust-synth",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Rust Synth",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "^0.20.2",
+    "typescript": "^5.4.5"
+  }
+}
