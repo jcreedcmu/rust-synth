@@ -51,7 +51,9 @@ fn ugen_ix_of_key_state(key_state: &KeyState) -> Option<usize> {
 pub fn midi_reducer(msg: &Message, s: &mut State) {
   match &s.websocket {
     None => (),
-    Some(ws) => ws.try_send(SynthMessage::Ping(msg.clone())).unwrap(),
+    Some(ws) => ws
+      .try_send(SynthMessage::Midi { msg: msg.clone() })
+      .unwrap(),
   }
   match msg {
     Message::NoteOn {

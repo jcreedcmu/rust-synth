@@ -11,6 +11,8 @@ pub struct MidiService {
 type Pitch = u8;
 
 #[derive(Debug, Serialize, Clone)]
+#[serde(tag = "t")]
+#[serde(rename_all = "camelCase")]
 pub enum Message {
   NoteOn {
     pitch: Pitch,

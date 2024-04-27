@@ -43,6 +43,9 @@ fn reduce_web_message(m: &WebMessage, s: &mut State) {
     WebAction::Quit => {
       s.going = false;
     },
+    WebAction::SetVolume { vol } => {
+      () // XXX do nothing for now
+    },
   }
 }
 

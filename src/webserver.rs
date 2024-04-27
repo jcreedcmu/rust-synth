@@ -9,16 +9,17 @@ const CHANNEL_CAPACITY: usize = 100;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "t")]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "camelCase")]
 pub enum WebAction {
   Quit,
   Drum,
+  SetVolume { vol: u32 },
 }
 
 // Messages sent from the web client to the synth
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "camelCase")]
 pub struct WebMessage {
   pub message: WebAction,
 }
@@ -36,8 +37,10 @@ pub enum WebOrSubMessage {
 // Messages sent from the synthe to the web client
 
 #[derive(Serialize, Debug)]
+#[serde(tag = "t")]
+#[serde(rename_all = "camelCase")]
 pub enum SynthMessage {
-  Ping(midi::Message),
+  Midi { msg: midi::Message },
 }
 
 #[get("/ws")]
@@ -125,12 +128,20 @@ where
 mod tests {
   use crate::webserver::{WebAction, WebMessage};
   #[test]
-  fn web_message_serialization() {
+  fn quit_message_serialization() {
     let message = WebMessage {
       message: WebAction::Quit,
     };
     let json_str = serde_json::to_string(&message).unwrap();
-
     assert_eq!(json_str, r###"{"message":{"t":"quit"}}"###);
+  }
+
+  #[test]
+  fn set_volume_message_serialization() {
+    let message = WebMessage {
+      message: WebAction::SetVolume { vol: 123 },
+    };
+    let json_str = serde_json::to_string(&message).unwrap();
+    assert_eq!(json_str, r###"{"message":{"t":"setVolume","vol":123}}"###);
   }
 }
