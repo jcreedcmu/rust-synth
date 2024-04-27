@@ -64,13 +64,15 @@ pub type StateGuard = Arc<Mutex<State>>;
 
 impl State {
   pub fn new(buf_size: usize) -> State {
+    let mut control_blocks: ControlBlocks = vec![];
+    control_blocks.push(ControlBlock::Drum(DrumControlBlock {}));
     State {
       going: true,
       key_state: vec![KeyState::Off; NUM_KEYS],
       audio_bus: vec![vec![0.; buf_size]; AUDIO_BUS_LENGTH],
       ugen_state: vec![],
       fixed_ugens: vec![],
-      control_blocks: vec![],
+      control_blocks,
       drum_vol: 1.,
       pedal: false,
       write_to_file: true,

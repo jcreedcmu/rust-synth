@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::consts::BUS_DRY;
 use crate::envelope::{Adsr, EnvPos, EnvState};
-use crate::state::{AudioBusses, ControlBlocks};
+use crate::state::{AudioBusses, ControlBlock, ControlBlocks};
 use crate::synth::TABLE_SIZE;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
@@ -26,6 +26,7 @@ pub struct DrumSynthState {
   vol: f32,
   env_state: EnvState,
   wavetable: Arc<Vec<f32>>,
+  ci: usize,
 }
 
 impl DrumSynthState {
@@ -47,12 +48,11 @@ impl DrumSynthState {
         adsr: drum_adsr,
       },
       wavetable,
+      ci: 0,
     }
   }
-}
 
-impl Ugen for DrumSynthState {
-  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool {
+  fn ctl_run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &DrumControlBlock) -> bool {
     for out in bus[self.dst].iter_mut() {
       let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
       let offset = table_phase.floor() as usize;
@@ -77,6 +77,15 @@ impl Ugen for DrumSynthState {
       }
     }
     true
+  }
+}
+
+impl Ugen for DrumSynthState {
+  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool {
+    match &ctl[self.ci] {
+      ControlBlock::Drum(ctl) => self.ctl_run(bus, tick_s, &ctl),
+      _ => false,
+    }
   }
 
   fn release(&mut self) {}
