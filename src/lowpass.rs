@@ -20,6 +20,8 @@ impl LowpassState {
 }
 
 impl Ugen for LowpassState {
+  type ControlBlock = ();
+
   fn run(&self, bus: &mut Vec<f32>) {
     bus[self.dst] = self.buffer.iter().sum::<f32>() / (self.buffer.len() as f32);
   }

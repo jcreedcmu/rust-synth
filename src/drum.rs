@@ -51,6 +51,8 @@ impl DrumSynthState {
 }
 
 impl Ugen for DrumSynthState {
+  type ControlBlock = DrumControlBlock;
+
   fn run(&self, bus: &mut Vec<f32>) {
     let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
     let offset = table_phase.floor() as usize;
