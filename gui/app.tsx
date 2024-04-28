@@ -45,7 +45,7 @@ function Sequencer(props: SequencerProps): JSX.Element {
     }
     return rv;
   }
-  const rows = [0, 1].map(row => <tr>{cellsOfRow(row)}</tr>);
+  const rows = [2, 1, 0].map(row => <tr>{cellsOfRow(row)}</tr>);
   return <table>{rows}</table>;
 }
 

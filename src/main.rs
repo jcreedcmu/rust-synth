@@ -55,6 +55,9 @@ fn reduce_web_message(m: &WebMessage, s: &mut State) {
         println!("Unexpected control block");
       },
     },
+    WebAction::SetSequencer { inst, pat, on } => {
+      s.sequencer.set(inst, pat, on);
+    },
   }
 }
 

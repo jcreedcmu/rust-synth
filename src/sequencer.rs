@@ -8,7 +8,7 @@ pub struct Sequencer {
   tab: Vec<Vec<bool>>,
 }
 
-pub const SEQ_NUM_INSTRS: usize = 2;
+pub const SEQ_NUM_INSTRS: usize = 3;
 pub const SEQ_PATTERN_LEN: usize = 16;
 
 pub fn sequencer_loop(sg: StateGuard) {
@@ -31,6 +31,10 @@ pub fn sequencer_loop(sg: StateGuard) {
         let ugen = s.new_drum(1760.0, 1760.0);
         add_ugen_state(&mut s, ugen);
       }
+      if s.sequencer.tab[pos][2] {
+        let ugen = s.new_drum(4760.0, 5760.0);
+        add_ugen_state(&mut s, ugen);
+      }
 
       pos = (pos + 1) % SEQ_PATTERN_LEN;
     }
@@ -43,11 +47,10 @@ impl Sequencer {
     let mut sequencer: Sequencer = Sequencer {
       tab: vec![vec![false; SEQ_NUM_INSTRS]; SEQ_PATTERN_LEN],
     };
-    // sequencer.tab[0][0] = true;
-    // sequencer.tab[4][1] = true;
-    // sequencer.tab[10][0] = true;
-    // sequencer.tab[11][0] = true;
-    // sequencer.tab[12][1] = true;
     sequencer
+  }
+
+  pub fn set(&mut self, inst: usize, pat: usize, on: bool) {
+    self.tab[pat][inst] = on;
   }
 }

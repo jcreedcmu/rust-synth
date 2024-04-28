@@ -14,6 +14,7 @@ pub enum WebAction {
   Quit,
   Drum,
   SetVolume { vol: u32 },
+  SetSequencer { inst: usize, pat: usize, on: bool },
 }
 
 // Messages sent from the web client to the synth
