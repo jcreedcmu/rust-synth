@@ -8,6 +8,7 @@ mod lowpass;
 mod midi;
 mod reasonable_synth;
 mod reduce;
+mod sequencer;
 mod state;
 mod synth;
 mod ugen;
@@ -22,6 +23,7 @@ use drum::DrumControlBlock;
 use lowpass::LowpassState;
 use midi::{Message, MidiService};
 use reduce::{add_fixed_ugen_state, add_ugen_state};
+use sequencer::sequencer_loop;
 use state::{State, StateGuard};
 use webserver::{WebAction, WebMessage, WebOrSubMessage};
 
@@ -76,22 +78,7 @@ fn mk_web_thread(sg: StateGuard) {
 
 fn mk_sequencer_thread(sg: StateGuard) {
   std::thread::spawn(move || {
-    let mut toggle: bool = true;
-    loop {
-      std::thread::sleep(std::time::Duration::from_millis(500));
-      {
-        let mut s: MutexGuard<State> = sg.lock().unwrap();
-        if !s.going {
-          break;
-        }
-        let ugen = s.new_drum(
-          if toggle { 660.0 } else { 1760.0 },
-          if toggle { 10.0 } else { 1760.0 },
-        );
-        add_ugen_state(&mut s, ugen);
-        toggle = !toggle;
-      }
-    }
+    sequencer_loop(sg);
   });
 }
 

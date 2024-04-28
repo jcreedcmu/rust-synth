@@ -42,10 +42,10 @@ impl Ugen for LowpassState {
         + tap(13, 0.1)
         + tap(14, 0.09);
 
-      for i in 0..10 {
-        sum += tap(i + 1000, 10.0 / 10.0);
-      }
-      let wet = sum / 14.1;
+      // for i in 0..10 {
+      //   sum += tap(i + 1000, 10.0 / 10.0);
+      // }
+      let wet = sum / 4.1;
 
       bus[self.dst][bus_ix] = wet;
       self.ix = (self.ix + 1) % len;

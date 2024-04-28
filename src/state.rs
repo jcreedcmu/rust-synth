@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE, NUM_KEYS};
 use crate::drum::{DrumControlBlock, DrumSynthState};
 use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
+use crate::sequencer::Sequencer;
 use crate::ugen::{UgenState, UgensState};
 use crate::wavetables::Wavetables;
 use crate::webserver::SynthMessage;
@@ -53,7 +54,7 @@ pub struct State {
 
   pub control_blocks: ControlBlocks,
   pub wavetables: Wavetables,
-
+  pub sequencer: Sequencer,
   pub websocket: Option<tokio::sync::mpsc::Sender<SynthMessage>>,
 }
 
@@ -69,6 +70,7 @@ impl State {
       going: true,
       key_state: vec![KeyState::Off; NUM_KEYS],
       audio_bus: vec![vec![0.; buf_size]; AUDIO_BUS_LENGTH],
+      sequencer: Sequencer::new(),
       ugen_state: vec![],
       fixed_ugens: vec![],
       control_blocks,
