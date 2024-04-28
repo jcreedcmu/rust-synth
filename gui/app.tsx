@@ -1,6 +1,7 @@
 import { render, JSX } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { WebMessage } from './protocol';
+import { produce } from 'immer';
 
 type AppProps = {
 
@@ -11,6 +12,42 @@ export function init(props: AppProps) {
 }
 
 type WebSocketContainer = { ws: WebSocket };
+
+type SequencerProps = {
+  send(msg: WebMessage): void;
+}
+
+function Sequencer(props: SequencerProps): JSX.Element {
+  const initTable: boolean[][] = [
+    [false, false], [false, false], [false, false], [false, false],
+    [false, false], [false, false], [false, false], [false, false],
+    [false, false], [false, false], [false, false], [false, false],
+    [false, false], [false, false], [false, false], [false, false]
+  ];
+  const [table, setTable] = useState(initTable);
+  function cellsOfRow(row: number): JSX.Element[] {
+    let rv: JSX.Element[] = [];
+    for (let i = 0; i < 16; i++) {
+      const style: JSX.CSSProperties = {
+        height: 20,
+        width: 20,
+        backgroundColor: table[i][row] ? 'black' : '#ddd'
+      };
+      function onClick(e: Event) {
+        const oldVal = table[i][row];
+        const newVal = !oldVal;
+        setTable(produce(table, t => {
+          t[i][row] = newVal;
+        }));
+        props.send({ message: { t: 'setSequencer', inst: row, on: newVal, pat: i } });
+      }
+      rv.push(<td><div style={style} onClick={onClick}></div></td>)
+    }
+    return rv;
+  }
+  const rows = [0, 1].map(row => <tr>{cellsOfRow(row)}</tr>);
+  return <table>{rows}</table>;
+}
 
 function App(props: AppProps): JSX.Element {
   const [connected, setConnected] = useState(true);
@@ -69,5 +106,6 @@ function App(props: AppProps): JSX.Element {
     <input disabled={!connected} type="range" min="0" max="100" value={drumVolume} onInput={onInput} />
     {!connected ? <span><br /><button style={{ backgroundColor: 'red', color: 'white' }}
       onClick={() => { reconnect(wsco.current!); }}>reconnect</button></span> : undefined}
+    <Sequencer send={send} />
   </div>;
 }

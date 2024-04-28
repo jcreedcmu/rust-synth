@@ -43,11 +43,11 @@ impl Sequencer {
     let mut sequencer: Sequencer = Sequencer {
       tab: vec![vec![false; SEQ_NUM_INSTRS]; SEQ_PATTERN_LEN],
     };
-    sequencer.tab[0][0] = true;
-    sequencer.tab[4][1] = true;
-    sequencer.tab[10][0] = true;
-    sequencer.tab[11][0] = true;
-    sequencer.tab[12][1] = true;
+    // sequencer.tab[0][0] = true;
+    // sequencer.tab[4][1] = true;
+    // sequencer.tab[10][0] = true;
+    // sequencer.tab[11][0] = true;
+    // sequencer.tab[12][1] = true;
     sequencer
   }
 }
