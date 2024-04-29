@@ -96,7 +96,7 @@ async fn ws_serve(
   })
 }
 
-fn serve(tx: Sender<WebOrSubMessage>) -> Result<(), rocket::Error> {
+fn serve(tx: Sender<WebOrSubMessage>) -> anyhow::Result<()> {
   ::rocket::async_main(async move {
     let _rocket = rocket::build()
       .mount("/", rocket::fs::FileServer::from("./public"))
@@ -108,20 +108,24 @@ fn serve(tx: Sender<WebOrSubMessage>) -> Result<(), rocket::Error> {
   })
 }
 
-pub fn start<C>(k: C)
+type JoinHandle = std::thread::JoinHandle<anyhow::Result<()>>;
+
+pub fn start<C>(k: C) -> (JoinHandle, JoinHandle)
 where
-  C: Fn(&WebOrSubMessage) + Send + 'static,
+  C: Fn(&WebOrSubMessage) -> anyhow::Result<()> + Send + 'static,
 {
   let (web_tx, mut web_rx) = channel::<WebOrSubMessage>(CHANNEL_CAPACITY);
-  std::thread::spawn(move || {
-    serve(web_tx).unwrap();
-  });
-  std::thread::spawn(move || loop {
-    match web_rx.blocking_recv() {
-      None => break,
-      Some(msg) => k(&msg),
+  let serve_thread = std::thread::spawn(move || -> anyhow::Result<()> { serve(web_tx) });
+  let fwd_thread = std::thread::spawn(move || -> anyhow::Result<()> {
+    loop {
+      match web_rx.blocking_recv() {
+        None => break,
+        Some(msg) => k(&msg)?,
+      }
     }
+    Ok(())
   });
+  (serve_thread, fwd_thread)
 }
 
 #[cfg(test)]

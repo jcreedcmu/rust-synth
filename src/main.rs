@@ -25,6 +25,7 @@ use midi::{Message, MidiService};
 use reduce::{add_fixed_ugen_state, add_ugen_state};
 use sequencer::sequencer_loop;
 use state::{State, StateGuard};
+use util::depoison;
 use webserver::{WebAction, WebMessage, WebOrSubMessage};
 
 use std::error::Error;
@@ -74,8 +75,9 @@ fn reduce_web_or_sub_message(m: &WebOrSubMessage, s: &mut State) {
 
 fn mk_web_thread(sg: StateGuard) {
   webserver::start(move |msg| {
-    let mut s: MutexGuard<State> = sg.lock().unwrap();
+    let mut s = depoison(sg.lock())?;
     reduce_web_or_sub_message(&msg, &mut s);
+    Ok(())
   });
 }
 
@@ -85,10 +87,11 @@ fn mk_sequencer_thread(sg: StateGuard) {
   });
 }
 
-fn mk_midi_service(sg: StateGuard) -> Result<MidiService, Box<dyn Error>> {
-  midi::MidiService::new(0, move |msg: &Message| {
-    let mut s: MutexGuard<State> = sg.lock().unwrap();
+fn mk_midi_service(sg: StateGuard) -> anyhow::Result<MidiService> {
+  midi::MidiService::new(0, move |msg: &Message| -> anyhow::Result<()> {
+    let mut s: MutexGuard<State> = depoison(sg.lock())?;
     reduce::midi_reducer(msg, &mut s);
+    Ok(())
   })
 }
 

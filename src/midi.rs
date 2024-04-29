@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt;
 
+use anyhow::{anyhow, bail};
 use midir::{Ignore, MidiInput};
 use serde::Serialize;
 
@@ -64,9 +65,9 @@ fn message_of_vec(vec: &[u8]) -> Option<Message> {
 }
 
 impl MidiService {
-  pub fn new<C>(source_index: usize, k: C) -> Result<MidiService, Box<dyn Error>>
+  pub fn new<C>(source_index: usize, k: C) -> anyhow::Result<MidiService>
   where
-    C: Fn(&Message) + std::marker::Send + 'static,
+    C: Fn(&Message) -> anyhow::Result<()> + std::marker::Send + Sync + 'static,
   {
     let mut midi_in = MidiInput::new("midir input")?;
     midi_in.ignore(Ignore::None);
@@ -75,24 +76,31 @@ impl MidiService {
     let in_port = midi_in
       .ports()
       .get(midi_device_num)
-      .ok_or("Invalid port number")?
+      .ok_or(anyhow!("Invalid port number"))?
       .clone();
 
     println!("\nOpening connections");
     let in_port_name = midi_in.port_name(&in_port)?;
 
-    // _conn_in needs to be a named binding, because it needs to be kept alive until the end of the scope
-    let conn_in: midir::MidiInputConnection<()> = midi_in.connect(
+    let conn_in_result = midi_in.connect(
       &in_port,
       "midir-print",
       move |stamp, message, _| {
         println!("{}: {:?} (len = {})", stamp, message, message.len());
         if let Some(msg) = message_of_vec(message) {
-          k(&msg);
+          match k(&msg) {
+            Ok(()) => (),
+            Err(e) => println!("midi callback error: {}", e.to_string()),
+          }
         }
       },
       (),
-    )?;
+    );
+
+    let conn_in: midir::MidiInputConnection<()> = match conn_in_result {
+      Ok(v) => v,
+      Err(e) => bail!("Can't make midi input connection: {}", e.to_string()),
+    };
 
     Ok(MidiService { conn_in })
   }
