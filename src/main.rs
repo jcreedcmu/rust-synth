@@ -132,7 +132,7 @@ pub struct Args {
   profile_interval: Option<usize>,
 }
 
-fn run() -> Result<(), Box<dyn Error>> {
+fn run() -> anyhow::Result<()> {
   let args = Args::parse();
 
   let mono_buf_size = BUF_SIZE / (CHANNELS as usize);
@@ -148,8 +148,11 @@ fn run() -> Result<(), Box<dyn Error>> {
   let ms = mk_midi_service(state.clone())?;
   mk_sequencer_thread(state.clone());
   mk_stdin_thread(state.clone());
-  mk_web_thread(state.clone());
+  let (serve_thread, fwd_thread) = mk_web_thread(state.clone());
 
   let ads = audio::AudioService::new(&args, &state, synth::Synth::new())?;
+  serve_thread.join().unwrap()?;
+  fwd_thread.join().unwrap()?;
+
   Ok(())
 }
