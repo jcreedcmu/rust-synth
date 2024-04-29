@@ -41,7 +41,7 @@ fn main() {
 fn reduce_web_message(m: &WebMessage, s: &mut State) {
   match m.message {
     WebAction::Drum => {
-      let ugen = s.new_drum(1000.0, 2000.0);
+      let ugen = s.new_drum(1000.0, 2000.0, 1.0);
       add_ugen_state(s, ugen);
     },
     WebAction::Quit => {
@@ -106,7 +106,7 @@ fn mk_stdin_thread(sg: StateGuard) {
         },
         "k\n" => {
           let mut s: MutexGuard<State> = sg.lock().unwrap();
-          let ugen = s.new_drum(440.0, 440.0);
+          let ugen = s.new_drum(440.0, 440.0, 1.0);
           add_ugen_state(&mut s, ugen);
         },
         _ => println!("Didn't recognize {input}."),

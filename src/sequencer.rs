@@ -24,15 +24,15 @@ pub fn sequencer_loop(sg: StateGuard) {
       // if toggle { 10.0 } else { 1760.0 },
 
       if s.sequencer.tab[pos][0] {
-        let ugen = s.new_drum(660.0, 10.0);
+        let ugen = s.new_drum(660.0, 10.0, 1.0);
         add_ugen_state(&mut s, ugen);
       }
       if s.sequencer.tab[pos][1] {
-        let ugen = s.new_drum(1760.0, 1760.0);
+        let ugen = s.new_drum(1760.0, 1760.0, 1.0);
         add_ugen_state(&mut s, ugen);
       }
       if s.sequencer.tab[pos][2] {
-        let ugen = s.new_drum(4760.0, 5760.0);
+        let ugen = s.new_drum(6760.0, 5760.0, 0.05);
         add_ugen_state(&mut s, ugen);
       }
 

@@ -9,3 +9,8 @@ count:
 
 watch:
 	node ./build.js watch
+
+export:
+	sox -r 44100 -c 2 /tmp/a.sw /tmp/a.wav
+	oggenc /tmp/a.wav
+	mv /tmp/a.ogg ~/tmp/a.ogg

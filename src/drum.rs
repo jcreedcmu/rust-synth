@@ -6,12 +6,14 @@ use crate::state::{AudioBusses, ControlBlock, ControlBlocks, DEFAULT_DRUM_CONTRO
 use crate::synth::TABLE_SIZE;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
-const drum_adsr: Adsr = Adsr {
-  attack_s: 0.025,
-  decay_s: 0.05,
-  sustain: 0.1,
-  release_s: 0.25,
-};
+fn drum_adsr(dur_scale: f32) -> Adsr {
+  Adsr {
+    attack_s: 0.025 * dur_scale,
+    decay_s: 0.05 * dur_scale,
+    sustain: 0.1,
+    release_s: 0.25,
+  }
+}
 
 #[derive(Debug)]
 pub struct DrumControlBlock {
@@ -31,7 +33,12 @@ pub struct DrumSynthState {
 }
 
 impl DrumSynthState {
-  pub fn new(freq_hz: f32, freq2_hz: f32, wavetable: Arc<Vec<f32>>) -> DrumSynthState {
+  pub fn new(
+    freq_hz: f32,
+    freq2_hz: f32,
+    dur_scale: f32,
+    wavetable: Arc<Vec<f32>>,
+  ) -> DrumSynthState {
     DrumSynthState {
       dst: BUS_DRY,
       t_s: 0.0,
@@ -45,7 +52,7 @@ impl DrumSynthState {
           hold: false,
           vel: 1.0,
         },
-        adsr: drum_adsr,
+        adsr: drum_adsr(dur_scale),
       },
       wavetable,
       ci: DEFAULT_DRUM_CONTROL_BLOCK,

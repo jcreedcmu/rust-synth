@@ -1,6 +1,5 @@
 use crate::consts::BUS_OUT;
 use crate::synth::Synth;
-use crate::util::Mostly;
 use crate::{Args, State, StateGuard};
 use alsa::pcm::{Access, Format, HwParams, PCM};
 use alsa::{Direction, ValueOr};
@@ -59,7 +58,7 @@ fn vi_to_u8(v: &[i16]) -> &[u8] {
 }
 
 impl AudioService {
-  pub fn new(args: &Args, state: &StateGuard, mut synth: Synth) -> Mostly<AudioService> {
+  pub fn new(args: &Args, state: &StateGuard, mut synth: Synth) -> anyhow::Result<AudioService> {
     let card = args.sound_card;
     let reservation = dbus_reserve(card);
     if let Err(e) = reservation {
@@ -75,7 +74,7 @@ impl AudioService {
 
     let sg = state.clone();
 
-    let mut file = File::create("/tmp/a.sw").unwrap();
+    let mut file = File::create("/tmp/a.sw")?;
     let (send, recv) = channel::<Vec<i16>>();
     std::thread::spawn(move || {
       let mut n = 0;
@@ -92,29 +91,27 @@ impl AudioService {
 
     // Initialize alsa
     let device_name = format!("hw:{card}");
-    let pcm = PCM::new(&device_name, Direction::Playback, false).unwrap();
+    let pcm = PCM::new(&device_name, Direction::Playback, false)?;
 
-    let hwp = HwParams::any(&pcm).unwrap();
-    hwp.set_channels(CHANNELS).unwrap();
-    hwp.set_rate(44100, ValueOr::Nearest).unwrap();
-    hwp.set_format(Format::s16()).unwrap();
-    hwp.set_access(Access::RWInterleaved).unwrap();
-    hwp.set_buffer_size(BUF_SIZE as i64).unwrap();
-    pcm.hw_params(&hwp).unwrap();
-    let io = pcm.io_i16().unwrap();
+    let hwp = HwParams::any(&pcm)?;
+    hwp.set_channels(CHANNELS)?;
+    hwp.set_rate(44100, ValueOr::Nearest)?;
+    hwp.set_format(Format::s16())?;
+    hwp.set_access(Access::RWInterleaved)?;
+    hwp.set_buffer_size(BUF_SIZE as i64)?;
+    pcm.hw_params(&hwp)?;
+    let io = pcm.io_i16()?;
 
-    let hwp = pcm.hw_params_current().unwrap();
+    let hwp = pcm.hw_params_current()?;
     let buffer_size = hwp.get_buffer_size();
     match buffer_size {
       Ok(s) => println!("buffer size is {s}"),
       Err(_) => {},
     }
 
-    let swp = pcm.sw_params_current().unwrap();
-    swp
-      .set_start_threshold(hwp.get_buffer_size().unwrap())
-      .unwrap();
-    pcm.sw_params(&swp).unwrap();
+    let swp = pcm.sw_params_current()?;
+    swp.set_start_threshold(hwp.get_buffer_size()?)?;
+    pcm.sw_params(&swp)?;
 
     let mut iters: usize = 0;
     let mut buf = [0i16; BUF_SIZE];
@@ -140,7 +137,7 @@ impl AudioService {
         }
 
         if s.write_to_file {
-          send.send(buf.to_vec()).unwrap();
+          send.send(buf.to_vec())?;
         }
       }
       if do_profile(args, iters) {
@@ -155,7 +152,7 @@ impl AudioService {
     }
 
     // Wait for the stream to finish playback.
-    pcm.drain().unwrap();
+    pcm.drain()?;
 
     Ok(AudioService {})
   }
