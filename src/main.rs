@@ -25,7 +25,7 @@ use midi::{Message, MidiService};
 use reduce::{add_fixed_ugen_state, add_ugen_state};
 use sequencer::sequencer_loop;
 use state::{State, StateGuard};
-use util::{depoison, JoinHandle};
+use util::{depoison, JoinHandle, UnitHandle};
 use webserver::{WebAction, WebMessage, WebOrSubMessage};
 
 use std::error::Error;
@@ -73,7 +73,7 @@ fn reduce_web_or_sub_message(m: &WebOrSubMessage, s: &mut State) {
   }
 }
 
-fn mk_web_thread(sg: StateGuard) -> (JoinHandle, JoinHandle) {
+fn mk_web_thread(sg: StateGuard) -> (UnitHandle, UnitHandle) {
   webserver::start(move |msg| {
     let mut s = depoison(sg.lock())?;
     reduce_web_or_sub_message(&msg, &mut s);
