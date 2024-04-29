@@ -48,12 +48,10 @@ fn ugen_ix_of_key_state(key_state: &KeyState) -> Option<usize> {
 // Could have this function return pure data that represents the
 // change, then have subsequent function carry it out, so that we hold
 // state lock for shorter duration.
-pub fn midi_reducer(msg: &Message, s: &mut State) {
+pub fn midi_reducer(msg: &Message, s: &mut State) -> anyhow::Result<()> {
   match &s.websocket {
     None => (),
-    Some(ws) => ws
-      .try_send(SynthMessage::Midi { msg: msg.clone() })
-      .unwrap(),
+    Some(ws) => ws.try_send(SynthMessage::Midi { msg: msg.clone() })?,
   }
   match msg {
     Message::NoteOn {
@@ -121,4 +119,5 @@ pub fn midi_reducer(msg: &Message, s: &mut State) {
       s.pedal = true;
     },
   }
+  Ok(())
 }

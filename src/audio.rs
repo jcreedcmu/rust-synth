@@ -1,5 +1,6 @@
 use crate::consts::BUS_OUT;
 use crate::synth::Synth;
+use crate::util::depoison;
 use crate::{Args, State, StateGuard};
 use alsa::pcm::{Access, Format, HwParams, PCM};
 use alsa::{Direction, ValueOr};
@@ -76,7 +77,7 @@ impl AudioService {
 
     let mut file = File::create("/tmp/a.sw")?;
     let (send, recv) = channel::<Vec<i16>>();
-    std::thread::spawn(move || {
+    let file_writing_thread = std::thread::spawn(move || -> anyhow::Result<()> {
       let mut n = 0;
       for ref x in recv.iter() {
         n += 1;
@@ -85,8 +86,9 @@ impl AudioService {
           println!("on channel recv'ed {}", x[0]);
         }
         let bytes = vi_to_u8(x);
-        file.write_all(bytes).unwrap();
+        file.write_all(bytes)?;
       }
+      Ok(())
     });
 
     // Initialize alsa
@@ -121,7 +123,7 @@ impl AudioService {
         if do_profile(args, iters) {
           now = Instant::now();
         }
-        let mut s: MutexGuard<State> = sg.lock().unwrap();
+        let mut s: MutexGuard<State> = depoison(sg.lock())?;
         if !s.going {
           break;
         }

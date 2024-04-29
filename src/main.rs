@@ -90,7 +90,7 @@ fn mk_sequencer_thread(sg: StateGuard) {
 fn mk_midi_service(sg: StateGuard) -> anyhow::Result<MidiService> {
   midi::MidiService::new(0, move |msg: &Message| -> anyhow::Result<()> {
     let mut s: MutexGuard<State> = depoison(sg.lock())?;
-    reduce::midi_reducer(msg, &mut s);
+    reduce::midi_reducer(msg, &mut s)?;
     Ok(())
   })
 }
@@ -103,12 +103,12 @@ fn mk_stdin_thread(sg: StateGuard) {
 
       match input.as_str() {
         "\n" => {
-          let mut s: MutexGuard<State> = sg.lock().unwrap();
+          let mut s: MutexGuard<State> = depoison(sg.lock())?;
           s.going = false;
           break;
         },
         "k\n" => {
-          let mut s: MutexGuard<State> = sg.lock().unwrap();
+          let mut s: MutexGuard<State> = depoison(sg.lock())?;
           let ugen = s.new_drum(440.0, 440.0, 1.0);
           add_ugen_state(&mut s, ugen);
         },
