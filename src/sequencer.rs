@@ -1,5 +1,6 @@
 use crate::reduce::add_ugen_state;
 use crate::state::{State, StateGuard};
+use crate::util::depoison;
 use std::sync::MutexGuard;
 
 // State of the sequencer
@@ -11,11 +12,11 @@ pub struct Sequencer {
 pub const SEQ_NUM_INSTRS: usize = 3;
 pub const SEQ_PATTERN_LEN: usize = 16;
 
-pub fn sequencer_loop(sg: StateGuard) {
+pub fn sequencer_loop(sg: StateGuard) -> anyhow::Result<()> {
   let mut pos: usize = 0;
   loop {
     {
-      let mut s: MutexGuard<State> = sg.lock().unwrap();
+      let mut s: MutexGuard<State> = depoison(sg.lock())?;
       if !s.going {
         break;
       }
@@ -40,6 +41,7 @@ pub fn sequencer_loop(sg: StateGuard) {
     }
     std::thread::sleep(std::time::Duration::from_millis(125));
   }
+  Ok(())
 }
 
 impl Sequencer {

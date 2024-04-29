@@ -1,4 +1,5 @@
 use crate::midi;
+use crate::util::JoinHandle;
 use rocket::futures::{SinkExt, StreamExt};
 use rocket::{get, routes};
 use rocket_ws::{stream::DuplexStream, Message as RocketWsMessage, WebSocket};
@@ -107,8 +108,6 @@ fn serve(tx: Sender<WebOrSubMessage>) -> anyhow::Result<()> {
     Ok(())
   })
 }
-
-type JoinHandle = std::thread::JoinHandle<anyhow::Result<()>>;
 
 pub fn start<C>(k: C) -> (JoinHandle, JoinHandle)
 where

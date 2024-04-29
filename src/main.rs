@@ -25,7 +25,7 @@ use midi::{Message, MidiService};
 use reduce::{add_fixed_ugen_state, add_ugen_state};
 use sequencer::sequencer_loop;
 use state::{State, StateGuard};
-use util::depoison;
+use util::{depoison, JoinHandle};
 use webserver::{WebAction, WebMessage, WebOrSubMessage};
 
 use std::error::Error;
@@ -73,18 +73,19 @@ fn reduce_web_or_sub_message(m: &WebOrSubMessage, s: &mut State) {
   }
 }
 
-fn mk_web_thread(sg: StateGuard) {
+fn mk_web_thread(sg: StateGuard) -> (JoinHandle, JoinHandle) {
   webserver::start(move |msg| {
     let mut s = depoison(sg.lock())?;
     reduce_web_or_sub_message(&msg, &mut s);
     Ok(())
-  });
+  })
 }
 
-fn mk_sequencer_thread(sg: StateGuard) {
-  std::thread::spawn(move || {
-    sequencer_loop(sg);
-  });
+fn mk_sequencer_thread(sg: StateGuard) -> JoinHandle {
+  std::thread::spawn(move || -> anyhow::Result<()> {
+    sequencer_loop(sg)?;
+    Ok(())
+  })
 }
 
 fn mk_midi_service(sg: StateGuard) -> anyhow::Result<MidiService> {
@@ -95,8 +96,8 @@ fn mk_midi_service(sg: StateGuard) -> anyhow::Result<MidiService> {
   })
 }
 
-fn mk_stdin_thread(sg: StateGuard) {
-  std::thread::spawn(move || -> Result<(), Box<dyn Error + Send + Sync>> {
+fn mk_stdin_thread(sg: StateGuard) -> JoinHandle {
+  std::thread::spawn(move || -> anyhow::Result<()> {
     loop {
       let mut input = String::new();
       stdin().read_line(&mut input)?; // wait for next enter key press
@@ -116,7 +117,7 @@ fn mk_stdin_thread(sg: StateGuard) {
       }
     }
     Ok(())
-  });
+  })
 }
 
 #[derive(Parser, Debug)]
