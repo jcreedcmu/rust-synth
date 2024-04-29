@@ -87,11 +87,12 @@ impl MidiService {
       "midir-print",
       move |stamp, message, _| {
         println!("{}: {:?} (len = {})", stamp, message, message.len());
-        if let Some(msg) = message_of_vec(message) {
-          match k(&msg) {
+        match message_of_vec(message) {
+          Some(msg) => match k(&msg) {
             Ok(()) => (),
-            Err(e) => println!("midi callback error: {}", e.to_string()),
-          }
+            Err(e) => println!("Error in midi callback: {}", e.to_string()),
+          },
+          None => println!("Warning, unknown midi message: {:?}", message),
         }
       },
       (),
@@ -99,7 +100,7 @@ impl MidiService {
 
     let conn_in: midir::MidiInputConnection<()> = match conn_in_result {
       Ok(v) => v,
-      Err(e) => bail!("Can't make midi input connection: {}", e.to_string()),
+      Err(e) => bail!("Error: Can't make midi input connection: {}", e.to_string()),
     };
 
     Ok(MidiService { conn_in })
