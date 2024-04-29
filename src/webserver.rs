@@ -46,6 +46,9 @@ pub enum SynthMessage {
 }
 
 #[get("/ws")]
+// Note that we could also have said
+// impl rocket::response::Responder
+// as the return type here
 async fn ws_serve(
   ws: WebSocket,
   state: &rocket::State<Sender<WebOrSubMessage>>,
