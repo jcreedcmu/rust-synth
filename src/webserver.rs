@@ -1,5 +1,5 @@
 use crate::midi;
-use crate::util::{JoinHandle, UnitHandle};
+use crate::util::UnitHandle;
 use rocket::futures::{SinkExt, StreamExt};
 use rocket::{get, routes};
 use rocket_ws::{stream::DuplexStream, Message as RocketWsMessage, WebSocket};
@@ -103,6 +103,13 @@ async fn ws_serve(
 fn serve(tx: Sender<WebOrSubMessage>) -> anyhow::Result<()> {
   ::rocket::async_main(async move {
     let _rocket = rocket::build()
+      .configure(rocket::Config {
+        shutdown: rocket::config::Shutdown {
+          ctrlc: false,
+          ..Default::default()
+        },
+        ..Default::default()
+      })
       .mount("/", rocket::fs::FileServer::from("./public"))
       .mount("/", routes![ws_serve])
       .manage(tx)
@@ -123,7 +130,7 @@ where
   let fwd_thread = std::thread::spawn(move || loop {
     match web_rx.blocking_recv() {
       None => {
-        println!("web_rx blocking recv got None, fwd_thread terminating.");
+        println!("web_rx blocking recv got None, in fwd_thread");
         break;
       },
       Some(msg) => k(&msg).unwrap(),

@@ -132,6 +132,19 @@ pub struct Args {
   profile_interval: Option<usize>,
 }
 
+fn setup_ctrlc_handler(sg: StateGuard) {
+  ctrlc::set_handler(move || {
+    let mut s: MutexGuard<State> = sg.lock().unwrap();
+    reduce_web_message(
+      &WebMessage {
+        message: WebAction::Quit,
+      },
+      &mut s,
+    );
+  })
+  .expect("Error setting Ctrl-C handler");
+}
+
 fn run() -> Result<(), Box<dyn Error>> {
   let args = Args::parse();
 
@@ -149,6 +162,7 @@ fn run() -> Result<(), Box<dyn Error>> {
   mk_sequencer_thread(state.clone());
   mk_stdin_thread(state.clone());
   mk_web_thread(state.clone());
+  setup_ctrlc_handler(state.clone());
 
   let ads = audio::AudioService::new(&args, &state, synth::Synth::new())?;
   ads.render_thread.join().unwrap()?;
