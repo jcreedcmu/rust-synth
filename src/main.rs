@@ -120,7 +120,7 @@ fn mk_stdin_thread(sg: StateGuard) -> JoinHandle {
   })
 }
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(version, about)]
 pub struct Args {
   // Sound card
@@ -151,5 +151,6 @@ fn run() -> Result<(), Box<dyn Error>> {
   mk_web_thread(state.clone());
 
   let ads = audio::AudioService::new(&args, &state, synth::Synth::new())?;
+  ads.render_thread.join().unwrap()?;
   Ok(())
 }

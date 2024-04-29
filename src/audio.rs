@@ -1,6 +1,6 @@
 use crate::consts::BUS_OUT;
 use crate::synth::Synth;
-use crate::util::depoison;
+use crate::util::{depoison, JoinHandle};
 use crate::{Args, State, StateGuard};
 use alsa::pcm::{Access, Format, HwParams, PCM};
 use alsa::{Direction, ValueOr};
@@ -12,7 +12,9 @@ use std::sync::mpsc::channel;
 use std::sync::MutexGuard;
 use std::time::Instant;
 
-pub struct AudioService {}
+pub struct AudioService {
+  pub render_thread: JoinHandle,
+}
 
 pub const CHANNELS: u32 = 2;
 pub const BUF_SIZE: usize = 64;
@@ -60,6 +62,7 @@ fn vi_to_u8(v: &[i16]) -> &[u8] {
 
 impl AudioService {
   pub fn new(args: &Args, state: &StateGuard, mut synth: Synth) -> anyhow::Result<AudioService> {
+    let args = args.clone();
     let card = args.sound_card;
     let reservation = dbus_reserve(card);
     if let Err(e) = reservation {
@@ -91,71 +94,73 @@ impl AudioService {
       Ok(())
     });
 
-    // Initialize alsa
-    let device_name = format!("hw:{card}");
-    let pcm = PCM::new(&device_name, Direction::Playback, false)?;
+    let render_thread = std::thread::spawn(move || -> anyhow::Result<()> {
+      // Initialize alsa
+      let device_name = format!("hw:{card}");
+      let pcm = PCM::new(&device_name, Direction::Playback, false)?;
 
-    let hwp = HwParams::any(&pcm)?;
-    hwp.set_channels(CHANNELS)?;
-    hwp.set_rate(44100, ValueOr::Nearest)?;
-    hwp.set_format(Format::s16())?;
-    hwp.set_access(Access::RWInterleaved)?;
-    hwp.set_buffer_size(BUF_SIZE as i64)?;
-    pcm.hw_params(&hwp)?;
-    let io = pcm.io_i16()?;
+      let hwp = HwParams::any(&pcm)?;
+      hwp.set_channels(CHANNELS)?;
+      hwp.set_rate(44100, ValueOr::Nearest)?;
+      hwp.set_format(Format::s16())?;
+      hwp.set_access(Access::RWInterleaved)?;
+      hwp.set_buffer_size(BUF_SIZE as i64)?;
+      pcm.hw_params(&hwp)?;
+      let io = pcm.io_i16()?;
 
-    let hwp = pcm.hw_params_current()?;
-    let buffer_size = hwp.get_buffer_size();
-    match buffer_size {
-      Ok(s) => println!("buffer size is {s}"),
-      Err(_) => {},
-    }
-
-    let swp = pcm.sw_params_current()?;
-    swp.set_start_threshold(hwp.get_buffer_size()?)?;
-    pcm.sw_params(&swp)?;
-
-    let mut iters: usize = 0;
-    let mut buf = [0i16; BUF_SIZE];
-    let mut now: Instant = Instant::now();
-    loop {
-      {
-        if do_profile(args, iters) {
-          now = Instant::now();
-        }
-        let mut s: MutexGuard<State> = depoison(sg.lock())?;
-        if !s.going {
-          break;
-        }
-
-        synth.synth_buf(&mut s);
-
-        for (ix, ch) in buf.chunks_mut(CHANNELS as usize).enumerate() {
-          let samp_f32 = &s.audio_bus[BUS_OUT][ix];
-          let samp_i16 = (samp_f32 * 14.0 * 32767.0) as i16;
-
-          ch[0] = samp_i16;
-          ch[1] = samp_i16;
-        }
-
-        if s.write_to_file {
-          send.send(buf.to_vec())?;
-        }
-      }
-      if do_profile(args, iters) {
-        println!("Elapsed: {:.2?}", now.elapsed());
-        println!("Time: {:.2?}", now);
-        iters = 0;
+      let hwp = pcm.hw_params_current()?;
+      let buffer_size = hwp.get_buffer_size();
+      match buffer_size {
+        Ok(s) => println!("buffer size is {s}"),
+        Err(_) => {},
       }
 
-      iters += 1;
+      let swp = pcm.sw_params_current()?;
+      swp.set_start_threshold(hwp.get_buffer_size()?)?;
+      pcm.sw_params(&swp)?;
 
-      let _written = io.writei(&buf[..]);
-    }
+      let mut iters: usize = 0;
+      let mut buf = [0i16; BUF_SIZE];
+      let mut now: Instant = Instant::now();
+      loop {
+        {
+          if do_profile(&args, iters) {
+            now = Instant::now();
+          }
+          let mut s: MutexGuard<State> = depoison(sg.lock())?;
+          if !s.going {
+            break;
+          }
 
-    // Wait for the stream to finish playback.
-    pcm.drain()?;
+          synth.synth_buf(&mut s);
 
-    Ok(AudioService {})
+          for (ix, ch) in buf.chunks_mut(CHANNELS as usize).enumerate() {
+            let samp_f32 = &s.audio_bus[BUS_OUT][ix];
+            let samp_i16 = (samp_f32 * 14.0 * 32767.0) as i16;
+
+            ch[0] = samp_i16;
+            ch[1] = samp_i16;
+          }
+
+          if s.write_to_file {
+            send.send(buf.to_vec())?;
+          }
+        }
+        if do_profile(&args, iters) {
+          println!("Elapsed: {:.2?}", now.elapsed());
+          println!("Time: {:.2?}", now);
+          iters = 0;
+        }
+
+        iters += 1;
+
+        let _written = io.writei(&buf[..]);
+      }
+
+      // Wait for the stream to finish playback.
+      pcm.drain()?;
+      Ok(())
+    });
+    Ok(AudioService { render_thread })
   }
 }
