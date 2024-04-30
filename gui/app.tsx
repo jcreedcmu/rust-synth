@@ -1,14 +1,14 @@
-import { render, JSX } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import ReactDOM from 'react-dom';
+import { CSSProperties, useEffect, useRef, useState } from 'react';
 import { WebMessage } from './protocol';
 import { produce } from 'immer';
-
+import { Chart } from './chart';
 type AppProps = {
 
 };
 
 export function init(props: AppProps) {
-  render(<App {...props} />, document.querySelector('.app') as any);
+  ReactDOM.render(<App {...props} />, document.querySelector('.app') as any);
 }
 
 type WebSocketContainer = { ws: WebSocket };
@@ -28,12 +28,12 @@ function Sequencer(props: SequencerProps): JSX.Element {
   function cellsOfRow(row: number): JSX.Element[] {
     let rv: JSX.Element[] = [];
     for (let i = 0; i < 16; i++) {
-      const style: JSX.CSSProperties = {
+      const style: CSSProperties = {
         height: 20,
         width: 20,
         backgroundColor: table[i][row] ? 'black' : '#ddd'
       };
-      function onClick(e: Event) {
+      function onClick(e: React.MouseEvent) {
         const oldVal = table[i][row];
         const newVal = !oldVal;
         setTable(produce(table, t => {
@@ -52,6 +52,7 @@ function Sequencer(props: SequencerProps): JSX.Element {
 function App(props: AppProps): JSX.Element {
   const [connected, setConnected] = useState(true);
   const [drumVolume, setDrumVolume] = useState(100);
+  const [lowpParam, setLowpParam] = useState(50);
   const wsco = useRef<WebSocketContainer | undefined>(undefined);
 
   function reconnect(wsc: WebSocketContainer) {
@@ -94,18 +95,26 @@ function App(props: AppProps): JSX.Element {
     wsc.ws.send(JSON.stringify(sm));
   }
 
-  const onInput = (e: Event) => {
+  const drumVolOnInput = (e: React.FormEvent) => {
     const vol = parseInt((e.target as HTMLInputElement).value);
     send({ message: { t: 'setVolume', vol } });
     setDrumVolume(vol);
   };
 
+  const lowpParamOnInput = (e: React.FormEvent) => {
+    const vol = parseInt((e.target as HTMLInputElement).value);
+    setLowpParam(vol);
+  };
+
   return <div>
     <button disabled={!connected} onMouseDown={() => { send({ message: { t: 'drum' } }) }}>Action</button><br />
     <button disabled={!connected} onMouseDown={() => { send({ message: { t: 'quit' } }) }}>Quit</button><br />
-    <input disabled={!connected} type="range" min="0" max="100" value={drumVolume} onInput={onInput} />
+    <input disabled={!connected} type="range" min="0" max="100" value={drumVolume} onInput={drumVolOnInput} />
+    <input disabled={!connected} type="range" min="1" max="99" value={lowpParam} onInput={lowpParamOnInput} />
     {!connected ? <span><br /><button style={{ backgroundColor: 'red', color: 'white' }}
       onClick={() => { reconnect(wsco.current!); }}>reconnect</button></span> : undefined}
     <Sequencer send={send} />
+    <br />
+    <Chart lowp_param={lowpParam / 100} />
   </div>;
 }

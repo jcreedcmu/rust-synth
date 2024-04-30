@@ -14,7 +14,10 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
+    "@visx/scale": "^3.5.0",
+    "@visx/xychart": "^3.10.2",
     "immer": "^10.1.1",
-    "preact": "^10.20.2"
+    "mathjs": "^12.4.2",
+    "react": "^18.3.1"
   }
 }
