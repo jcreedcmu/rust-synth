@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE, NUM_KEYS};
 use crate::drum::{DrumControlBlock, DrumSynthState};
+use crate::lowpass::LowpassControlBlock;
 use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
 use crate::sequencer::Sequencer;
 use crate::ugen::{UgenState, UgensState};
@@ -20,6 +21,7 @@ pub enum KeyState {
 pub enum ControlBlock {
   Reasonable(ReasonableControlBlock),
   Drum(DrumControlBlock),
+  Low(LowpassControlBlock),
 }
 
 pub type ControlBlocks = Vec<ControlBlock>;
@@ -66,6 +68,7 @@ impl State {
   pub fn new(buf_size: usize) -> State {
     let mut control_blocks: ControlBlocks = vec![];
     control_blocks.push(ControlBlock::Drum(DrumControlBlock { vol: 1. }));
+    control_blocks.push(ControlBlock::Low(LowpassControlBlock { lowp_param: 0.5 }));
     State {
       going: true,
       key_state: vec![KeyState::Off; NUM_KEYS],
