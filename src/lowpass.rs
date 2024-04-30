@@ -32,20 +32,7 @@ impl Ugen for LowpassState {
         scale * self.buffer[((self.ix as i32) - offset).rem_euclid(len as i32) as usize]
       };
 
-      let mut sum = bus[self.src][bus_ix]
-        + tap(3934, 0.1)
-        + tap(5001, 0.5)
-        + tap(501, 0.5)
-        + tap(102, 0.5)
-        + tap(10133, 0.1)
-        + tap(12, 0.1)
-        + tap(13, 0.1)
-        + tap(14, 0.09);
-
-      // for i in 0..10 {
-      //   sum += tap(i + 1000, 10.0 / 10.0);
-      // }
-      let wet = sum / 4.1;
+      let wet = 0.03 * bus[self.src][bus_ix] + tap(2, 0.22) + tap(1, 0.75);
 
       bus[self.dst][bus_ix] = wet;
       self.ix = (self.ix + 1) % len;
