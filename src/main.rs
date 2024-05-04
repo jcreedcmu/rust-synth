@@ -20,7 +20,7 @@ use audio::{BUF_SIZE, CHANNELS};
 use clap::Parser;
 use consts::{BUS_DRY, BUS_OUT};
 use drum::DrumControlBlock;
-use lowpass::LowpassState;
+use lowpass::{LowpassControlBlock, LowpassState};
 use midi::{Message, MidiService};
 use reduce::{add_fixed_ugen_state, add_ugen_state};
 use sequencer::sequencer_loop;
@@ -51,6 +51,14 @@ fn reduce_web_message(m: &WebMessage, s: &mut State) {
     WebAction::SetVolume { vol } => match &mut s.control_blocks[0] {
       state::ControlBlock::Drum(DrumControlBlock { vol: ctl_vol }) => {
         *ctl_vol = (vol as f32) / 100.0;
+      },
+      _ => {
+        println!("Unexpected control block");
+      },
+    },
+    WebAction::SetLowpassParam { lowp_param } => match &mut s.control_blocks[1] {
+      state::ControlBlock::Low(LowpassControlBlock { lowp_param: param }) => {
+        *param = lowp_param;
       },
       _ => {
         println!("Unexpected control block");

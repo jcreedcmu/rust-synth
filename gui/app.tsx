@@ -102,8 +102,9 @@ function App(props: AppProps): JSX.Element {
   };
 
   const lowpParamOnInput = (e: React.FormEvent) => {
-    const vol = parseInt((e.target as HTMLInputElement).value);
-    setLowpParam(vol);
+    const lowp_param = parseInt((e.target as HTMLInputElement).value);
+    send({ message: { t: 'setLowpassParam', lowp_param: lowp_param / 100 } });
+    setLowpParam(lowp_param);
   };
 
   return <div>

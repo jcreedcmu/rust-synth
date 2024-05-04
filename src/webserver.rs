@@ -15,6 +15,7 @@ pub enum WebAction {
   Quit,
   Drum,
   SetVolume { vol: u32 },
+  SetLowpassParam { lowp_param: f32 },
   SetSequencer { inst: usize, pat: usize, on: bool },
 }
 
