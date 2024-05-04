@@ -9,6 +9,10 @@ pub trait Ugen: std::fmt::Debug + Sync + Send {
   fn restrike(&mut self, vel: f32);
 }
 
+pub trait GetSrcBuf {
+  fn get_src_buf(&self) -> &Vec<f32>;
+}
+
 #[derive(Debug)]
 pub enum UgenState {
   ReasonableSynth(ReasonableSynthState),
