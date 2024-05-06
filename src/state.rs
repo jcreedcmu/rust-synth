@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE, NUM_KEYS};
 use crate::drum::{DrumControlBlock, DrumSynthState};
+use crate::envelope::Adsr;
 use crate::lowpass::LowpassControlBlock;
 use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
 use crate::sequencer::Sequencer;
@@ -100,11 +101,11 @@ impl State {
     ))
   }
 
-  pub fn new_drum(&self, freq_hz: f32, freq2_hz: f32, dur_scale: f32) -> UgenState {
+  pub fn new_drum(&self, freq_hz: f32, freq2_hz: f32, adsr: Adsr) -> UgenState {
     UgenState::DrumSynth(DrumSynthState::new(
       freq_hz,
       freq2_hz,
-      dur_scale,
+      adsr,
       self.wavetables.noise_wavetable.clone(),
     ))
   }

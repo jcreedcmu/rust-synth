@@ -19,7 +19,7 @@ mod webserver;
 use audio::{BUF_SIZE, CHANNELS};
 use clap::Parser;
 use consts::{BUS_DRY, BUS_OUT};
-use drum::DrumControlBlock;
+use drum::{drum_adsr, DrumControlBlock};
 use lowpass::{LowpassControlBlock, LowpassState};
 use midi::{Message, MidiService};
 use reduce::{add_fixed_ugen_state, add_ugen_state};
@@ -42,7 +42,7 @@ fn main() {
 fn reduce_web_message(m: &WebMessage, s: &mut State) {
   match m.message {
     WebAction::Drum => {
-      let ugen = s.new_drum(1000.0, 2000.0, 1.0);
+      let ugen = s.new_drum(1000.0, 2000.0, drum_adsr(1.0));
       add_ugen_state(s, ugen);
     },
     WebAction::Quit => {
@@ -118,7 +118,7 @@ fn mk_stdin_thread(sg: StateGuard) -> JoinHandle {
         },
         "k\n" => {
           let mut s: MutexGuard<State> = depoison(sg.lock())?;
-          let ugen = s.new_drum(440.0, 440.0, 1.0);
+          let ugen = s.new_drum(440.0, 440.0, drum_adsr(1.0));
           add_ugen_state(&mut s, ugen);
         },
         _ => println!("Didn't recognize {input}."),

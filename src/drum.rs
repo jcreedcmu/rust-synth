@@ -8,7 +8,7 @@ use crate::synth::TABLE_SIZE;
 use crate::ugen::GetSrcBuf;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
-fn drum_adsr(dur_scale: f32) -> Adsr {
+pub fn drum_adsr(dur_scale: f32) -> Adsr {
   Adsr {
     attack_s: 0.025 * dur_scale,
     decay_s: 0.05 * dur_scale,
@@ -36,12 +36,7 @@ pub struct DrumSynthState {
 }
 
 impl DrumSynthState {
-  pub fn new(
-    freq_hz: f32,
-    freq2_hz: f32,
-    dur_scale: f32,
-    wavetable: Arc<Vec<f32>>,
-  ) -> DrumSynthState {
+  pub fn new(freq_hz: f32, freq2_hz: f32, adsr: Adsr, wavetable: Arc<Vec<f32>>) -> DrumSynthState {
     DrumSynthState {
       dst: BUS_DRY,
       t_s: 0.0,
@@ -55,7 +50,7 @@ impl DrumSynthState {
           hold: false,
           vel: 1.0,
         },
-        adsr: drum_adsr(dur_scale),
+        adsr,
       },
       wavetable,
       ci: DEFAULT_DRUM_CONTROL_BLOCK,
