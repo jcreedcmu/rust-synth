@@ -1,7 +1,3 @@
-use std::sync::Arc;
-
-use crate::consts::BUS_DRY;
-use crate::envelope::Adsr;
 use crate::state::{AudioBusses, ControlBlocks};
 use crate::ugen::Ugen;
 
@@ -11,13 +7,8 @@ pub struct MidiManagerState {
 }
 
 impl MidiManagerState {
-  pub fn new(
-    freq_hz: f32,
-    freq2_hz: f32,
-    adsr: Adsr,
-    wavetable: Arc<Vec<f32>>,
-  ) -> MidiManagerState {
-    MidiManagerState { dst: BUS_DRY }
+  pub fn new(dst: usize) -> MidiManagerState {
+    MidiManagerState { dst }
   }
 }
 

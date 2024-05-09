@@ -23,6 +23,7 @@ use consts::{BUS_DRY, BUS_OUT};
 use drum::{drum_adsr, DrumControlBlock};
 use lowpass::{LowpassControlBlock, LowpassState};
 use midi::{Message, MidiService};
+use midi_manager::MidiManagerState;
 use reduce::{add_fixed_ugen_state, add_ugen_state};
 use sequencer::sequencer_loop;
 use state::{State, StateGuard};
@@ -159,6 +160,11 @@ fn run() -> Result<(), Box<dyn Error>> {
 
   let mono_buf_size = BUF_SIZE / (CHANNELS as usize);
   let mut state = State::new(mono_buf_size);
+
+  add_fixed_ugen_state(
+    &mut state,
+    ugen::UgenState::MidiManager(MidiManagerState::new(BUS_DRY)),
+  );
 
   add_fixed_ugen_state(
     &mut state,
