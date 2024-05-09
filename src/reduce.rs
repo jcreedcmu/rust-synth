@@ -2,7 +2,7 @@ use anyhow::anyhow;
 
 use crate::midi::Message;
 use crate::midi_manager::MidiManagerState;
-use crate::state::{get_key_state_mut_of_keys, new_reasonable_of_tables, KeyState, State};
+use crate::state::{get_key_state_mut, new_reasonable_of_tables, KeyState, State};
 use crate::ugen::{Ugen, UgenState, UgensState};
 use crate::util;
 use crate::webserver::SynthMessage;
@@ -56,7 +56,6 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, s: &mut State) -> anyhow::Res
     websocket,
     fixed_ugens,
     ugen_state,
-    key_state,
     wavetables,
     ..
   } = s;
@@ -66,7 +65,11 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, s: &mut State) -> anyhow::Res
   }
 
   match fixed_ugens[ugen_id] {
-    Some(UgenState::MidiManager(MidiManagerState { ref mut pedal, .. })) => {
+    Some(UgenState::MidiManager(MidiManagerState {
+      ref mut pedal,
+      ref mut key_state,
+      ..
+    })) => {
       match msg {
         Message::NoteOn {
           pitch,
@@ -76,7 +79,7 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, s: &mut State) -> anyhow::Res
           let pitch = *pitch;
           let freq = util::freq_of_pitch(pitch);
           // Is this ugen already being played?
-          let pre = ugen_ix_of_key_state(get_key_state_mut_of_keys(key_state, pitch as usize));
+          let pre = ugen_ix_of_key_state(get_key_state_mut(key_state, pitch as usize));
           let vel = (*velocity as f32) / 1280.0;
 
           let ugen_ix = match pre {
@@ -92,20 +95,20 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, s: &mut State) -> anyhow::Res
               },
             },
           };
-          *s.get_key_state_mut(pitch.into()) = KeyState::On { ugen_ix };
+          *get_key_state_mut(key_state, pitch.into()) = KeyState::On { ugen_ix };
         },
         Message::NoteOff { pitch, channel } => {
           let pitch = *pitch;
-          let pre = ugen_ix_of_key_state(get_key_state_mut_of_keys(key_state, pitch as usize));
+          let pre = ugen_ix_of_key_state(get_key_state_mut(key_state, pitch as usize));
 
           match pre {
             None => println!("warning: NoteOff {} on a ugen already off", pitch),
             Some(ugen_ix) => {
               if *pedal {
-                *s.get_key_state_mut(pitch.into()) = KeyState::Held { ugen_ix };
+                *get_key_state_mut(key_state, pitch.into()) = KeyState::Held { ugen_ix };
               } else {
                 release_maybe_ugen(&mut s.ugen_state[ugen_ix]);
-                *s.get_key_state_mut(pitch.into()) = KeyState::Off;
+                *get_key_state_mut(key_state, pitch.into()) = KeyState::Off;
               }
             },
           }
@@ -116,7 +119,7 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, s: &mut State) -> anyhow::Res
 
           let mut ugen_ixs: Vec<usize> = vec![];
 
-          for ks in s.get_key_states() {
+          for ks in key_state.iter_mut() {
             match ks {
               KeyState::Held { ugen_ix } => {
                 ugen_ixs.push(*ugen_ix);

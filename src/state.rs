@@ -1,7 +1,6 @@
-use std::slice::IterMut;
 use std::sync::{Arc, Mutex};
 
-use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE, NUM_KEYS};
+use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE};
 use crate::drum::{DrumControlBlock, DrumSynthState};
 use crate::envelope::Adsr;
 use crate::lowpass::LowpassControlBlock;
@@ -36,9 +35,6 @@ pub type AudioBusses = Vec<Vec<f32>>;
 pub struct State {
   pub going: bool,
 
-  // This is NUM_KEYS long, one keystate for every physical key.
-  pub key_state: Vec<KeyState>,
-
   // audio bus
   pub audio_bus: AudioBusses,
 
@@ -69,7 +65,6 @@ impl State {
     control_blocks.push(ControlBlock::Low(LowpassControlBlock { lowp_param: 0.5 }));
     State {
       going: true,
-      key_state: vec![KeyState::Off; NUM_KEYS],
       audio_bus: vec![vec![0.; buf_size]; AUDIO_BUS_LENGTH],
       sequencer: Sequencer::new(),
       ugen_state: vec![],
@@ -81,14 +76,7 @@ impl State {
     }
   }
 
-  pub fn get_key_state_mut(self: &mut State, pitch: usize) -> &mut KeyState {
-    &mut self.key_state[pitch - (BOTTOM_NOTE as usize)]
-  }
-
-  pub fn get_key_states(self: &mut State) -> IterMut<'_, KeyState> {
-    self.key_state.iter_mut()
-  }
-
+  // XXX deprecated?
   pub fn new_reasonable(&self, freq_hz: f32, vel: f32) -> UgenState {
     UgenState::ReasonableSynth(ReasonableSynthState::new(
       freq_hz,
@@ -97,6 +85,7 @@ impl State {
     ))
   }
 
+  // XXX move to midi manager somehow?
   pub fn new_drum(&self, freq_hz: f32, freq2_hz: f32, adsr: Adsr) -> UgenState {
     UgenState::DrumSynth(DrumSynthState::new(
       freq_hz,
@@ -107,9 +96,7 @@ impl State {
   }
 }
 
-pub fn get_key_state_mut_of_keys(keys: &mut Vec<KeyState>, pitch: usize) -> &mut KeyState {
-  &mut keys[pitch - (BOTTOM_NOTE as usize)]
-}
+// XXX move to MIDI manager maybe?
 
 pub fn new_reasonable_of_tables(wavetables: &Wavetables, freq_hz: f32, vel: f32) -> UgenState {
   UgenState::ReasonableSynth(ReasonableSynthState::new(
@@ -117,4 +104,10 @@ pub fn new_reasonable_of_tables(wavetables: &Wavetables, freq_hz: f32, vel: f32)
     vel,
     wavetables.saw_wavetable.clone(),
   ))
+}
+
+// XXX move to MIDI manager maybe?
+
+pub fn get_key_state_mut(key_state: &mut Vec<KeyState>, pitch: usize) -> &mut KeyState {
+  &mut key_state[pitch - (BOTTOM_NOTE as usize)]
 }
