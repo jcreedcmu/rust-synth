@@ -4,11 +4,13 @@ use crate::ugen::Ugen;
 #[derive(Clone, Debug)]
 pub struct MidiManagerState {
   dst: usize,
+  // Is the sustain pedal on?
+  pub pedal: bool,
 }
 
 impl MidiManagerState {
   pub fn new(dst: usize) -> MidiManagerState {
-    MidiManagerState { dst }
+    MidiManagerState { dst, pedal: false }
   }
 }
 

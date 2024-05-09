@@ -37,7 +37,7 @@ pub struct State {
   pub going: bool,
 
   // This is NUM_KEYS long, one keystate for every physical key.
-  key_state: Vec<KeyState>,
+  pub key_state: Vec<KeyState>,
 
   // audio bus
   pub audio_bus: AudioBusses,
@@ -49,9 +49,6 @@ pub struct State {
 
   // Effects go here
   pub fixed_ugens: UgensState,
-
-  // Is the sustain pedal on?
-  pub pedal: bool,
 
   pub write_to_file: bool,
 
@@ -78,7 +75,6 @@ impl State {
       ugen_state: vec![],
       fixed_ugens: vec![],
       control_blocks,
-      pedal: false,
       write_to_file: true,
       wavetables: Wavetables::new(),
       websocket: None,
@@ -109,4 +105,16 @@ impl State {
       self.wavetables.noise_wavetable.clone(),
     ))
   }
+}
+
+pub fn get_key_state_mut_of_keys(keys: &mut Vec<KeyState>, pitch: usize) -> &mut KeyState {
+  &mut keys[pitch - (BOTTOM_NOTE as usize)]
+}
+
+pub fn new_reasonable_of_tables(wavetables: &Wavetables, freq_hz: f32, vel: f32) -> UgenState {
+  UgenState::ReasonableSynth(ReasonableSynthState::new(
+    freq_hz,
+    vel,
+    wavetables.saw_wavetable.clone(),
+  ))
 }
