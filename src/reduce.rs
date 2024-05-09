@@ -11,6 +11,7 @@ pub fn add_fixed_ugen_state(s: &mut State, new: UgenState) -> usize {
   add_ugen(&mut s.fixed_ugens, new)
 }
 
+// Don't want to call this function from within this file
 pub fn add_ugen_state(s: &mut State, new: UgenState) -> usize {
   add_ugen(&mut s.ugen_state, new)
 }
@@ -51,14 +52,13 @@ fn ugen_ix_of_key_state(key_state: &KeyState) -> Option<usize> {
 // Could have this function return pure data that represents the
 // change, then have subsequent function carry it out, so that we hold
 // state lock for shorter duration.
-pub fn midi_reducer(msg: &Message, ugen_id: usize, s: &mut State) -> anyhow::Result<()> {
+pub fn midi_reducer(msg: &Message, ugen_id: usize, state: &mut State) -> anyhow::Result<()> {
   let State {
     websocket,
     fixed_ugens,
-    ugen_state,
     wavetables,
     ..
-  } = s;
+  } = state;
   match &websocket {
     None => (),
     Some(ws) => ws.try_send(SynthMessage::Midi { msg: msg.clone() })?,
@@ -68,6 +68,7 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, s: &mut State) -> anyhow::Res
     Some(UgenState::MidiManager(MidiManagerState {
       ref mut pedal,
       ref mut key_state,
+      ref mut ugen_state,
       ..
     })) => {
       match msg {
@@ -107,7 +108,7 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, s: &mut State) -> anyhow::Res
               if *pedal {
                 *get_key_state_mut(key_state, pitch.into()) = KeyState::Held { ugen_ix };
               } else {
-                release_maybe_ugen(&mut s.ugen_state[ugen_ix]);
+                release_maybe_ugen(&mut ugen_state[ugen_ix]);
                 *get_key_state_mut(key_state, pitch.into()) = KeyState::Off;
               }
             },
@@ -129,7 +130,7 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, s: &mut State) -> anyhow::Res
             }
           }
           for ugen_ix in ugen_ixs.iter() {
-            release_maybe_ugen(&mut s.ugen_state[*ugen_ix]);
+            release_maybe_ugen(&mut ugen_state[*ugen_ix]);
           }
         },
         Message::PedalOn { .. } => {

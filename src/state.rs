@@ -10,6 +10,7 @@ use crate::ugen::{UgenState, UgensState};
 use crate::wavetables::Wavetables;
 use crate::webserver::SynthMessage;
 
+// XXX move to midi manager or reduce
 #[derive(Clone, Debug)]
 pub enum KeyState {
   Off,
@@ -41,6 +42,9 @@ pub struct State {
   // This has a varying length as synthesis goes on. Every time we
   // need to allocate a ugen, we try to reuse existing `None`s, but
   // push a new one if necessary.
+
+  // I'm trying to move the midi-spawned notes into midi_manager, but
+  // the sequencer-spawned drums can stay here for now.
   pub ugen_state: UgensState,
 
   // Effects go here
