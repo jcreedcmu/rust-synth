@@ -1,16 +1,13 @@
 use std::sync::Arc;
 
-use crate::audio::BUF_SIZE;
 use crate::consts::BUS_DRY;
 use crate::envelope::Adsr;
 use crate::state::{AudioBusses, ControlBlocks};
-use crate::ugen::GetSrcBuf;
 use crate::ugen::Ugen;
 
 #[derive(Clone, Debug)]
 pub struct MidiManagerState {
   dst: usize,
-  buf: Vec<f32>,
 }
 
 impl MidiManagerState {
@@ -20,10 +17,7 @@ impl MidiManagerState {
     adsr: Adsr,
     wavetable: Arc<Vec<f32>>,
   ) -> MidiManagerState {
-    MidiManagerState {
-      dst: BUS_DRY,
-      buf: vec![0.; BUF_SIZE],
-    }
+    MidiManagerState { dst: BUS_DRY }
   }
 }
 
@@ -33,10 +27,4 @@ impl Ugen for MidiManagerState {
   }
   fn release(&mut self) {}
   fn restrike(&mut self, _vel: f32) {}
-}
-
-impl GetSrcBuf for MidiManagerState {
-  fn get_src_buf(&self) -> &Vec<f32> {
-    &self.buf
-  }
 }

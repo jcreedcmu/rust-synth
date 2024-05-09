@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
-use crate::audio::BUF_SIZE;
 use crate::consts::{SAMPLE_RATE_hz, BUS_DRY};
 use crate::envelope::{Adsr, EnvPos, EnvState};
 use crate::state::{AudioBusses, ControlBlocks};
-use crate::ugen::{GetSrcBuf, Ugen};
+use crate::ugen::Ugen;
 
 const reasonable_adsr: Adsr = Adsr {
   attack_s: 0.001,
@@ -23,7 +22,6 @@ pub struct ReasonableSynthState {
   phase: f32,
   env_state: EnvState,
   wavetable: Arc<Vec<f32>>,
-  buf: Vec<f32>,
 }
 
 impl ReasonableSynthState {
@@ -42,7 +40,6 @@ impl ReasonableSynthState {
         },
       },
       wavetable,
-      buf: vec![0.; BUF_SIZE],
     }
   }
 }
@@ -87,11 +84,5 @@ impl Ugen for ReasonableSynthState {
       vel,
       hold: true,
     };
-  }
-}
-
-impl GetSrcBuf for ReasonableSynthState {
-  fn get_src_buf(&self) -> &Vec<f32> {
-    &self.buf
   }
 }

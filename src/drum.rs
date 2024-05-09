@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
-use crate::audio::BUF_SIZE;
 use crate::consts::BUS_DRY;
 use crate::envelope::{Adsr, EnvPos, EnvState};
 use crate::state::{AudioBusses, ControlBlock, ControlBlocks, DEFAULT_DRUM_CONTROL_BLOCK};
 use crate::synth::TABLE_SIZE;
-use crate::ugen::GetSrcBuf;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
 pub fn drum_adsr(dur_scale: f32) -> Adsr {
@@ -32,7 +30,6 @@ pub struct DrumSynthState {
   env_state: EnvState,
   wavetable: Arc<Vec<f32>>,
   ci: usize,
-  buf: Vec<f32>,
 }
 
 impl DrumSynthState {
@@ -54,7 +51,6 @@ impl DrumSynthState {
       },
       wavetable,
       ci: DEFAULT_DRUM_CONTROL_BLOCK,
-      buf: vec![0.; BUF_SIZE],
     }
   }
 
@@ -96,10 +92,4 @@ impl Ugen for DrumSynthState {
 
   fn release(&mut self) {}
   fn restrike(&mut self, _vel: f32) {}
-}
-
-impl GetSrcBuf for DrumSynthState {
-  fn get_src_buf(&self) -> &Vec<f32> {
-    &self.buf
-  }
 }

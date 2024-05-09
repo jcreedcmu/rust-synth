@@ -1,6 +1,5 @@
-use crate::audio::BUF_SIZE;
 use crate::state::{AudioBusses, ControlBlock, ControlBlocks};
-use crate::ugen::{GetSrcBuf, Ugen};
+use crate::ugen::Ugen;
 
 const LOW_PASS_AMOUNT: usize = 35000;
 
@@ -18,7 +17,6 @@ pub struct LowpassState {
   dst: usize,
   ix: usize,
   memory: Vec<f32>,
-  buf: Vec<f32>,
 }
 
 impl LowpassState {
@@ -28,7 +26,6 @@ impl LowpassState {
       dst,
       ix: 0,
       memory: vec![0.; LOW_PASS_AMOUNT],
-      buf: vec![0.; BUF_SIZE],
     }
   }
 
@@ -62,10 +59,4 @@ impl Ugen for LowpassState {
   }
   fn release(&mut self) {}
   fn restrike(&mut self, vel: f32) {}
-}
-
-impl GetSrcBuf for LowpassState {
-  fn get_src_buf(&self) -> &Vec<f32> {
-    &self.buf
-  }
 }
