@@ -1,5 +1,6 @@
 use crate::drum::DrumSynthState;
 use crate::lowpass::LowpassState;
+use crate::midi_manager::MidiManagerState;
 use crate::reasonable_synth::ReasonableSynthState;
 use crate::state::{AudioBusses, ControlBlocks};
 
@@ -14,6 +15,7 @@ pub enum UgenState {
   ReasonableSynth(ReasonableSynthState),
   DrumSynth(DrumSynthState),
   Lowpass(LowpassState),
+  MidiManager(MidiManagerState),
 }
 
 // some boilerplate to wire things up
@@ -23,6 +25,7 @@ impl Ugen for UgenState {
       UgenState::DrumSynth(s) => s.run(bus, tick_s, ctl),
       UgenState::ReasonableSynth(s) => s.run(bus, tick_s, ctl),
       UgenState::Lowpass(s) => s.run(bus, tick_s, ctl),
+      UgenState::MidiManager(s) => s.run(bus, tick_s, ctl),
     }
   }
 
@@ -31,6 +34,7 @@ impl Ugen for UgenState {
       UgenState::DrumSynth(s) => s.release(),
       UgenState::ReasonableSynth(s) => s.release(),
       UgenState::Lowpass(s) => s.release(),
+      UgenState::MidiManager(s) => s.release(),
     }
   }
 
@@ -39,6 +43,7 @@ impl Ugen for UgenState {
       UgenState::DrumSynth(s) => s.restrike(vel),
       UgenState::ReasonableSynth(s) => s.restrike(vel),
       UgenState::Lowpass(s) => s.restrike(vel),
+      UgenState::MidiManager(s) => s.restrike(vel),
     }
   }
 }
