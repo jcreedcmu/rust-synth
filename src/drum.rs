@@ -10,10 +10,10 @@ use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
 pub fn drum_adsr(dur_scale: f32) -> Adsr {
   Adsr {
-    attack_s: 0.025 * dur_scale,
+    attack_s: 0.01 * dur_scale,
     decay_s: 0.05 * dur_scale,
-    sustain: 0.1,
-    release_s: 0.25,
+    sustain: 0.2,
+    release_s: 0.2 * dur_scale,
   }
 }
 

@@ -26,11 +26,11 @@ pub fn sequencer_loop(sg: StateGuard) -> anyhow::Result<()> {
       // if toggle { 10.0 } else { 1760.0 },
 
       if s.sequencer.tab[pos][0] {
-        let ugen = s.new_drum(660.0, 10.0, drum_adsr(1.0));
+        let ugen = s.new_drum(660.0, 1.0, drum_adsr(1.0));
         add_ugen_state(&mut s, ugen);
       }
       if s.sequencer.tab[pos][1] {
-        let ugen = s.new_drum(1760.0, 1760.0, drum_adsr(1.0));
+        let ugen = s.new_drum(1760.0, 1000.0, drum_adsr(0.5));
         add_ugen_state(&mut s, ugen);
       }
       if s.sequencer.tab[pos][2] {
