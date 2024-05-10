@@ -14,6 +14,7 @@ mod sequencer;
 mod state;
 mod synth;
 mod ugen;
+mod ugen_group;
 mod util;
 mod wavetables;
 mod webserver;
