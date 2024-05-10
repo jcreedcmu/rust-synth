@@ -47,13 +47,6 @@ fn sequencer_loop_inner(col: &Vec<bool>, wavetables: &Wavetables, group: &mut Ug
   }
 }
 
-fn find_ugen_group(ugens: &mut Vec<Option<UgenState>>) -> Option<&mut UgenGroupState> {
-  ugens.iter_mut().find_map(|ougen| match ougen {
-    Some(UgenState::UgenGroup(group)) => Some(group),
-    _ => None,
-  })
-}
-
 pub fn sequencer_loop(sg: StateGuard) -> anyhow::Result<()> {
   let mut pos: usize = 0;
   loop {
@@ -70,10 +63,16 @@ pub fn sequencer_loop(sg: StateGuard) -> anyhow::Result<()> {
         ..
       } = &mut *s;
 
-      match find_ugen_group(fixed_ugens) {
-        Some(group) => sequencer_loop_inner(&sequencer.tab[pos], wavetables, group),
-        _ => println!("WARNING: didn't find sequencer ugen group where we expected it"),
-      };
+      let maybe_group = fixed_ugens.iter_mut().find_map(|ougen| match ougen {
+        Some(UgenState::UgenGroup(group)) => Some(group),
+        _ => None,
+      });
+
+      if let Some(group) = maybe_group {
+        sequencer_loop_inner(&sequencer.tab[pos], wavetables, group);
+      } else {
+        println!("WARNING: didn't find sequencer ugen group where we expected it");
+      }
 
       pos = (pos + 1) % SEQ_PATTERN_LEN;
     }
