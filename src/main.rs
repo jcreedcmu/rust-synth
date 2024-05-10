@@ -100,10 +100,10 @@ fn mk_sequencer_thread(sg: StateGuard) -> JoinHandle {
   })
 }
 
-fn mk_midi_service(sg: StateGuard, ugen_id: usize) -> anyhow::Result<MidiService> {
+fn mk_midi_service(sg: StateGuard) -> anyhow::Result<MidiService> {
   midi::MidiService::new(0, move |msg: &Message| -> anyhow::Result<()> {
     let mut s: MutexGuard<State> = depoison(sg.lock())?;
-    reduce::midi_reducer(msg, ugen_id, &mut s)?;
+    reduce::midi_reducer(msg, &mut s)?;
     Ok(())
   })
 }
@@ -164,7 +164,7 @@ fn run() -> Result<(), Box<dyn Error>> {
   let mono_buf_size = BUF_SIZE / (CHANNELS as usize);
   let mut state = State::new(mono_buf_size);
 
-  let midi_manager_id = add_fixed_ugen_state(
+  add_fixed_ugen_state(
     &mut state,
     ugen::UgenState::MidiManager(MidiManagerState::new(BUS_DRY)),
   );
@@ -181,7 +181,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 
   let state = Arc::new(Mutex::new(state));
 
-  let ms = mk_midi_service(state.clone(), midi_manager_id)?;
+  let ms = mk_midi_service(state.clone())?;
   mk_sequencer_thread(state.clone());
   mk_stdin_thread(state.clone());
   mk_web_thread(state.clone());

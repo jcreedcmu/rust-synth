@@ -129,10 +129,17 @@ pub fn midi_reducer_inner(
   }
 }
 
+fn find_midi_manager(ugens: &mut Vec<Option<UgenState>>) -> Option<&mut MidiManagerState> {
+  ugens.iter_mut().find_map(|ougen| match ougen {
+    Some(UgenState::MidiManager(m)) => Some(m),
+    _ => None,
+  })
+}
+
 // Could have this function return pure data that represents the
 // change, then have subsequent function carry it out, so that we hold
 // state lock for shorter duration.
-pub fn midi_reducer(msg: &Message, ugen_id: usize, state: &mut State) -> anyhow::Result<()> {
+pub fn midi_reducer(msg: &Message, state: &mut State) -> anyhow::Result<()> {
   let State {
     websocket,
     fixed_ugens,
@@ -143,10 +150,8 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, state: &mut State) -> anyhow:
     None => (),
     Some(ws) => ws.try_send(SynthMessage::Midi { msg: msg.clone() })?,
   }
-  match fixed_ugens[ugen_id] {
-    Some(UgenState::MidiManager(ref mut midi_manager)) => {
-      midi_reducer_inner(msg, wavetables, midi_manager)
-    },
+  match find_midi_manager(fixed_ugens) {
+    Some(midi_manager) => midi_reducer_inner(msg, wavetables, midi_manager),
     _ => Err(anyhow!("didn't find midi manager where we expected it")),
   }
 }
