@@ -36,10 +36,6 @@ impl Synth {
       }
     }
 
-    for mut ugen in s.ugen_state.iter_mut() {
-      self.exec_maybe_ugen(&mut ugen, &mut s.audio_bus, &s.control_blocks);
-    }
-
     for mut ugen in s.fixed_ugens.iter_mut() {
       self.exec_maybe_ugen(&mut ugen, &mut s.audio_bus, &s.control_blocks);
     }

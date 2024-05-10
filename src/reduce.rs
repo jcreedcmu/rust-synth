@@ -13,11 +13,6 @@ pub fn add_fixed_ugen_state(s: &mut State, new: UgenState) -> usize {
   add_gen(&mut s.fixed_ugens, new)
 }
 
-// Don't want to call this function from within this file
-pub fn add_ugen_state(s: &mut State, new: UgenState) -> usize {
-  add_gen(&mut s.ugen_state, new)
-}
-
 pub fn add_gen<T>(ns: &mut Vec<Option<T>>, new: T) -> usize {
   let first_free_index = ns.iter().position(|x| match x {
     None => true,

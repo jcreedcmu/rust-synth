@@ -22,11 +22,11 @@ mod webserver;
 use audio::{BUF_SIZE, CHANNELS};
 use clap::Parser;
 use consts::{BUS_DRY, BUS_OUT};
-use drum::{drum_adsr, DrumControlBlock};
+use drum::DrumControlBlock;
 use lowpass::{LowpassControlBlock, LowpassState};
 use midi::{Message, MidiService};
 use midi_manager::MidiManagerState;
-use reduce::{add_fixed_ugen_state, add_ugen_state};
+use reduce::add_fixed_ugen_state;
 use sequencer::sequencer_loop;
 use state::{State, StateGuard};
 use ugen_group::UgenGroupState;
@@ -47,8 +47,7 @@ fn main() {
 fn reduce_web_message(m: &WebMessage, s: &mut State) {
   match m.message {
     WebAction::Drum => {
-      let ugen = s.new_drum(1000.0, 2000.0, drum_adsr(1.0));
-      add_ugen_state(s, ugen);
+      println!("would have done drum here");
     },
     WebAction::Quit => {
       s.going = false;
@@ -122,9 +121,10 @@ fn mk_stdin_thread(sg: StateGuard) -> JoinHandle {
           break;
         },
         "k\n" => {
-          let mut s: MutexGuard<State> = depoison(sg.lock())?;
-          let ugen = s.new_drum(440.0, 440.0, drum_adsr(1.0));
-          add_ugen_state(&mut s, ugen);
+          // let mut s: MutexGuard<State> = depoison(sg.lock())?;
+          // let ugen = s.new_drum(440.0, 440.0, drum_adsr(1.0));
+          // add_ugen_state(&mut s, ugen);
+          println!("would have played drum here");
         },
         _ => println!("Didn't recognize {input}."),
       }
