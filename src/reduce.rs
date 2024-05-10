@@ -4,27 +4,25 @@ use crate::midi::Message;
 use crate::midi_manager::MidiManagerState;
 use crate::notegen::{Notegen, NotegenState};
 use crate::state::{get_key_state_mut, new_reasonable_of_tables, KeyState, State};
-use crate::ugen::{UgenState, UgensState};
+use crate::ugen::UgenState;
 use crate::util;
 use crate::webserver::SynthMessage;
 
 pub fn add_fixed_ugen_state(s: &mut State, new: UgenState) -> usize {
-  add_ugen(&mut s.fixed_ugens, new)
+  add_gen(&mut s.fixed_ugens, new)
 }
 
 // Don't want to call this function from within this file
 pub fn add_ugen_state(s: &mut State, new: UgenState) -> usize {
-  add_ugen(&mut s.ugen_state, new)
+  add_gen(&mut s.ugen_state, new)
 }
 
-// XXX combine add_ugen and add_notegen
-
-fn add_ugen(ns: &mut UgensState, new: UgenState) -> usize {
+fn add_gen<T>(ns: &mut Vec<Option<T>>, new: T) -> usize {
   let first_free_index = ns.iter().position(|x| match x {
     None => true,
     _ => false,
   });
-  let ougen: Option<UgenState> = Some(new);
+  let ougen: Option<T> = Some(new);
   match first_free_index {
     None => {
       ns.push(ougen);
@@ -32,24 +30,6 @@ fn add_ugen(ns: &mut UgensState, new: UgenState) -> usize {
     },
     Some(i) => {
       ns[i] = ougen;
-      i
-    },
-  }
-}
-
-fn add_notegen(ns: &mut Vec<Option<NotegenState>>, new: NotegenState) -> usize {
-  let first_free_index = ns.iter().position(|x| match x {
-    None => true,
-    _ => false,
-  });
-  let onotegen: Option<NotegenState> = Some(new);
-  match first_free_index {
-    None => {
-      ns.push(onotegen);
-      ns.len() - 1
-    },
-    Some(i) => {
-      ns[i] = onotegen;
       i
     },
   }
@@ -107,7 +87,7 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, state: &mut State) -> anyhow:
           let ugen_ix = match pre {
             None => {
               let ugen = new_reasonable_of_tables(wavetables, freq, vel);
-              add_notegen(notegen_state, ugen)
+              add_gen(notegen_state, ugen)
             },
             Some(ugen_ix) => match &mut notegen_state[ugen_ix] {
               None => panic!("Invariant Violation: expected key_state pointed to live ugen"),
