@@ -72,6 +72,14 @@ fn reduce_web_message(m: WebMessage, s: &mut State) {
         println!("Unexpected control block");
       },
     },
+    WebAction::SetLowpassConfig { lowp_cfg } => match &mut s.control_blocks[1] {
+      state::ControlBlock::Low(cfg) => {
+        *cfg = lowp_cfg;
+      },
+      _ => {
+        println!("Unexpected control block");
+      },
+    },
     WebAction::SetSequencer { inst, pat, on } => {
       s.sequencer.set(inst, pat, on);
     },

@@ -1,3 +1,4 @@
+use crate::lowpass::LowpassControlBlock;
 use crate::midi;
 use crate::ugen::UgenSpec;
 use crate::util::UnitHandle;
@@ -17,6 +18,7 @@ pub enum WebAction {
   Drum,
   SetVolume { vol: u32 },
   SetLowpassParam { lowp_param: f32 },
+  SetLowpassConfig { lowp_cfg: LowpassControlBlock },
   SetSequencer { inst: usize, pat: usize, on: bool },
   Reconfigure { specs: Vec<UgenSpec> },
 }
