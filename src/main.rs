@@ -26,7 +26,6 @@ use drum::DrumControlBlock;
 use lowpass::{LowpassControlBlock, LowpassState};
 use midi::{Message, MidiService};
 use midi_manager::MidiManagerState;
-use reduce::add_fixed_ugen_state;
 use sequencer::sequencer_loop;
 use state::{State, StateGuard};
 use ugen::UgenState;
@@ -73,9 +72,9 @@ fn reduce_web_message(m: WebMessage, s: &mut State) {
       s.sequencer.set(inst, pat, on);
     },
     WebAction::Reconfigure { specs } => {
-      s.fixed_ugens = specs
+      s.fixed_ugens = specs //
         .into_iter()
-        .map(|spec| Some(UgenState::new(spec)))
+        .map(UgenState::new)
         .collect();
     },
   }
@@ -171,20 +170,11 @@ fn run() -> Result<(), Box<dyn Error>> {
   let mono_buf_size = BUF_SIZE / (CHANNELS as usize);
   let mut state = State::new(mono_buf_size);
 
-  add_fixed_ugen_state(
-    &mut state,
+  state.fixed_ugens = vec![
     ugen::UgenState::MidiManager(MidiManagerState::new(BUS_DRY)),
-  );
-
-  add_fixed_ugen_state(
-    &mut state,
     ugen::UgenState::UgenGroup(UgenGroupState::new(BUS_DRY)),
-  );
-
-  add_fixed_ugen_state(
-    &mut state,
     ugen::UgenState::Lowpass(LowpassState::new(BUS_DRY, BUS_OUT)),
-  );
+  ];
 
   let state = Arc::new(Mutex::new(state));
 

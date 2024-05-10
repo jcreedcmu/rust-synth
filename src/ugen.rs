@@ -49,5 +49,4 @@ impl UgenState {
   }
 }
 
-// XXX make this not option
-pub type UgensState = Vec<Option<UgenState>>;
+pub type UgensState = Vec<UgenState>;

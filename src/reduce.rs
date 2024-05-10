@@ -9,10 +9,6 @@ use crate::util;
 use crate::wavetables::Wavetables;
 use crate::webserver::SynthMessage;
 
-pub fn add_fixed_ugen_state(s: &mut State, new: UgenState) -> usize {
-  add_gen(&mut s.fixed_ugens, new)
-}
-
 pub fn add_gen<T>(ns: &mut Vec<Option<T>>, new: T) -> usize {
   let first_free_index = ns.iter().position(|x| match x {
     None => true,
@@ -146,8 +142,8 @@ pub fn midi_reducer(msg: &Message, state: &mut State) -> anyhow::Result<()> {
 
   let midi_manager = fixed_ugens
     .iter_mut()
-    .find_map(|ougen| match ougen {
-      Some(UgenState::MidiManager(m)) => Some(m),
+    .find_map(|ugen| match ugen {
+      UgenState::MidiManager(m) => Some(m),
       _ => None,
     })
     .map_or_else(|| Err(anyhow!("couldn't find midi manager")), Ok)?;

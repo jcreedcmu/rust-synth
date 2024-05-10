@@ -63,8 +63,8 @@ pub fn sequencer_loop(sg: StateGuard) -> anyhow::Result<()> {
         ..
       } = &mut *s;
 
-      let maybe_group = fixed_ugens.iter_mut().find_map(|ougen| match ougen {
-        Some(UgenState::UgenGroup(group)) => Some(group),
+      let maybe_group = fixed_ugens.iter_mut().find_map(|ugen| match ugen {
+        UgenState::UgenGroup(group) => Some(group),
         _ => None,
       });
 
