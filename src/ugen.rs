@@ -8,6 +8,12 @@ pub trait Ugen: std::fmt::Debug + Sync + Send {
   fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool;
 }
 
+pub enum UgenSpec {
+  LowPass { src: usize, dst: usize },
+  MidiManager { dst: usize },
+  UgenGroup { dst: usize },
+}
+
 #[derive(Debug)]
 pub enum UgenState {
   DrumSynth(DrumSynthState),
@@ -28,4 +34,15 @@ impl Ugen for UgenState {
   }
 }
 
+impl UgenState {
+  pub fn new(spec: UgenSpec) -> Self {
+    match spec {
+      UgenSpec::LowPass { src, dst } => UgenState::Lowpass(LowpassState::new(src, dst)),
+      UgenSpec::MidiManager { dst } => UgenState::MidiManager(MidiManagerState::new(dst)),
+      UgenSpec::UgenGroup { dst } => UgenState::UgenGroup(UgenGroupState::new(dst)),
+    }
+  }
+}
+
+// XXX make this not option
 pub type UgensState = Vec<Option<UgenState>>;
