@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::drum::DrumSynthState;
 use crate::lowpass::LowpassState;
 use crate::midi_manager::MidiManagerState;
@@ -8,6 +10,9 @@ pub trait Ugen: std::fmt::Debug + Sync + Send {
   fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool;
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "t")]
+#[serde(rename_all = "camelCase")]
 pub enum UgenSpec {
   LowPass { src: usize, dst: usize },
   MidiManager { dst: usize },

@@ -29,6 +29,7 @@ use midi_manager::MidiManagerState;
 use reduce::add_fixed_ugen_state;
 use sequencer::sequencer_loop;
 use state::{State, StateGuard};
+use ugen::UgenState;
 use ugen_group::UgenGroupState;
 use util::{depoison, JoinHandle, UnitHandle};
 use webserver::{WebAction, WebMessage, WebOrSubMessage};
@@ -44,7 +45,7 @@ fn main() {
   }
 }
 
-fn reduce_web_message(m: &WebMessage, s: &mut State) {
+fn reduce_web_message(m: WebMessage, s: &mut State) {
   match m.message {
     WebAction::Drum => {
       println!("would have done drum here");
@@ -71,10 +72,16 @@ fn reduce_web_message(m: &WebMessage, s: &mut State) {
     WebAction::SetSequencer { inst, pat, on } => {
       s.sequencer.set(inst, pat, on);
     },
+    WebAction::Reconfigure { specs } => {
+      s.fixed_ugens = specs
+        .into_iter()
+        .map(|spec| Some(UgenState::new(spec)))
+        .collect();
+    },
   }
 }
 
-fn reduce_web_or_sub_message(m: &WebOrSubMessage, s: &mut State) {
+fn reduce_web_or_sub_message(m: WebOrSubMessage, s: &mut State) {
   match m {
     WebOrSubMessage::WebMessage(m) => {
       reduce_web_message(m, s);
@@ -88,7 +95,7 @@ fn reduce_web_or_sub_message(m: &WebOrSubMessage, s: &mut State) {
 fn mk_web_thread(sg: StateGuard) -> (UnitHandle, UnitHandle) {
   webserver::start(move |msg| {
     let mut s = depoison(sg.lock())?;
-    reduce_web_or_sub_message(&msg, &mut s);
+    reduce_web_or_sub_message(msg, &mut s);
     Ok(())
   })
 }
@@ -149,7 +156,7 @@ fn setup_ctrlc_handler(sg: StateGuard) {
   ctrlc::set_handler(move || {
     let mut s: MutexGuard<State> = sg.lock().unwrap();
     reduce_web_message(
-      &WebMessage {
+      WebMessage {
         message: WebAction::Quit,
       },
       &mut s,

@@ -1,4 +1,5 @@
 use crate::midi;
+use crate::ugen::UgenSpec;
 use crate::util::UnitHandle;
 use rocket::futures::{SinkExt, StreamExt};
 use rocket::{get, routes};
@@ -17,6 +18,7 @@ pub enum WebAction {
   SetVolume { vol: u32 },
   SetLowpassParam { lowp_param: f32 },
   SetSequencer { inst: usize, pat: usize, on: bool },
+  Reconfigure { specs: Vec<UgenSpec> },
 }
 
 // Messages sent from the web client to the synth
@@ -122,7 +124,7 @@ fn serve(tx: Sender<WebOrSubMessage>) -> anyhow::Result<()> {
 
 pub fn start<C>(k: C) -> (UnitHandle, UnitHandle)
 where
-  C: Fn(&WebOrSubMessage) -> anyhow::Result<()> + Send + 'static,
+  C: Fn(WebOrSubMessage) -> anyhow::Result<()> + Send + 'static,
 {
   let (web_tx, mut web_rx) = channel::<WebOrSubMessage>(CHANNEL_CAPACITY);
   let serve_thread = std::thread::spawn(move || {
@@ -134,7 +136,7 @@ where
         println!("web_rx blocking recv got None, in fwd_thread");
         break;
       },
-      Some(msg) => k(&msg).unwrap(),
+      Some(msg) => k(msg).unwrap(),
     }
   });
   (serve_thread, fwd_thread)
