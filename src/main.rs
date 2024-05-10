@@ -93,9 +93,9 @@ fn mk_web_thread(sg: StateGuard) -> (UnitHandle, UnitHandle) {
   })
 }
 
-fn mk_sequencer_thread(sg: StateGuard, ugen_group_id: usize) -> JoinHandle {
+fn mk_sequencer_thread(sg: StateGuard) -> JoinHandle {
   std::thread::spawn(move || -> anyhow::Result<()> {
-    sequencer_loop(sg, ugen_group_id)?;
+    sequencer_loop(sg)?;
     Ok(())
   })
 }
@@ -169,7 +169,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     ugen::UgenState::MidiManager(MidiManagerState::new(BUS_DRY)),
   );
 
-  let ugen_group_id = add_fixed_ugen_state(
+  add_fixed_ugen_state(
     &mut state,
     ugen::UgenState::UgenGroup(UgenGroupState::new(BUS_DRY)),
   );
@@ -182,7 +182,7 @@ fn run() -> Result<(), Box<dyn Error>> {
   let state = Arc::new(Mutex::new(state));
 
   let ms = mk_midi_service(state.clone(), midi_manager_id)?;
-  mk_sequencer_thread(state.clone(), ugen_group_id);
+  mk_sequencer_thread(state.clone());
   mk_stdin_thread(state.clone());
   mk_web_thread(state.clone());
   setup_ctrlc_handler(state.clone());

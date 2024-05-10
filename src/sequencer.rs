@@ -49,7 +49,14 @@ fn sequencer_loop_inner(col: &Vec<bool>, wavetables: &Wavetables, group: &mut Ug
   }
 }
 
-pub fn sequencer_loop(sg: StateGuard, ugen_group_id: usize) -> anyhow::Result<()> {
+fn find_ugen_group(ugens: &mut Vec<Option<UgenState>>) -> Option<&mut UgenGroupState> {
+  ugens.iter_mut().find_map(|ougen| match ougen {
+    Some(UgenState::UgenGroup(group)) => Some(group),
+    _ => None,
+  })
+}
+
+pub fn sequencer_loop(sg: StateGuard) -> anyhow::Result<()> {
   let mut pos: usize = 0;
   loop {
     {
@@ -65,10 +72,8 @@ pub fn sequencer_loop(sg: StateGuard, ugen_group_id: usize) -> anyhow::Result<()
         ..
       } = &mut *s;
 
-      match fixed_ugens[ugen_group_id] {
-        Some(UgenState::UgenGroup(ref mut group)) => {
-          sequencer_loop_inner(&sequencer.tab[pos], wavetables, group)
-        },
+      match find_ugen_group(fixed_ugens) {
+        Some(group) => sequencer_loop_inner(&sequencer.tab[pos], wavetables, group),
         _ => return Err(anyhow!("didn't find midi manager where we expected it")),
       };
 
