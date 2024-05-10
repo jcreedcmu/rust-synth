@@ -1,5 +1,3 @@
-use anyhow::anyhow;
-
 use crate::drum::{drum_adsr, DrumSynthState};
 use crate::envelope::Adsr;
 use crate::reduce::add_gen;
@@ -74,7 +72,7 @@ pub fn sequencer_loop(sg: StateGuard) -> anyhow::Result<()> {
 
       match find_ugen_group(fixed_ugens) {
         Some(group) => sequencer_loop_inner(&sequencer.tab[pos], wavetables, group),
-        _ => return Err(anyhow!("didn't find midi manager where we expected it")),
+        _ => println!("WARNING: didn't find sequencer ugen group where we expected it"),
       };
 
       pos = (pos + 1) % SEQ_PATTERN_LEN;

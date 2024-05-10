@@ -3,6 +3,11 @@ import { CSSProperties, useEffect, useRef, useState } from 'react';
 import { WebMessage } from './protocol';
 import { produce } from 'immer';
 import { Chart } from './chart';
+
+// Should match consts.rs
+const BUS_DRY = 1;
+const BUS_OUT = 0;
+
 type AppProps = {
 
 };
@@ -71,8 +76,17 @@ function App(props: AppProps): JSX.Element {
 
     wsc.ws.onopen = () => {
       setConnected(true);
-      console.log('ws opened on browser')
+      console.log('ws opened on browser');
       wsco.current = wsc;
+      send({
+        message: {
+          t: 'reconfigure', specs: [
+            { t: 'midiManager', dst: BUS_DRY },
+            { t: 'ugenGroup', dst: BUS_DRY },
+            { t: 'lowPass', src: BUS_DRY, dst: BUS_OUT },
+          ]
+        }
+      });
     }
 
     wsc.ws.onclose = () => {
