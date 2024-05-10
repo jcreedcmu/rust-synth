@@ -19,13 +19,10 @@ impl UgenGroupState {
 impl Ugen for UgenGroupState {
   fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool {
     for mut ougen in self.ugen_state.iter_mut() {
-      match *ougen {
-        None => (),
-        Some(ref mut ugen) => {
-          if !ugen.run(bus, tick_s, ctl) {
-            *ougen = None;
-          }
-        },
+      if let Some(ugen) = ougen {
+        if !ugen.run(bus, tick_s, ctl) {
+          *ougen = None;
+        }
       }
     }
     true
