@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE};
 use crate::drum::{DrumControlBlock, DrumSynthState};
 use crate::envelope::Adsr;
-use crate::lowpass::LowpassControlBlock;
+use crate::lowpass::{LowpassControlBlock, Tap};
 use crate::notegen::NotegenState;
 use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
 use crate::sequencer::Sequencer;
@@ -58,7 +58,13 @@ impl State {
   pub fn new(buf_size: usize) -> State {
     let mut control_blocks: ControlBlocks = vec![];
     control_blocks.push(ControlBlock::Drum(DrumControlBlock { vol: 1. }));
-    control_blocks.push(ControlBlock::Low(LowpassControlBlock { lowp_param: 0.5 }));
+    control_blocks.push(ControlBlock::Low(LowpassControlBlock {
+      self_weight: 0.5,
+      taps: vec![Tap {
+        pos: 1,
+        weight: 0.5,
+      }],
+    }));
     State {
       going: true,
       audio_bus: vec![vec![0.; buf_size]; AUDIO_BUS_LENGTH],

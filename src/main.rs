@@ -23,7 +23,7 @@ use audio::{BUF_SIZE, CHANNELS};
 use clap::Parser;
 use consts::{BUS_DRY, BUS_OUT};
 use drum::DrumControlBlock;
-use lowpass::{LowpassControlBlock, LowpassState};
+use lowpass::{LowpassControlBlock, LowpassState, Tap};
 use midi::{Message, MidiService};
 use midi_manager::MidiManagerState;
 use sequencer::sequencer_loop;
@@ -61,8 +61,12 @@ fn reduce_web_message(m: WebMessage, s: &mut State) {
       },
     },
     WebAction::SetLowpassParam { lowp_param } => match &mut s.control_blocks[1] {
-      state::ControlBlock::Low(LowpassControlBlock { lowp_param: param }) => {
-        *param = lowp_param;
+      state::ControlBlock::Low(LowpassControlBlock { self_weight, taps }) => {
+        *self_weight = 1.0 - lowp_param;
+        *taps = vec![Tap {
+          pos: 1,
+          weight: lowp_param,
+        }];
       },
       _ => {
         println!("Unexpected control block");
