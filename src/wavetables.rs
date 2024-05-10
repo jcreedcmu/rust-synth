@@ -7,6 +7,7 @@ use crate::synth::TABLE_SIZE;
 #[derive(Debug)]
 pub struct Wavetables {
   pub saw_wavetable: Arc<Vec<f32>>,
+  pub sqr_wavetable: Arc<Vec<f32>>,
   pub noise_wavetable: Arc<Vec<f32>>,
 }
 
@@ -24,6 +25,7 @@ impl Wavetables {
 
     // Initialise wavetables
     let mut saw_wavetable = vec![0.0; TABLE_SIZE + 1];
+    let mut sqr_wavetable = vec![0.0; TABLE_SIZE + 1];
     let mut noise_wavetable = vec![0.0; TABLE_SIZE + 1];
 
     // Why did we make TABLE_SIZE + 1 with this wraparound? It seems I
@@ -36,12 +38,18 @@ impl Wavetables {
     saw_wavetable[TABLE_SIZE] = saw_wavetable[0];
 
     for i in 0..TABLE_SIZE {
+      sqr_wavetable[i] = if i < TABLE_SIZE / 2 { 1.0 } else { -1.0 };
+    }
+    sqr_wavetable[TABLE_SIZE] = sqr_wavetable[0];
+
+    for i in 0..TABLE_SIZE {
       noise_wavetable[i] = rand::thread_rng().gen_range(-1.0f32..1.0f32);
     }
     noise_wavetable[TABLE_SIZE] = noise_wavetable[0];
 
     Self {
       saw_wavetable: Arc::new(saw_wavetable),
+      sqr_wavetable: Arc::new(sqr_wavetable),
       noise_wavetable: Arc::new(noise_wavetable),
     }
   }
