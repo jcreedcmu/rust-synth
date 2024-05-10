@@ -57,6 +57,4 @@ impl Ugen for LowpassState {
       _ => false,
     }
   }
-  fn release(&mut self) {}
-  fn restrike(&mut self, vel: f32) {}
 }

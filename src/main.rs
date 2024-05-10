@@ -7,6 +7,7 @@ mod envelope;
 mod lowpass;
 mod midi;
 mod midi_manager;
+mod notegen;
 mod reasonable_synth;
 mod reduce;
 mod sequencer;

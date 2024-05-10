@@ -1,6 +1,7 @@
 use crate::consts::NUM_KEYS;
+use crate::notegen::{Notegen, NotegenState};
 use crate::state::{AudioBusses, ControlBlocks, KeyState};
-use crate::ugen::{Ugen, UgensState};
+use crate::ugen::Ugen;
 
 #[derive(Debug)]
 pub struct MidiManagerState {
@@ -9,7 +10,7 @@ pub struct MidiManagerState {
   pub pedal: bool,
   // This is NUM_KEYS long, one keystate for every physical key.
   pub key_state: Vec<KeyState>,
-  pub ugen_state: UgensState,
+  pub notegen_state: Vec<Option<NotegenState>>,
 }
 
 impl MidiManagerState {
@@ -18,25 +19,23 @@ impl MidiManagerState {
       dst,
       pedal: false,
       key_state: vec![KeyState::Off; NUM_KEYS],
-      ugen_state: vec![],
+      notegen_state: vec![],
     }
   }
 }
 
 impl Ugen for MidiManagerState {
   fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool {
-    for mut ougen in self.ugen_state.iter_mut() {
-      match *ougen {
+    for mut onotegen in self.notegen_state.iter_mut() {
+      match *onotegen {
         None => (),
-        Some(ref mut ugen) => {
-          if !ugen.run(bus, tick_s, ctl) {
-            *ougen = None;
+        Some(ref mut notegen) => {
+          if !notegen.run(bus, tick_s, ctl) {
+            *onotegen = None;
           }
         },
       }
     }
     true
   }
-  fn release(&mut self) {}
-  fn restrike(&mut self, _vel: f32) {}
 }

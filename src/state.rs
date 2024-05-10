@@ -4,6 +4,7 @@ use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE};
 use crate::drum::{DrumControlBlock, DrumSynthState};
 use crate::envelope::Adsr;
 use crate::lowpass::LowpassControlBlock;
+use crate::notegen::NotegenState;
 use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
 use crate::sequencer::Sequencer;
 use crate::ugen::{UgenState, UgensState};
@@ -80,15 +81,6 @@ impl State {
     }
   }
 
-  // XXX deprecated?
-  pub fn new_reasonable(&self, freq_hz: f32, vel: f32) -> UgenState {
-    UgenState::ReasonableSynth(ReasonableSynthState::new(
-      freq_hz,
-      vel,
-      self.wavetables.saw_wavetable.clone(),
-    ))
-  }
-
   // XXX move to midi manager somehow?
   pub fn new_drum(&self, freq_hz: f32, freq2_hz: f32, adsr: Adsr) -> UgenState {
     UgenState::DrumSynth(DrumSynthState::new(
@@ -102,8 +94,8 @@ impl State {
 
 // XXX move to MIDI manager maybe?
 
-pub fn new_reasonable_of_tables(wavetables: &Wavetables, freq_hz: f32, vel: f32) -> UgenState {
-  UgenState::ReasonableSynth(ReasonableSynthState::new(
+pub fn new_reasonable_of_tables(wavetables: &Wavetables, freq_hz: f32, vel: f32) -> NotegenState {
+  NotegenState::ReasonableSynth(ReasonableSynthState::new(
     freq_hz,
     vel,
     wavetables.saw_wavetable.clone(),

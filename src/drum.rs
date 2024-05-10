@@ -89,7 +89,4 @@ impl Ugen for DrumSynthState {
       _ => false,
     }
   }
-
-  fn release(&mut self) {}
-  fn restrike(&mut self, _vel: f32) {}
 }

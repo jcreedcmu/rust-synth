@@ -2,8 +2,9 @@ use anyhow::anyhow;
 
 use crate::midi::Message;
 use crate::midi_manager::MidiManagerState;
+use crate::notegen::{Notegen, NotegenState};
 use crate::state::{get_key_state_mut, new_reasonable_of_tables, KeyState, State};
-use crate::ugen::{Ugen, UgenState, UgensState};
+use crate::ugen::{UgenState, UgensState};
 use crate::util;
 use crate::webserver::SynthMessage;
 
@@ -15,6 +16,8 @@ pub fn add_fixed_ugen_state(s: &mut State, new: UgenState) -> usize {
 pub fn add_ugen_state(s: &mut State, new: UgenState) -> usize {
   add_ugen(&mut s.ugen_state, new)
 }
+
+// XXX combine add_ugen and add_notegen
 
 fn add_ugen(ns: &mut UgensState, new: UgenState) -> usize {
   let first_free_index = ns.iter().position(|x| match x {
@@ -34,10 +37,28 @@ fn add_ugen(ns: &mut UgensState, new: UgenState) -> usize {
   }
 }
 
-fn release_maybe_ugen(ougen: &mut Option<UgenState>) {
-  match ougen {
+fn add_notegen(ns: &mut Vec<Option<NotegenState>>, new: NotegenState) -> usize {
+  let first_free_index = ns.iter().position(|x| match x {
+    None => true,
+    _ => false,
+  });
+  let onotegen: Option<NotegenState> = Some(new);
+  match first_free_index {
+    None => {
+      ns.push(onotegen);
+      ns.len() - 1
+    },
+    Some(i) => {
+      ns[i] = onotegen;
+      i
+    },
+  }
+}
+
+fn release_maybe_notegen(onotegen: &mut Option<NotegenState>) {
+  match onotegen {
     None => (),
-    Some(ugen) => ugen.release(),
+    Some(notegen) => notegen.release(),
   }
 }
 
@@ -68,7 +89,7 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, state: &mut State) -> anyhow:
     Some(UgenState::MidiManager(MidiManagerState {
       ref mut pedal,
       ref mut key_state,
-      ref mut ugen_state,
+      ref mut notegen_state,
       ..
     })) => {
       match msg {
@@ -86,9 +107,9 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, state: &mut State) -> anyhow:
           let ugen_ix = match pre {
             None => {
               let ugen = new_reasonable_of_tables(wavetables, freq, vel);
-              add_ugen(ugen_state, ugen)
+              add_notegen(notegen_state, ugen)
             },
-            Some(ugen_ix) => match &mut ugen_state[ugen_ix] {
+            Some(ugen_ix) => match &mut notegen_state[ugen_ix] {
               None => panic!("Invariant Violation: expected key_state pointed to live ugen"),
               Some(ugen) => {
                 ugen.restrike(vel);
@@ -108,7 +129,7 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, state: &mut State) -> anyhow:
               if *pedal {
                 *get_key_state_mut(key_state, pitch.into()) = KeyState::Held { ugen_ix };
               } else {
-                release_maybe_ugen(&mut ugen_state[ugen_ix]);
+                release_maybe_notegen(&mut notegen_state[ugen_ix]);
                 *get_key_state_mut(key_state, pitch.into()) = KeyState::Off;
               }
             },
@@ -130,7 +151,7 @@ pub fn midi_reducer(msg: &Message, ugen_id: usize, state: &mut State) -> anyhow:
             }
           }
           for ugen_ix in ugen_ixs.iter() {
-            release_maybe_ugen(&mut ugen_state[*ugen_ix]);
+            release_maybe_notegen(&mut notegen_state[*ugen_ix]);
           }
         },
         Message::PedalOn { .. } => {

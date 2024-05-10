@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use crate::consts::{SAMPLE_RATE_hz, BUS_DRY};
 use crate::envelope::{Adsr, EnvPos, EnvState};
+use crate::notegen::Notegen;
 use crate::state::{AudioBusses, ControlBlocks};
-use crate::ugen::Ugen;
 
 const reasonable_adsr: Adsr = Adsr {
   attack_s: 0.001,
@@ -44,7 +44,7 @@ impl ReasonableSynthState {
   }
 }
 
-impl Ugen for ReasonableSynthState {
+impl Notegen for ReasonableSynthState {
   fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool {
     for out in bus[self.dst].iter_mut() {
       let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
