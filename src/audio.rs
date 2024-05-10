@@ -17,7 +17,7 @@ pub struct AudioService {
 }
 
 pub const CHANNELS: u32 = 2;
-pub const BUF_SIZE: usize = 64;
+pub const BUF_SIZE: usize = 128;
 
 struct Reservation {
   conn: dbus::Connection,
