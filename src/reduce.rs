@@ -58,6 +58,7 @@ pub fn midi_reducer_inner(
 ) -> anyhow::Result<()> {
   {
     let MidiManagerState {
+      ref dst,
       ref mut pedal,
       ref mut key_state,
       ref mut notegen_state,
@@ -77,7 +78,7 @@ pub fn midi_reducer_inner(
 
         let ugen_ix = match pre {
           None => {
-            let ugen = new_reasonable_of_tables(wavetables, freq, vel);
+            let ugen = new_reasonable_of_tables(*dst, wavetables, freq, vel);
             add_gen(notegen_state, ugen)
           },
           Some(ugen_ix) => match &mut notegen_state[ugen_ix] {

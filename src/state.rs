@@ -94,8 +94,14 @@ impl State {
 
 // XXX move to MIDI manager maybe?
 
-pub fn new_reasonable_of_tables(wavetables: &Wavetables, freq_hz: f32, vel: f32) -> NotegenState {
+pub fn new_reasonable_of_tables(
+  dst: usize,
+  wavetables: &Wavetables,
+  freq_hz: f32,
+  vel: f32,
+) -> NotegenState {
   NotegenState::ReasonableSynth(ReasonableSynthState::new(
+    dst,
     freq_hz,
     vel,
     wavetables.saw_wavetable.clone(),

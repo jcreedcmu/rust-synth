@@ -5,7 +5,7 @@ use crate::ugen::Ugen;
 
 #[derive(Debug)]
 pub struct MidiManagerState {
-  dst: usize,
+  pub dst: usize,
   // Is the sustain pedal on?
   pub pedal: bool,
   // This is NUM_KEYS long, one keystate for every physical key.

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::consts::{SAMPLE_RATE_hz, BUS_DRY};
+use crate::consts::SAMPLE_RATE_hz;
 use crate::envelope::{Adsr, EnvPos, EnvState};
 use crate::notegen::Notegen;
 use crate::state::{AudioBusses, ControlBlocks};
@@ -25,9 +25,9 @@ pub struct ReasonableSynthState {
 }
 
 impl ReasonableSynthState {
-  pub fn new(freq_hz: f32, vel: f32, wavetable: Arc<Vec<f32>>) -> Self {
+  pub fn new(dst: usize, freq_hz: f32, vel: f32, wavetable: Arc<Vec<f32>>) -> Self {
     ReasonableSynthState {
-      dst: BUS_DRY,
+      dst,
       phase: 0.0,
       freq_hz,
       env_state: EnvState {
