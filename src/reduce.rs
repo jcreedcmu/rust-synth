@@ -18,7 +18,7 @@ pub fn add_ugen_state(s: &mut State, new: UgenState) -> usize {
   add_gen(&mut s.ugen_state, new)
 }
 
-fn add_gen<T>(ns: &mut Vec<Option<T>>, new: T) -> usize {
+pub fn add_gen<T>(ns: &mut Vec<Option<T>>, new: T) -> usize {
   let first_free_index = ns.iter().position(|x| match x {
     None => true,
     _ => false,

@@ -1,7 +1,13 @@
-use crate::drum::drum_adsr;
-use crate::reduce::add_ugen_state;
+use anyhow::anyhow;
+
+use crate::drum::{drum_adsr, DrumSynthState};
+use crate::envelope::Adsr;
+use crate::reduce::add_gen;
 use crate::state::{State, StateGuard};
+use crate::ugen::UgenState;
+use crate::ugen_group::UgenGroupState;
 use crate::util::depoison;
+use crate::wavetables::Wavetables;
 use std::sync::MutexGuard;
 
 // State of the sequencer
@@ -13,7 +19,37 @@ pub struct Sequencer {
 pub const SEQ_NUM_INSTRS: usize = 3;
 pub const SEQ_PATTERN_LEN: usize = 16;
 
-pub fn sequencer_loop(sg: StateGuard) -> anyhow::Result<()> {
+fn new_drum(wavetables: &Wavetables, freq_hz: f32, freq2_hz: f32, adsr: Adsr) -> UgenState {
+  UgenState::DrumSynth(DrumSynthState::new(
+    freq_hz,
+    freq2_hz,
+    adsr,
+    wavetables.noise_wavetable.clone(),
+  ))
+}
+
+fn sequencer_loop_inner(col: &Vec<bool>, wavetables: &Wavetables, group: &mut UgenGroupState) {
+  if col[0] {
+    add_gen(
+      &mut group.ugen_state,
+      new_drum(wavetables, 660.0, 1.0, drum_adsr(1.0)),
+    );
+  }
+  if col[1] {
+    add_gen(
+      &mut group.ugen_state,
+      new_drum(wavetables, 1760.0, 1000.0, drum_adsr(0.5)),
+    );
+  }
+  if col[2] {
+    add_gen(
+      &mut group.ugen_state,
+      new_drum(wavetables, 6760.0, 5760.0, drum_adsr(0.05)),
+    );
+  }
+}
+
+pub fn sequencer_loop(sg: StateGuard, ugen_group_id: usize) -> anyhow::Result<()> {
   let mut pos: usize = 0;
   loop {
     {
@@ -22,21 +58,19 @@ pub fn sequencer_loop(sg: StateGuard) -> anyhow::Result<()> {
         break;
       }
 
-      // if toggle { 660.0 } else { 1760.0 },
-      // if toggle { 10.0 } else { 1760.0 },
+      let State {
+        fixed_ugens,
+        wavetables,
+        sequencer,
+        ..
+      } = &mut *s;
 
-      if s.sequencer.tab[pos][0] {
-        let ugen = s.new_drum(660.0, 1.0, drum_adsr(1.0));
-        add_ugen_state(&mut s, ugen);
-      }
-      if s.sequencer.tab[pos][1] {
-        let ugen = s.new_drum(1760.0, 1000.0, drum_adsr(0.5));
-        add_ugen_state(&mut s, ugen);
-      }
-      if s.sequencer.tab[pos][2] {
-        let ugen = s.new_drum(6760.0, 5760.0, drum_adsr(0.05));
-        add_ugen_state(&mut s, ugen);
-      }
+      match fixed_ugens[ugen_group_id] {
+        Some(UgenState::UgenGroup(ref mut group)) => {
+          sequencer_loop_inner(&sequencer.tab[pos], wavetables, group)
+        },
+        _ => return Err(anyhow!("didn't find midi manager where we expected it")),
+      };
 
       pos = (pos + 1) % SEQ_PATTERN_LEN;
     }
