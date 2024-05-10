@@ -2,7 +2,7 @@ use crate::consts::SAMPLE_RATE_hz;
 use crate::state::{AudioBusses, ControlBlocks, State};
 use crate::ugen::{Ugen, UgenState};
 
-pub const TABLE_SIZE: usize = 4000;
+pub const TABLE_SIZE: usize = 512;
 
 pub struct Synth;
 
