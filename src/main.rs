@@ -5,6 +5,7 @@ mod consts;
 mod drum;
 mod envelope;
 mod lowpass;
+mod meter;
 mod midi;
 mod midi_manager;
 mod notegen;

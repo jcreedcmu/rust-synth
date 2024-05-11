@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::drum::DrumSynthState;
 use crate::lowpass::LowpassState;
+use crate::meter::MeterState;
 use crate::midi_manager::MidiManagerState;
 use crate::state::{AudioBusses, ControlBlocks};
 use crate::ugen_group::UgenGroupState;
@@ -17,6 +18,7 @@ pub enum UgenSpec {
   LowPass { src: usize, dst: usize },
   MidiManager { dst: usize },
   UgenGroup { dst: usize },
+  Meter { src: usize },
 }
 
 #[derive(Debug)]
@@ -25,6 +27,7 @@ pub enum UgenState {
   Lowpass(LowpassState),
   MidiManager(MidiManagerState),
   UgenGroup(UgenGroupState),
+  Meter(MeterState),
 }
 
 // some boilerplate to wire things up
@@ -35,6 +38,7 @@ impl Ugen for UgenState {
       UgenState::Lowpass(s) => s.run(bus, tick_s, ctl),
       UgenState::MidiManager(s) => s.run(bus, tick_s, ctl),
       UgenState::UgenGroup(s) => s.run(bus, tick_s, ctl),
+      UgenState::Meter(s) => s.run(bus, tick_s, ctl),
     }
   }
 }
@@ -45,6 +49,7 @@ impl UgenState {
       UgenSpec::LowPass { src, dst } => UgenState::Lowpass(LowpassState::new(src, dst)),
       UgenSpec::MidiManager { dst } => UgenState::MidiManager(MidiManagerState::new(dst)),
       UgenSpec::UgenGroup { dst } => UgenState::UgenGroup(UgenGroupState::new(dst)),
+      UgenSpec::Meter { src } => UgenState::Meter(MeterState::new(src)),
     }
   }
 }
