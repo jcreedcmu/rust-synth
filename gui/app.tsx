@@ -1,6 +1,6 @@
 import ReactDOM from 'react-dom';
 import { CSSProperties, useEffect, useRef, useState } from 'react';
-import { LowpassControlBlock, WebMessage } from './protocol';
+import { LowpassControlBlock, SynthMessage, WebMessage } from './protocol';
 import { produce } from 'immer';
 import { Chart } from './chart';
 import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
@@ -59,6 +59,7 @@ function App(props: AppProps): JSX.Element {
   const [connected, setConnected] = useState(true);
   const [drumVolume, setDrumVolume] = useState(100);
   const [lowpParam, setLowpParam] = useState(50);
+  const [meterValue, setMeterValue] = useState(0);
   const [cfg, setCfg] = useState<LowpassWidgetState>([{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }]);
   const wsco = useRef<WebSocketContainer | undefined>(undefined);
 
@@ -98,7 +99,15 @@ function App(props: AppProps): JSX.Element {
     }
 
     wsc.ws.onmessage = message => {
-      console.log(`message received`, message.data);
+      //   console.log(`message received`, message.data, typeof (message.data));
+      try {
+        const msg: SynthMessage = JSON.parse(message.data);
+        if (msg.t == 'meter') {
+          setMeterValue(msg.level);
+        }
+      } catch (e) {
+        console.log(`couldn't parse ${message.data}`);
+      }
     }
 
   }, []);
@@ -138,6 +147,7 @@ function App(props: AppProps): JSX.Element {
   }
   //  <Chart lowp_param={0.50} />
 
+  const meterDb = meterValue < 1e-10 ? '-infinity' : 20 * Math.log(meterValue) / Math.log(10);
   return <div>
     <button disabled={!connected} onMouseDown={() => { send({ message: { t: 'drum' } }) }}>Action</button><br />
     <button disabled={!connected} onMouseDown={() => { send({ message: { t: 'quit' } }) }}>Quit</button><br />
@@ -147,5 +157,6 @@ function App(props: AppProps): JSX.Element {
       onClick={() => { reconnect(wsco.current!); }}>reconnect</button></span> : undefined}
     <Sequencer send={send} />
     <br />
+    <b>RMS</b>: {meterDb}dB
   </div>;
 }

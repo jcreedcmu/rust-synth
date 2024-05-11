@@ -28,3 +28,15 @@ export type WebAction =
 export type WebMessage = {
   message: WebAction
 };
+
+export type MidiMessage =
+  | { t: 'noteOn', pitch: number, channel: number, velocity: number }
+  | { t: 'noteOff', pitch: number, channel: number }
+  | { t: 'pedalOn' }
+  | { t: 'pedalOff' }
+  ;
+
+export type SynthMessage =
+  | { t: 'midi', msg: MidiMessage }
+  | { t: 'meter', level: number } // rms
+  ;
