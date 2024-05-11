@@ -32,9 +32,24 @@ export function LowpassCfg(props: LowpassCfgProps): JSX.Element[] {
     props.setLowpassCfg(newCfg);
   };
 
+  function onKeyDown(e: React.KeyboardEvent, ix: number) {
+    console.log(e.code);
+    if (e.code == 'ArrowUp') {
+      const newCfg = produce(props.cfg, cfg => { cfg[ix].pos = cfg[ix].pos + 1; });
+      props.setLowpassCfg(newCfg);
+    }
+    else if (e.code == 'ArrowDown') {
+      const newCfg = produce(props.cfg, cfg => { cfg[ix].pos = Math.max(1, cfg[ix].pos - 1); });
+      props.setLowpassCfg(newCfg);
+    }
+  }
+
   const taps = props.cfg.flatMap((tap, i) => {
     return [<br />, <div className="range-container">
-      <input type="text" value={tap.pos} onInput={e => setPos(e, i)}></input>
+      <input type="text"
+        value={tap.pos}
+        onKeyDown={e => onKeyDown(e, i)}
+        onInput={e => setPos(e, i)} />
       <input type="range" min="1" max="99" value={tap.weight} onInput={e => setWeight(e, i)} />
     </div>];
   });

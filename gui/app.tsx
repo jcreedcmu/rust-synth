@@ -59,7 +59,7 @@ function App(props: AppProps): JSX.Element {
   const [connected, setConnected] = useState(true);
   const [drumVolume, setDrumVolume] = useState(100);
   const [lowpParam, setLowpParam] = useState(50);
-  const [cfg, setCfg] = useState<LowpassWidgetState>([{ pos: 1, weight: 50 }, { pos: 2, weight: 25 }]);
+  const [cfg, setCfg] = useState<LowpassWidgetState>([{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }]);
   const wsco = useRef<WebSocketContainer | undefined>(undefined);
 
   function reconnect(wsc: WebSocketContainer) {
@@ -116,7 +116,6 @@ function App(props: AppProps): JSX.Element {
     send({ message: { t: 'setVolume', vol } });
     setDrumVolume(vol);
   };
-
 
   function setLowpassCfg(cfg: LowpassWidgetState): void {
     let taps = cfg.map(({ pos, weight }) => ({ pos, weight: weight / 100 }));
