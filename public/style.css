@@ -1,0 +1,5 @@
+.range-container {
+  border: 1px solid black;
+  padding: 1em;
+  display: inline-block;
+}

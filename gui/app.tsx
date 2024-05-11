@@ -3,6 +3,7 @@ import { CSSProperties, useEffect, useRef, useState } from 'react';
 import { LowpassControlBlock, WebMessage } from './protocol';
 import { produce } from 'immer';
 import { Chart } from './chart';
+import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
 
 // Should match consts.rs
 const BUS_DRY = 1;
@@ -54,40 +55,11 @@ function Sequencer(props: SequencerProps): JSX.Element {
   return <table>{rows}</table>;
 }
 
-type LowpassCfgProps = {
-  cfg: LowpassControlBlock,
-  setLowpassCfg: (x: LowpassControlBlock) => void,
-}
-
-function LowpassCfg(props: LowpassCfgProps): JSX.Element[] {
-
-  const setPos = (e: React.FormEvent, ix: number) => {
-    const pos = parseInt((e.target as HTMLInputElement).value);
-    const newCfg = produce(props.cfg, cfg => { cfg.taps[ix].pos = pos; });
-    props.setLowpassCfg(newCfg);
-  };
-
-  const setWeight = (e: React.FormEvent, ix: number) => {
-    const weight = parseInt((e.target as HTMLInputElement).value);
-    const newCfg = produce(props.cfg, cfg => { cfg.taps[ix].weight = weight / 100; });
-    props.setLowpassCfg(newCfg);
-  };
-
-  const taps = props.cfg.taps.map((tap, i) => {
-    return <div>
-      <input type="text" value={tap.pos} onInput={e => setPos(e, i)}></input>
-      <input type="range" min="1" max="99" value={Math.round(tap.weight * 100)} onInput={e => setWeight(e, i)} />
-    </div>;
-  });
-
-  return taps;
-}
-
 function App(props: AppProps): JSX.Element {
   const [connected, setConnected] = useState(true);
   const [drumVolume, setDrumVolume] = useState(100);
   const [lowpParam, setLowpParam] = useState(50);
-  const [cfg, setCfg] = useState<LowpassControlBlock>({ selfWeight: 0.5, taps: [{ pos: 1, weight: 0.5 }] });
+  const [cfg, setCfg] = useState<LowpassWidgetState>([{ pos: 1, weight: 50 }, { pos: 2, weight: 25 }]);
   const wsco = useRef<WebSocketContainer | undefined>(undefined);
 
   function reconnect(wsc: WebSocketContainer) {
@@ -145,20 +117,26 @@ function App(props: AppProps): JSX.Element {
     setDrumVolume(vol);
   };
 
-  const lowpParamOnInput = (e: React.FormEvent) => {
-    const lowp_param = parseInt((e.target as HTMLInputElement).value);
-    send({ message: { t: 'setLowpassParam', lowp_param: lowp_param / 100 } });
-    setLowpParam(lowp_param);
-  };
 
-  function setLowpassCfg(cfg: LowpassControlBlock): void {
-    const selfWeight = 1 - cfg.taps.map(x => x.weight).reduce((a, b) => a + b);
-    const lowp_cfg = produce(cfg, cfg => {
-      cfg.selfWeight = selfWeight;
-    });
+  function setLowpassCfg(cfg: LowpassWidgetState): void {
+    let taps = cfg.map(({ pos, weight }) => ({ pos, weight: weight / 100 }));
+    let sum = taps.map(x => x.weight).reduce((a, b) => a + b);
+    const minSelfWeight = 0.05;
+    const maxSum = 1 - minSelfWeight;
+    const s = maxSum / sum;
+    if (sum > maxSum) {
+      taps = taps.map(({ pos, weight }) => ({ pos, weight: weight * s }));
+      sum = sum * s;
+    }
+    const selfWeight = 1 - sum;
+    const lowp_cfg: LowpassControlBlock = {
+      selfWeight,
+      taps,
+    };
     setCfg(cfg);
     send({ message: { t: 'setLowpassConfig', lowp_cfg } });
   }
+  //  <Chart lowp_param={0.50} />
 
   return <div>
     <button disabled={!connected} onMouseDown={() => { send({ message: { t: 'drum' } }) }}>Action</button><br />
@@ -169,6 +147,5 @@ function App(props: AppProps): JSX.Element {
       onClick={() => { reconnect(wsco.current!); }}>reconnect</button></span> : undefined}
     <Sequencer send={send} />
     <br />
-    <Chart lowp_param={lowpParam / 100} />
   </div>;
 }
