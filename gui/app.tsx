@@ -86,6 +86,7 @@ function App(props: AppProps): JSX.Element {
             { t: 'midiManager', dst: BUS_DRY },
             { t: 'ugenGroup', dst: BUS_DRY },
             { t: 'lowPass', src: BUS_DRY, dst: BUS_OUT },
+            { t: 'meter', src: BUS_OUT },
           ]
         }
       });

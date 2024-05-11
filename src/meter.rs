@@ -1,5 +1,6 @@
 use crate::state::{ControlBlocks, GenState};
 use crate::ugen::Ugen;
+use crate::webserver::SynthMessage;
 
 const METER_AMOUNT: usize = 44100 / 3;
 
@@ -32,12 +33,22 @@ impl Ugen for MeterState {
 
       let a = 0.99;
       let sig = gen.audio_bus[self.src][bus_ix];
-      let mut wet = (1.0 - a) * sig * sig;
+      let mut mean_square = (1.0 - a) * sig * sig;
 
-      wet += do_tap(1, a);
+      mean_square += do_tap(1, a);
 
       self.ix = (self.ix + 1) % len;
-      self.memory[self.ix] = wet;
+      self.memory[self.ix] = mean_square;
+
+      if self.ix == 0 {
+        if let Some(ws) = &gen.websocket {
+          let rms = mean_square.sqrt();
+          let send_result = ws.try_send(SynthMessage::Meter { level: rms });
+          if let Err(e) = send_result {
+            println!("meter error {:?}", e);
+          }
+        }
+      }
     }
     true
   }

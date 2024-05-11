@@ -2,6 +2,7 @@ export type UgenSpec =
   | { t: 'lowPass', src: number, dst: number }
   | { t: 'midiManager', dst: number }
   | { t: 'ugenGroup', dst: number }
+  | { t: 'meter', src: number }
   ;
 
 export type Tap = {

@@ -48,6 +48,7 @@ pub enum WebOrSubMessage {
 #[serde(rename_all = "camelCase")]
 pub enum SynthMessage {
   Midi { msg: midi::Message },
+  Meter { level: f32 },
 }
 
 #[get("/ws")]
