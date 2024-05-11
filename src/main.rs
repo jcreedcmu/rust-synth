@@ -99,7 +99,7 @@ fn reduce_web_or_sub_message(m: WebOrSubMessage, s: &mut State) {
       reduce_web_message(m, s);
     },
     WebOrSubMessage::SubMessage(tx) => {
-      s.websocket = Some(tx.clone());
+      s.gen_state.websocket = Some(tx.clone());
     },
   }
 }

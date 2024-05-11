@@ -13,7 +13,7 @@ impl Synth {
 
   pub fn synth_buf(self: &mut Synth, s: &mut State) {
     // clear the audio busses
-    for line in s.audio_bus.iter_mut() {
+    for line in s.gen_state.audio_bus.iter_mut() {
       for m in line.iter_mut() {
         *m = 0.;
       }
@@ -21,7 +21,7 @@ impl Synth {
 
     for mut ugen in s.fixed_ugens.iter_mut() {
       // XXX This discards the boolean returned by run
-      ugen.run(&mut s.audio_bus, 1.0 / SAMPLE_RATE_hz, &s.control_blocks);
+      ugen.run(&mut s.gen_state, 1.0 / SAMPLE_RATE_hz, &s.control_blocks);
     }
   }
 }

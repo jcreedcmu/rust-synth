@@ -1,8 +1,8 @@
 use crate::reasonable_synth::ReasonableSynthState;
-use crate::state::{AudioBusses, ControlBlocks};
+use crate::state::{ControlBlocks, GenState};
 
 pub trait Notegen: std::fmt::Debug + Sync + Send {
-  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool;
+  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool;
   fn release(&mut self);
   fn restrike(&mut self, vel: f32);
 }
@@ -14,9 +14,9 @@ pub enum NotegenState {
 
 // some boilerplate to wire things up
 impl Notegen for NotegenState {
-  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool {
+  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
     match self {
-      NotegenState::ReasonableSynth(s) => s.run(bus, tick_s, ctl),
+      NotegenState::ReasonableSynth(s) => s.run(gen, tick_s, ctl),
     }
   }
 

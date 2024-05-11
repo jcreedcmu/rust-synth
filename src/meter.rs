@@ -1,4 +1,4 @@
-use crate::state::{AudioBusses, ControlBlocks};
+use crate::state::{ControlBlocks, GenState};
 use crate::ugen::Ugen;
 
 const METER_AMOUNT: usize = 44100 / 3;
@@ -21,9 +21,9 @@ impl MeterState {
 }
 
 impl Ugen for MeterState {
-  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool {
+  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
     let len = self.memory.len();
-    for bus_ix in 0..bus[0].len() {
+    for bus_ix in 0..gen.audio_bus[0].len() {
       // advance
 
       let do_tap = |offset: i32, scale: f32| -> f32 {
@@ -31,7 +31,7 @@ impl Ugen for MeterState {
       };
 
       let a = 0.99;
-      let sig = bus[self.src][bus_ix];
+      let sig = gen.audio_bus[self.src][bus_ix];
       let mut wet = (1.0 - a) * sig * sig;
 
       wet += do_tap(1, a);

@@ -3,7 +3,7 @@ use anyhow::anyhow;
 use crate::midi::Message;
 use crate::midi_manager::MidiManagerState;
 use crate::notegen::{Notegen, NotegenState};
-use crate::state::{get_key_state_mut, new_reasonable_of_tables, KeyState, State};
+use crate::state::{get_key_state_mut, new_reasonable_of_tables, GenState, KeyState, State};
 use crate::ugen::UgenState;
 use crate::util;
 use crate::wavetables::Wavetables;
@@ -130,7 +130,7 @@ pub fn midi_reducer_inner(
 // state lock for shorter duration.
 pub fn midi_reducer(msg: &Message, state: &mut State) -> anyhow::Result<()> {
   let State {
-    ref websocket,
+    gen_state: GenState { ref websocket, .. },
     fixed_ugens,
     wavetables,
     ..

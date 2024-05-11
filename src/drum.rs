@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::consts::BUS_DRY;
 use crate::envelope::{Adsr, EnvPos, EnvState};
-use crate::state::{AudioBusses, ControlBlock, ControlBlocks, DEFAULT_DRUM_CONTROL_BLOCK};
+use crate::state::{ControlBlock, ControlBlocks, GenState, DEFAULT_DRUM_CONTROL_BLOCK};
 use crate::synth::TABLE_SIZE;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
@@ -54,8 +54,8 @@ impl DrumSynthState {
     }
   }
 
-  fn ctl_run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &DrumControlBlock) -> bool {
-    for out in bus[self.dst].iter_mut() {
+  fn ctl_run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &DrumControlBlock) -> bool {
+    for out in gen.audio_bus[self.dst].iter_mut() {
       let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
       let offset = table_phase.floor() as usize;
 
@@ -83,9 +83,9 @@ impl DrumSynthState {
 }
 
 impl Ugen for DrumSynthState {
-  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool {
+  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
     match &ctl[self.ci] {
-      ControlBlock::Drum(ctl) => self.ctl_run(bus, tick_s, &ctl),
+      ControlBlock::Drum(ctl) => self.ctl_run(gen, tick_s, &ctl),
       _ => false,
     }
   }

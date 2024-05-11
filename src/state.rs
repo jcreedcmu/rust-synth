@@ -34,11 +34,17 @@ pub type ControlBlocks = Vec<ControlBlock>;
 pub type AudioBusses = Vec<Vec<f32>>;
 
 #[derive(Debug)]
+pub struct GenState {
+  pub audio_bus: AudioBusses,
+  pub websocket: Option<tokio::sync::mpsc::Sender<SynthMessage>>,
+}
+
+#[derive(Debug)]
 pub struct State {
   pub going: bool,
 
   // audio bus
-  pub audio_bus: AudioBusses,
+  pub gen_state: GenState,
 
   pub fixed_ugens: UgensState,
 
@@ -47,7 +53,6 @@ pub struct State {
   pub control_blocks: ControlBlocks,
   pub wavetables: Wavetables,
   pub sequencer: Sequencer,
-  pub websocket: Option<tokio::sync::mpsc::Sender<SynthMessage>>,
 }
 
 pub type StateGuard = Arc<Mutex<State>>;
@@ -67,13 +72,15 @@ impl State {
     }));
     State {
       going: true,
-      audio_bus: vec![vec![0.; buf_size]; AUDIO_BUS_LENGTH],
       sequencer: Sequencer::new(),
       fixed_ugens: vec![],
       control_blocks,
       write_to_file: true,
       wavetables: Wavetables::new(),
-      websocket: None,
+      gen_state: GenState {
+        audio_bus: vec![vec![0.; buf_size]; AUDIO_BUS_LENGTH],
+        websocket: None,
+      },
     }
   }
 

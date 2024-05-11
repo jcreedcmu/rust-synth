@@ -1,6 +1,6 @@
 use crate::consts::NUM_KEYS;
 use crate::notegen::{Notegen, NotegenState};
-use crate::state::{AudioBusses, ControlBlocks, KeyState};
+use crate::state::{ControlBlocks, GenState, KeyState};
 use crate::ugen::Ugen;
 
 #[derive(Debug)]
@@ -25,10 +25,10 @@ impl MidiManagerState {
 }
 
 impl Ugen for MidiManagerState {
-  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool {
+  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
     for mut onotegen in self.notegen_state.iter_mut() {
       if let Some(notegen) = onotegen {
-        if !notegen.run(bus, tick_s, ctl) {
+        if !notegen.run(gen, tick_s, ctl) {
           *onotegen = None;
         }
       }

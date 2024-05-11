@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::state::{AudioBusses, ControlBlock, ControlBlocks};
+use crate::state::{ControlBlock, ControlBlocks, GenState};
 use crate::ugen::Ugen;
 
 const LOW_PASS_AMOUNT: usize = 35000;
@@ -38,21 +38,21 @@ impl LowpassState {
     }
   }
 
-  fn ctl_run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &LowpassControlBlock) -> bool {
+  fn ctl_run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &LowpassControlBlock) -> bool {
     let len = self.memory.len();
-    for bus_ix in 0..bus[0].len() {
+    for bus_ix in 0..gen.audio_bus[0].len() {
       // advance
 
       let do_tap = |offset: i32, scale: f32| -> f32 {
         scale * self.memory[((self.ix as i32) - offset).rem_euclid(len as i32) as usize]
       };
 
-      let mut wet = ctl.self_weight * bus[self.src][bus_ix];
+      let mut wet = ctl.self_weight * gen.audio_bus[self.src][bus_ix];
       for tap in ctl.taps.iter() {
         wet += do_tap(tap.pos as i32, tap.weight);
       }
 
-      bus[self.dst][bus_ix] = wet;
+      gen.audio_bus[self.dst][bus_ix] = wet;
       self.ix = (self.ix + 1) % len;
       self.memory[self.ix] = wet;
     }
@@ -61,10 +61,10 @@ impl LowpassState {
 }
 
 impl Ugen for LowpassState {
-  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool {
+  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
     match &ctl[1] {
       // XXX hard coded
-      ControlBlock::Low(ctl) => self.ctl_run(bus, tick_s, &ctl),
+      ControlBlock::Low(ctl) => self.ctl_run(gen, tick_s, &ctl),
       _ => false,
     }
   }

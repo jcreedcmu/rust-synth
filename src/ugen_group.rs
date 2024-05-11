@@ -1,4 +1,4 @@
-use crate::state::{AudioBusses, ControlBlocks};
+use crate::state::{ControlBlocks, GenState};
 use crate::ugen::{Ugen, UgenState};
 
 #[derive(Debug)]
@@ -17,10 +17,10 @@ impl UgenGroupState {
 }
 
 impl Ugen for UgenGroupState {
-  fn run(&mut self, bus: &mut AudioBusses, tick_s: f32, ctl: &ControlBlocks) -> bool {
+  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
     for mut ougen in self.ugen_state.iter_mut() {
       if let Some(ugen) = ougen {
-        if !ugen.run(bus, tick_s, ctl) {
+        if !ugen.run(gen, tick_s, ctl) {
           *ougen = None;
         }
       }
