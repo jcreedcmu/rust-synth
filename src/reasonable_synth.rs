@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use serde::{Deserialize, Serialize};
+
 use crate::consts::SAMPLE_RATE_hz;
 use crate::envelope::{Adsr, EnvPos, EnvState};
 use crate::notegen::Notegen;
@@ -12,7 +14,8 @@ const reasonable_adsr: Adsr = Adsr {
   release_s: 0.05,
 };
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "t")]
 pub struct ReasonableControlBlock {}
 
 #[derive(Clone, Debug)]

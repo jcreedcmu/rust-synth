@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 
+use serde::{Deserialize, Serialize};
+
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE};
 use crate::drum::{DrumControlBlock, DrumSynthState};
 use crate::envelope::Adsr;
@@ -20,7 +22,8 @@ pub enum KeyState {
   Held { ugen_ix: usize }, // only on because pedal held
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "t")]
 pub enum ControlBlock {
   Reasonable(ReasonableControlBlock),
   Drum(DrumControlBlock),

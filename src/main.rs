@@ -94,6 +94,9 @@ fn reduce_web_message(m: WebMessage, s: &mut State) {
         .map(UgenState::new)
         .collect();
     },
+    WebAction::SetControlBlock { index, ctl } => {
+      s.control_blocks[index] = ctl;
+    },
   }
 }
 

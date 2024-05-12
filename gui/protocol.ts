@@ -15,12 +15,20 @@ export type LowpassControlBlock = {
   taps: Tap[],
 }
 
+export type ControlBlock =
+  | { t: 'Reasonable' }
+  | { t: 'Drum', vol: number }
+  | { t: 'Low' } & LowpassControlBlock
+  | { t: 'Gain', scale: number }
+  ;
+
 export type WebAction =
   | { t: 'quit' }
   | { t: 'drum' }
   | { t: 'setVolume', vol: number }
-  | { t: 'setLowpassParam', lowp_param: number }
-  | { t: 'setLowpassConfig', lowp_cfg: LowpassControlBlock }
+  | { t: 'setLowpassParam', lowp_param: number } // XXX deprecated
+  | { t: 'setLowpassConfig', lowp_cfg: LowpassControlBlock } // XXX deprecated
+  | { t: 'setControlBlock', index: number, ctl: ControlBlock }
   | { t: 'setSequencer', inst: number, pat: number, on: boolean }
   | { t: 'reconfigure', specs: UgenSpec[] }
   ;

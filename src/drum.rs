@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use serde::{Deserialize, Serialize};
+
 use crate::consts::BUS_DRY;
 use crate::envelope::{Adsr, EnvPos, EnvState};
 use crate::state::{ControlBlock, ControlBlocks, GenState, DEFAULT_DRUM_CONTROL_BLOCK};
@@ -15,7 +17,8 @@ pub fn drum_adsr(dur_scale: f32) -> Adsr {
   }
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "t")]
 pub struct DrumControlBlock {
   pub vol: f32,
 }
