@@ -27,6 +27,7 @@ use drum::DrumControlBlock;
 use lowpass::{LowpassControlBlock, LowpassState, Tap};
 use midi::{Message, MidiService};
 use midi_manager::MidiManagerState;
+use reduce::add_gen;
 use sequencer::sequencer_loop;
 use state::{State, StateGuard};
 use ugen::UgenState;
@@ -38,6 +39,8 @@ use std::error::Error;
 use std::io::stdin;
 use std::sync::{Arc, Mutex, MutexGuard};
 
+use crate::drum::drum_adsr;
+
 fn main() {
   match run() {
     Ok(_) => (),
@@ -48,7 +51,8 @@ fn main() {
 fn reduce_web_message(m: WebMessage, s: &mut State) {
   match m.message {
     WebAction::Drum => {
-      println!("would have done drum here");
+      let ugen = s.new_drum(440.0, 440.0, drum_adsr(1.0));
+      add_ugen_to_group(&mut s.fixed_ugens, ugen);
     },
     WebAction::Quit => {
       s.going = false;
@@ -127,6 +131,18 @@ fn mk_midi_service(sg: StateGuard) -> anyhow::Result<MidiService> {
   })
 }
 
+fn add_ugen_to_group(ugens: &mut Vec<UgenState>, ugen: UgenState) {
+  let maybe_group = ugens.iter_mut().find_map(|ugen| match ugen {
+    UgenState::UgenGroup(group) => Some(group),
+    _ => None,
+  });
+  if let Some(group) = maybe_group {
+    add_gen(&mut group.ugen_state, ugen);
+  } else {
+    println!("couldn't find ugen group");
+  }
+}
+
 fn mk_stdin_thread(sg: StateGuard) -> JoinHandle {
   std::thread::spawn(move || -> anyhow::Result<()> {
     loop {
@@ -140,10 +156,9 @@ fn mk_stdin_thread(sg: StateGuard) -> JoinHandle {
           break;
         },
         "k\n" => {
-          // let mut s: MutexGuard<State> = depoison(sg.lock())?;
-          // let ugen = s.new_drum(440.0, 440.0, drum_adsr(1.0));
-          // add_ugen_state(&mut s, ugen);
-          println!("would have played drum here");
+          let mut s: MutexGuard<State> = depoison(sg.lock())?;
+          let ugen = s.new_drum(440.0, 440.0, drum_adsr(1.0));
+          add_ugen_to_group(&mut s.fixed_ugens, ugen);
         },
         _ => println!("Didn't recognize {input}."),
       }
