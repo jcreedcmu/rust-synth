@@ -24,7 +24,6 @@ mod webserver;
 use audio::{BUF_SIZE, CHANNELS};
 use clap::Parser;
 use consts::{BUS_DRY, BUS_OUT};
-use drum::DrumControlBlock;
 use lowpass::LowpassState;
 use midi::{Message, MidiService};
 use midi_manager::MidiManagerState;
@@ -56,14 +55,6 @@ fn reduce_web_message(m: WebMessage, s: &mut State) {
     },
     WebAction::Quit => {
       s.going = false;
-    },
-    WebAction::SetVolume { vol } => match &mut s.control_blocks[0] {
-      state::ControlBlock::Drum(DrumControlBlock { vol: ctl_vol }) => {
-        *ctl_vol = (vol as f32) / 100.0;
-      },
-      _ => {
-        println!("Unexpected control block");
-      },
     },
     WebAction::SetSequencer { inst, pat, on } => {
       s.sequencer.set(inst, pat, on);

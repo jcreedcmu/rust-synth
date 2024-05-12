@@ -16,7 +16,6 @@ const CHANNEL_CAPACITY: usize = 100;
 pub enum WebAction {
   Quit,
   Drum,
-  SetVolume { vol: u32 },
   SetControlBlock { index: usize, ctl: ControlBlock },
   SetSequencer { inst: usize, pat: usize, on: bool },
   Reconfigure { specs: Vec<UgenSpec> },
@@ -159,9 +158,16 @@ mod tests {
   #[test]
   fn set_volume_message_serialization() {
     let message = WebMessage {
-      message: WebAction::SetVolume { vol: 123 },
+      message: WebAction::SetSequencer {
+        inst: 123,
+        on: true,
+        pat: 234,
+      },
     };
     let json_str = serde_json::to_string(&message).unwrap();
-    assert_eq!(json_str, r###"{"message":{"t":"setVolume","vol":123}}"###);
+    assert_eq!(
+      json_str,
+      r###"{"message":{"t":"setSequencer","inst":123,"pat":234,"on":true}}"###
+    );
   }
 }
