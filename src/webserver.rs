@@ -1,4 +1,3 @@
-use crate::lowpass::LowpassControlBlock;
 use crate::midi;
 use crate::state::ControlBlock;
 use crate::ugen::UgenSpec;
@@ -17,29 +16,10 @@ const CHANNEL_CAPACITY: usize = 100;
 pub enum WebAction {
   Quit,
   Drum,
-  SetVolume {
-    vol: u32,
-  },
-  #[deprecated]
-  SetLowpassParam {
-    lowp_param: f32,
-  },
-  #[deprecated]
-  SetLowpassConfig {
-    lowp_cfg: LowpassControlBlock,
-  },
-  SetControlBlock {
-    index: usize,
-    ctl: ControlBlock,
-  },
-  SetSequencer {
-    inst: usize,
-    pat: usize,
-    on: bool,
-  },
-  Reconfigure {
-    specs: Vec<UgenSpec>,
-  },
+  SetVolume { vol: u32 },
+  SetControlBlock { index: usize, ctl: ControlBlock },
+  SetSequencer { inst: usize, pat: usize, on: bool },
+  Reconfigure { specs: Vec<UgenSpec> },
 }
 
 // Messages sent from the web client to the synth

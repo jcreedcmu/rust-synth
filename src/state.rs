@@ -63,6 +63,8 @@ pub struct State {
 pub type StateGuard = Arc<Mutex<State>>;
 
 pub const DEFAULT_DRUM_CONTROL_BLOCK: usize = 0;
+pub const DEFAULT_LOW_PASS_CONTROL_BLOCK: usize = 1;
+pub const DEFAULT_GAIN_CONTROL_BLOCK: usize = 2;
 
 impl State {
   pub fn new(buf_size: usize) -> State {
@@ -75,6 +77,7 @@ impl State {
         weight: 0.5,
       }],
     }));
+    control_blocks.push(ControlBlock::Gain(GainControlBlock { scale: 1.0 }));
     State {
       going: true,
       sequencer: Sequencer::new(),

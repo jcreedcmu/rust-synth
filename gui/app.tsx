@@ -1,6 +1,6 @@
 import ReactDOM from 'react-dom';
 import { CSSProperties, useEffect, useRef, useState } from 'react';
-import { LowpassControlBlock, SynthMessage, WebMessage } from './protocol';
+import { ControlBlock, LowpassControlBlock, SynthMessage, WebMessage } from './protocol';
 import { produce } from 'immer';
 import { Chart } from './chart';
 import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
@@ -54,6 +54,10 @@ function Sequencer(props: SequencerProps): JSX.Element {
   const rows = [2, 1, 0].map(row => <tr>{cellsOfRow(row)}</tr>);
   return <table>{rows}</table>;
 }
+
+const DEFAULT_DRUM_CONTROL_BLOCK: number = 0;
+const DEFAULT_LOW_PASS_CONTROL_BLOCK: number = 1;
+const DEFAULT_GAIN_CONTROL_BLOCK: number = 2;
 
 function App(props: AppProps): JSX.Element {
   const [connected, setConnected] = useState(true);
@@ -138,12 +142,13 @@ function App(props: AppProps): JSX.Element {
       sum = sum * s;
     }
     const selfWeight = 1 - sum;
-    const lowp_cfg: LowpassControlBlock = {
+    const ctl: ControlBlock = {
+      t: 'Low',
       selfWeight,
       taps,
     };
     setCfg(cfg);
-    send({ message: { t: 'setLowpassConfig', lowp_cfg } });
+    send({ message: { t: 'setControlBlock', index: DEFAULT_LOW_PASS_CONTROL_BLOCK, ctl } });
   }
   //  <Chart lowp_param={0.50} />
 

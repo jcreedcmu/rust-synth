@@ -25,7 +25,7 @@ use audio::{BUF_SIZE, CHANNELS};
 use clap::Parser;
 use consts::{BUS_DRY, BUS_OUT};
 use drum::DrumControlBlock;
-use lowpass::{LowpassControlBlock, LowpassState, Tap};
+use lowpass::LowpassState;
 use midi::{Message, MidiService};
 use midi_manager::MidiManagerState;
 use sequencer::sequencer_loop;
@@ -65,26 +65,6 @@ fn reduce_web_message(m: WebMessage, s: &mut State) {
         println!("Unexpected control block");
       },
     },
-    WebAction::SetLowpassParam { lowp_param } => match &mut s.control_blocks[1] {
-      state::ControlBlock::Low(LowpassControlBlock { self_weight, taps }) => {
-        *self_weight = 1.0 - lowp_param;
-        *taps = vec![Tap {
-          pos: 1,
-          weight: lowp_param,
-        }];
-      },
-      _ => {
-        println!("Unexpected control block");
-      },
-    },
-    WebAction::SetLowpassConfig { lowp_cfg } => match &mut s.control_blocks[1] {
-      state::ControlBlock::Low(cfg) => {
-        *cfg = lowp_cfg;
-      },
-      _ => {
-        println!("Unexpected control block");
-      },
-    },
     WebAction::SetSequencer { inst, pat, on } => {
       s.sequencer.set(inst, pat, on);
     },
@@ -95,6 +75,7 @@ fn reduce_web_message(m: WebMessage, s: &mut State) {
         .collect();
     },
     WebAction::SetControlBlock { index, ctl } => {
+      // XXX what if we need to extend the vector?
       s.control_blocks[index] = ctl;
     },
   }
