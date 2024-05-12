@@ -13,20 +13,12 @@ const CHANNEL_CAPACITY: usize = 100;
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
-pub enum WebAction {
+pub enum WebMessage {
   Quit,
   Drum,
   SetControlBlock { index: usize, ctl: ControlBlock },
   SetSequencer { inst: usize, pat: usize, on: bool },
   Reconfigure { specs: Vec<UgenSpec> },
-}
-
-// Messages sent from the web client to the synth
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct WebMessage {
-  pub message: WebAction,
 }
 
 // Messages to the synth, either
@@ -145,29 +137,25 @@ where
 
 #[cfg(test)]
 mod tests {
-  use crate::webserver::{WebAction, WebMessage};
+  use crate::webserver::WebMessage;
   #[test]
   fn quit_message_serialization() {
-    let message = WebMessage {
-      message: WebAction::Quit,
-    };
+    let message = WebMessage::Quit;
     let json_str = serde_json::to_string(&message).unwrap();
-    assert_eq!(json_str, r###"{"message":{"t":"quit"}}"###);
+    assert_eq!(json_str, r###"{"t":"quit"}"###);
   }
 
   #[test]
   fn set_volume_message_serialization() {
-    let message = WebMessage {
-      message: WebAction::SetSequencer {
-        inst: 123,
-        on: true,
-        pat: 234,
-      },
+    let message = WebMessage::SetSequencer {
+      inst: 123,
+      on: true,
+      pat: 234,
     };
     let json_str = serde_json::to_string(&message).unwrap();
     assert_eq!(
       json_str,
-      r###"{"message":{"t":"setSequencer","inst":123,"pat":234,"on":true}}"###
+      r###"{"t":"setSequencer","inst":123,"pat":234,"on":true}"###
     );
   }
 }

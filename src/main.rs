@@ -32,7 +32,7 @@ use state::{State, StateGuard};
 use ugen::UgenState;
 use ugen_group::UgenGroupState;
 use util::{depoison, JoinHandle, UnitHandle};
-use webserver::{WebAction, WebMessage, WebOrSubMessage};
+use webserver::{WebMessage, WebOrSubMessage};
 
 use std::error::Error;
 use std::io::stdin;
@@ -48,24 +48,24 @@ fn main() {
 }
 
 fn reduce_web_message(m: WebMessage, s: &mut State) {
-  match m.message {
-    WebAction::Drum => {
+  match m {
+    WebMessage::Drum => {
       let ugen = s.new_drum(440.0, 440.0, drum_adsr(1.0));
       add_ugen_to_group(&mut s.fixed_ugens, ugen);
     },
-    WebAction::Quit => {
+    WebMessage::Quit => {
       s.going = false;
     },
-    WebAction::SetSequencer { inst, pat, on } => {
+    WebMessage::SetSequencer { inst, pat, on } => {
       s.sequencer.set(inst, pat, on);
     },
-    WebAction::Reconfigure { specs } => {
+    WebMessage::Reconfigure { specs } => {
       s.fixed_ugens = specs //
         .into_iter()
         .map(UgenState::new)
         .collect();
     },
-    WebAction::SetControlBlock { index, ctl } => {
+    WebMessage::SetControlBlock { index, ctl } => {
       // XXX what if we need to extend the vector?
       s.control_blocks[index] = ctl;
     },
@@ -157,12 +157,7 @@ pub struct Args {
 fn setup_ctrlc_handler(sg: StateGuard) {
   ctrlc::set_handler(move || {
     let mut s: MutexGuard<State> = sg.lock().unwrap();
-    reduce_web_message(
-      WebMessage {
-        message: WebAction::Quit,
-      },
-      &mut s,
-    );
+    reduce_web_message(WebMessage::Quit, &mut s);
   })
   .expect("Error setting Ctrl-C handler");
 }

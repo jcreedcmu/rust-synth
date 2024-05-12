@@ -46,7 +46,7 @@ function Sequencer(props: SequencerProps): JSX.Element {
         setTable(produce(table, t => {
           t[i][row] = newVal;
         }));
-        props.send({ message: { t: 'setSequencer', inst: row, on: newVal, pat: i } });
+        props.send({ t: 'setSequencer', inst: row, on: newVal, pat: i });
       }
       rv.push(<td><div style={style} onClick={onClick}></div></td>)
     }
@@ -87,15 +87,13 @@ function App(props: AppProps): JSX.Element {
       console.log('ws opened on browser');
       wsco.current = wsc;
       send({
-        message: {
-          t: 'reconfigure', specs: [
-            { t: 'midiManager', dst: BUS_DRY },
-            { t: 'ugenGroup', dst: BUS_DRY },
-            { t: 'lowPass', src: BUS_DRY, dst: BUS_PREGAIN },
-            { t: 'gain', src: BUS_PREGAIN, dst: BUS_OUT },
-            { t: 'meter', src: BUS_OUT },
-          ]
-        }
+        t: 'reconfigure', specs: [
+          { t: 'midiManager', dst: BUS_DRY },
+          { t: 'ugenGroup', dst: BUS_DRY },
+          { t: 'lowPass', src: BUS_DRY, dst: BUS_PREGAIN },
+          { t: 'gain', src: BUS_PREGAIN, dst: BUS_OUT },
+          { t: 'meter', src: BUS_OUT },
+        ]
       });
     }
 
@@ -132,7 +130,7 @@ function App(props: AppProps): JSX.Element {
     const interface_gain = parseInt((e.target as HTMLInputElement).value);
     const gain = 10 * interface_gain / 100;
     const ctl: ControlBlock = { t: 'Gain', scale: gain };
-    send({ message: { t: 'setControlBlock', index: DEFAULT_GAIN_CONTROL_BLOCK, ctl } });
+    send({ t: 'setControlBlock', index: DEFAULT_GAIN_CONTROL_BLOCK, ctl });
     setGain(interface_gain);
   };
 
@@ -153,14 +151,14 @@ function App(props: AppProps): JSX.Element {
       taps,
     };
     setCfg(cfg);
-    send({ message: { t: 'setControlBlock', index: DEFAULT_LOW_PASS_CONTROL_BLOCK, ctl } });
+    send({ t: 'setControlBlock', index: DEFAULT_LOW_PASS_CONTROL_BLOCK, ctl });
   }
   //  <Chart lowp_param={0.50} />
 
   const meterDb = meterValue < 1e-10 ? '-infinity' : 20 * Math.log(meterValue) / Math.log(10);
   return <div>
-    <button disabled={!connected} onMouseDown={() => { send({ message: { t: 'drum' } }) }}>Action</button><br />
-    <button disabled={!connected} onMouseDown={() => { send({ message: { t: 'quit' } }) }}>Quit</button><br />
+    <button disabled={!connected} onMouseDown={() => { send({ t: 'drum' }) }}>Action</button><br />
+    <button disabled={!connected} onMouseDown={() => { send({ t: 'quit' }) }}>Quit</button><br />
     <input disabled={!connected} type="range" min="1" max="99" value={gain} onInput={gainOnInput} />
     <LowpassCfg cfg={cfg} setLowpassCfg={setLowpassCfg} />
     {!connected ? <span><br /><button style={{ backgroundColor: 'red', color: 'white' }}

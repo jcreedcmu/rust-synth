@@ -23,17 +23,13 @@ export type ControlBlock =
   | { t: 'Gain', scale: number }
   ;
 
-export type WebAction =
+export type WebMessage =
   | { t: 'quit' }
   | { t: 'drum' }
   | { t: 'setControlBlock', index: number, ctl: ControlBlock }
   | { t: 'setSequencer', inst: number, pat: number, on: boolean }
   | { t: 'reconfigure', specs: UgenSpec[] }
   ;
-
-export type WebMessage = {
-  message: WebAction
-};
 
 export type MidiMessage =
   | { t: 'noteOn', pitch: number, channel: number, velocity: number }
