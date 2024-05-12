@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::drum::DrumSynthState;
+use crate::gain::GainState;
 use crate::lowpass::LowpassState;
 use crate::meter::MeterState;
 use crate::midi_manager::MidiManagerState;
@@ -19,6 +20,7 @@ pub enum UgenSpec {
   MidiManager { dst: usize },
   UgenGroup { dst: usize },
   Meter { src: usize },
+  Gain { src: usize, dst: usize },
 }
 
 #[derive(Debug)]
@@ -28,6 +30,7 @@ pub enum UgenState {
   MidiManager(MidiManagerState),
   UgenGroup(UgenGroupState),
   Meter(MeterState),
+  Gain(GainState),
 }
 
 // some boilerplate to wire things up
@@ -39,6 +42,7 @@ impl Ugen for UgenState {
       UgenState::MidiManager(s) => s.run(gen, tick_s, ctl),
       UgenState::UgenGroup(s) => s.run(gen, tick_s, ctl),
       UgenState::Meter(s) => s.run(gen, tick_s, ctl),
+      UgenState::Gain(s) => s.run(gen, tick_s, ctl),
     }
   }
 }
@@ -50,6 +54,7 @@ impl UgenState {
       UgenSpec::MidiManager { dst } => UgenState::MidiManager(MidiManagerState::new(dst)),
       UgenSpec::UgenGroup { dst } => UgenState::UgenGroup(UgenGroupState::new(dst)),
       UgenSpec::Meter { src } => UgenState::Meter(MeterState::new(src)),
+      UgenSpec::Gain { src, dst } => UgenState::Gain(GainState::new(src, dst)),
     }
   }
 }

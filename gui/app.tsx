@@ -6,8 +6,9 @@ import { Chart } from './chart';
 import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
 
 // Should match consts.rs
-const BUS_DRY = 1;
 const BUS_OUT = 0;
+const BUS_DRY = 1;
+const BUS_PREGAIN = 2;
 
 type AppProps = {
 
@@ -61,7 +62,7 @@ const DEFAULT_GAIN_CONTROL_BLOCK: number = 2;
 
 function App(props: AppProps): JSX.Element {
   const [connected, setConnected] = useState(true);
-  const [drumVolume, setDrumVolume] = useState(100);
+  const [gain, setGain] = useState(10);
   const [lowpParam, setLowpParam] = useState(50);
   const [meterValue, setMeterValue] = useState(0);
   const [cfg, setCfg] = useState<LowpassWidgetState>([{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }]);
@@ -90,7 +91,8 @@ function App(props: AppProps): JSX.Element {
           t: 'reconfigure', specs: [
             { t: 'midiManager', dst: BUS_DRY },
             { t: 'ugenGroup', dst: BUS_DRY },
-            { t: 'lowPass', src: BUS_DRY, dst: BUS_OUT },
+            { t: 'lowPass', src: BUS_DRY, dst: BUS_PREGAIN },
+            { t: 'gain', src: BUS_PREGAIN, dst: BUS_OUT },
             { t: 'meter', src: BUS_OUT },
           ]
         }
@@ -125,10 +127,13 @@ function App(props: AppProps): JSX.Element {
     wsc.ws.send(JSON.stringify(sm));
   }
 
-  const drumVolOnInput = (e: React.FormEvent) => {
-    const vol = parseInt((e.target as HTMLInputElement).value);
-    send({ message: { t: 'setVolume', vol } });
-    setDrumVolume(vol);
+  const gainOnInput = (e: React.FormEvent) => {
+    // interface_gain ranges from 1 to 99, so gain ranges from 0.1 to 9.9;
+    const interface_gain = parseInt((e.target as HTMLInputElement).value);
+    const gain = 10 * interface_gain / 100;
+    const ctl: ControlBlock = { t: 'Gain', scale: gain };
+    send({ message: { t: 'setControlBlock', index: DEFAULT_GAIN_CONTROL_BLOCK, ctl } });
+    setGain(interface_gain);
   };
 
   function setLowpassCfg(cfg: LowpassWidgetState): void {
@@ -156,7 +161,7 @@ function App(props: AppProps): JSX.Element {
   return <div>
     <button disabled={!connected} onMouseDown={() => { send({ message: { t: 'drum' } }) }}>Action</button><br />
     <button disabled={!connected} onMouseDown={() => { send({ message: { t: 'quit' } }) }}>Quit</button><br />
-    <input disabled={!connected} type="range" min="0" max="100" value={drumVolume} onInput={drumVolOnInput} />
+    <input disabled={!connected} type="range" min="1" max="99" value={gain} onInput={gainOnInput} />
     <LowpassCfg cfg={cfg} setLowpassCfg={setLowpassCfg} />
     {!connected ? <span><br /><button style={{ backgroundColor: 'red', color: 'white' }}
       onClick={() => { reconnect(wsco.current!); }}>reconnect</button></span> : undefined}

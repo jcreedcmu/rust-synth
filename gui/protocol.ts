@@ -3,6 +3,7 @@ export type UgenSpec =
   | { t: 'midiManager', dst: number }
   | { t: 'ugenGroup', dst: number }
   | { t: 'meter', src: number }
+  | { t: 'gain', src: number, dst: number }
   ;
 
 export type Tap = {
@@ -25,7 +26,6 @@ export type ControlBlock =
 export type WebAction =
   | { t: 'quit' }
   | { t: 'drum' }
-  | { t: 'setVolume', vol: number }
   | { t: 'setControlBlock', index: number, ctl: ControlBlock }
   | { t: 'setSequencer', inst: number, pat: number, on: boolean }
   | { t: 'reconfigure', specs: UgenSpec[] }
