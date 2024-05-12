@@ -1,6 +1,5 @@
 use crate::drum::{drum_adsr, DrumSynthState};
 use crate::envelope::Adsr;
-use crate::reduce::add_gen;
 use crate::state::{State, StateGuard};
 use crate::ugen::UgenState;
 use crate::ugen_group::UgenGroupState;
@@ -28,22 +27,13 @@ fn new_drum(wavetables: &Wavetables, freq_hz: f32, freq2_hz: f32, adsr: Adsr) ->
 
 fn sequencer_loop_inner(col: &Vec<bool>, wavetables: &Wavetables, group: &mut UgenGroupState) {
   if col[0] {
-    add_gen(
-      &mut group.ugen_state,
-      new_drum(wavetables, 660.0, 1.0, drum_adsr(1.0)),
-    );
+    group.add(new_drum(wavetables, 660.0, 1.0, drum_adsr(1.0)));
   }
   if col[1] {
-    add_gen(
-      &mut group.ugen_state,
-      new_drum(wavetables, 1760.0, 1000.0, drum_adsr(0.5)),
-    );
+    group.add(new_drum(wavetables, 1760.0, 1000.0, drum_adsr(0.5)));
   }
   if col[2] {
-    add_gen(
-      &mut group.ugen_state,
-      new_drum(wavetables, 6760.0, 5760.0, drum_adsr(0.05)),
-    );
+    group.add(new_drum(wavetables, 6760.0, 5760.0, drum_adsr(0.05)));
   }
 }
 

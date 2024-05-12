@@ -1,10 +1,11 @@
+use crate::reduce::add_gen;
 use crate::state::{ControlBlocks, GenState};
 use crate::ugen::{Ugen, UgenState};
 
 #[derive(Debug)]
 pub struct UgenGroupState {
   dst: usize,
-  pub ugen_state: Vec<Option<UgenState>>,
+  ugen_state: Vec<Option<UgenState>>,
 }
 
 impl UgenGroupState {
@@ -13,6 +14,10 @@ impl UgenGroupState {
       dst,
       ugen_state: vec![],
     }
+  }
+
+  pub fn add(&mut self, ugen: UgenState) {
+    add_gen(&mut self.ugen_state, ugen);
   }
 }
 

@@ -27,7 +27,6 @@ use drum::DrumControlBlock;
 use lowpass::{LowpassControlBlock, LowpassState, Tap};
 use midi::{Message, MidiService};
 use midi_manager::MidiManagerState;
-use reduce::add_gen;
 use sequencer::sequencer_loop;
 use state::{State, StateGuard};
 use ugen::UgenState;
@@ -137,7 +136,7 @@ fn add_ugen_to_group(ugens: &mut Vec<UgenState>, ugen: UgenState) {
     _ => None,
   });
   if let Some(group) = maybe_group {
-    add_gen(&mut group.ugen_state, ugen);
+    group.add(ugen);
   } else {
     println!("couldn't find ugen group");
   }
