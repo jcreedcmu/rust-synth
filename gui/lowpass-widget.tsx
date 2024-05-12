@@ -1,6 +1,6 @@
 import ReactDOM from 'react-dom';
 import { CSSProperties, useEffect, useRef, useState } from 'react';
-import { LowpassControlBlock, WebMessage } from './protocol';
+import { LowpassControlBlock, Tap, WebMessage } from './protocol';
 import { produce } from 'immer';
 import { Chart } from './chart';
 
@@ -44,8 +44,20 @@ export function LowpassCfg(props: LowpassCfgProps): JSX.Element[] {
     }
   }
 
+  function addTap() {
+    const newTap: InterfaceTap = { pos: 1, weight: 1 };
+    const newCfg = produce(props.cfg, cfg => { cfg.push(newTap); });
+    props.setLowpassCfg(newCfg);
+  }
+
+  function removeTap(index: number) {
+    const newCfg = produce(props.cfg, cfg => { cfg.splice(index, 1); });
+    props.setLowpassCfg(newCfg);
+  }
+
   const taps = props.cfg.flatMap((tap, i) => {
     return [<br />, <div className="range-container">
+      <button onMouseDown={e => removeTap(i)}>-</button>
       <input type="text"
         value={tap.pos}
         onKeyDown={e => onKeyDown(e, i)}
@@ -54,5 +66,5 @@ export function LowpassCfg(props: LowpassCfgProps): JSX.Element[] {
     </div>];
   });
 
-  return taps;
+  return [...taps, <button onMouseDown={e => addTap()}>+</button>];
 }
