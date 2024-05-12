@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE};
 use crate::drum::{DrumControlBlock, DrumSynthState};
 use crate::envelope::Adsr;
+use crate::gain::GainControlBlock;
 use crate::lowpass::{LowpassControlBlock, Tap};
 use crate::notegen::NotegenState;
 use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
@@ -24,6 +25,7 @@ pub enum ControlBlock {
   Reasonable(ReasonableControlBlock),
   Drum(DrumControlBlock),
   Low(LowpassControlBlock),
+  Gain(GainControlBlock),
 }
 
 pub type ControlBlocks = Vec<ControlBlock>;
