@@ -56,8 +56,13 @@ impl Notegen for ReasonableSynthState {
       let fpart: f32 = (table_phase as f32) - (offset as f32);
 
       // linear interp
-      // FIXME: Sometimes we crash here because offset is exactly 512 somehow?
-      let table_val = fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset];
+      // Without this conditional, ometimes we crash here because
+      // offset is exactly self.wavetable.len() - 1
+      let table_val = if offset + 1 >= self.wavetable.len() {
+        self.wavetable[self.wavetable.len() - 1]
+      } else {
+        fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset]
+      };
 
       let scale = self.env_state.amp();
       *out += (scale as f32) * table_val;
