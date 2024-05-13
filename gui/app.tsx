@@ -9,6 +9,7 @@ import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
 const BUS_OUT = 0;
 const BUS_DRY = 1;
 const BUS_PREGAIN = 2;
+const MAX_GAIN = 40;
 
 type AppProps = {
 
@@ -128,7 +129,7 @@ function App(props: AppProps): JSX.Element {
   const gainOnInput = (e: React.FormEvent) => {
     // interface_gain ranges from 1 to 99, so gain ranges from 0.1 to 9.9;
     const interface_gain = parseInt((e.target as HTMLInputElement).value);
-    const gain = 10 * interface_gain / 100;
+    const gain = MAX_GAIN * interface_gain / 100;
     const ctl: ControlBlock = { t: 'Gain', scale: gain };
     send({ t: 'setControlBlock', index: DEFAULT_GAIN_CONTROL_BLOCK, ctl });
     setGain(interface_gain);
