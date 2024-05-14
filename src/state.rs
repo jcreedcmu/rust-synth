@@ -6,7 +6,7 @@ use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE};
 use crate::drum::{DrumControlBlock, DrumSynthState};
 use crate::envelope::Adsr;
 use crate::gain::GainControlBlock;
-use crate::lowpass::{LowpassControlBlock, Tap};
+use crate::lowpass::{LowpassControlBlock, Tap, TapType};
 use crate::notegen::NotegenState;
 use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
 use crate::sequencer::Sequencer;
@@ -71,11 +71,18 @@ impl State {
     let mut control_blocks: ControlBlocks = vec![];
     control_blocks.push(ControlBlock::Drum(DrumControlBlock { vol: 1. }));
     control_blocks.push(ControlBlock::Low(LowpassControlBlock {
-      self_weight: 0.5,
-      taps: vec![Tap {
-        pos: 1,
-        weight: 0.5,
-      }],
+      taps: vec![
+        Tap {
+          tp: TapType::Input,
+          pos: 0,
+          weight: 0.5,
+        },
+        Tap {
+          tp: TapType::Rec,
+          pos: 1,
+          weight: 0.5,
+        },
+      ],
     }));
     control_blocks.push(ControlBlock::Gain(GainControlBlock { scale: 1.0 }));
     State {
