@@ -64,7 +64,7 @@ const DEFAULT_GAIN_CONTROL_BLOCK: number = 2;
 function App(props: AppProps): JSX.Element {
   const [connected, setConnected] = useState(true);
   const [gain, setGain] = useState(10);
-  const [lowpParam, setLowpParam] = useState(50);
+  const [highpassParam, setHighpassParam] = useState(50);
   const [meterValue, setMeterValue] = useState(0);
   const [cfg, setCfg] = useState<LowpassWidgetState>([{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }]);
   const wsco = useRef<WebSocketContainer | undefined>(undefined);
@@ -135,6 +135,21 @@ function App(props: AppProps): JSX.Element {
     setGain(interface_gain);
   };
 
+  const highpassOnInput = (e: React.FormEvent) => {
+    // interface_gain ranges from 1 to 99, so gain ranges from 0.1 to 9.9;
+    const interface_alpha = parseInt((e.target as HTMLInputElement).value);
+    const alpha = interface_alpha / 100;
+    const ctl: ControlBlock = {
+      t: 'Low', taps: [
+        { tp: { t: 'Rec' }, pos: 1, weight: alpha },
+        { tp: { t: 'Input' }, pos: 0, weight: alpha },
+        { tp: { t: 'Input' }, pos: 1, weight: -alpha },
+      ]
+    };
+    send({ t: 'setControlBlock', index: DEFAULT_LOW_PASS_CONTROL_BLOCK, ctl });
+    setHighpassParam(interface_alpha);
+  };
+
   function setLowpassCfg(cfg: LowpassWidgetState): void {
     let taps: Tap[] = cfg.map(({ pos, weight }) => ({ pos, weight: weight / 100, tp: { t: 'Rec' } }));
     let sum = taps.map(x => x.weight).reduce((a, b) => a + b);
@@ -164,6 +179,7 @@ function App(props: AppProps): JSX.Element {
     {!connected ? <span><br /><button style={{ backgroundColor: 'red', color: 'white' }}
       onClick={() => { reconnect(wsco.current!); }}>reconnect</button></span> : undefined}
     <Sequencer send={send} />
+    highpass: <input type="range" min="1" max="99" value={highpassParam} onInput={highpassOnInput} />
     <br />
     <b>RMS</b>: {meterDb}dB
   </div>;
