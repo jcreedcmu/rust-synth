@@ -1,6 +1,6 @@
 import ReactDOM from 'react-dom';
 import { CSSProperties, useEffect, useRef, useState } from 'react';
-import { ControlBlock, LowpassControlBlock, SynthMessage, WebMessage } from './protocol';
+import { ControlBlock, LowpassControlBlock, SynthMessage, Tap, WebMessage } from './protocol';
 import { produce } from 'immer';
 import { Chart } from './chart';
 import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
@@ -136,20 +136,19 @@ function App(props: AppProps): JSX.Element {
   };
 
   function setLowpassCfg(cfg: LowpassWidgetState): void {
-    let taps = cfg.map(({ pos, weight }) => ({ pos, weight: weight / 100 }));
+    let taps: Tap[] = cfg.map(({ pos, weight }) => ({ pos, weight: weight / 100, tp: { t: 'Rec' } }));
     let sum = taps.map(x => x.weight).reduce((a, b) => a + b);
     const minSelfWeight = 0.05;
     const maxSum = 1 - minSelfWeight;
     const s = maxSum / sum;
     if (sum > maxSum) {
-      taps = taps.map(({ pos, weight }) => ({ pos, weight: weight * s }));
+      taps = taps.map(({ pos, weight }) => ({ pos, weight: weight * s, tp: { t: 'Rec' } }));
       sum = sum * s;
     }
     const selfWeight = 1 - sum;
     const ctl: ControlBlock = {
       t: 'Low',
-      selfWeight,
-      taps,
+      taps: [...taps, { pos: 0, weight: selfWeight, tp: { t: 'Input' } }],
     };
     setCfg(cfg);
     send({ t: 'setControlBlock', index: DEFAULT_LOW_PASS_CONTROL_BLOCK, ctl });

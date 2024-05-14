@@ -6,13 +6,18 @@ export type UgenSpec =
   | { t: 'gain', src: number, dst: number }
   ;
 
+export type TapType =
+  | { t: 'Rec' }
+  | { t: 'Input' }
+  ;
+
 export type Tap = {
+  tp: TapType,
   pos: number, // integer >0
   weight: number, // float in [0,1], together with selfWeight maybe should add up to < 1
 }
 
 export type LowpassControlBlock = {
-  selfWeight: number,
   taps: Tap[],
 }
 

@@ -1,6 +1,6 @@
 import ReactDOM from 'react-dom';
 import { CSSProperties, useEffect, useRef, useState } from 'react';
-import { LowpassControlBlock, Tap, WebMessage } from './protocol';
+import { LowpassControlBlock, Tap, TapType, WebMessage } from './protocol';
 import { produce } from 'immer';
 import { Chart } from './chart';
 
