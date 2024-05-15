@@ -26,6 +26,7 @@ type WebSocketContainer = { ws: WebSocket };
 export type Action =
   | { t: 'setSequencer', inst: number, pat: number, on: boolean }
   | { t: 'setConnected', connected: boolean }
+  | { t: 'setGain', iface_gain: number }
   ;
 
 type SequencerProps = {
@@ -36,6 +37,7 @@ type SequencerProps = {
 export type State = {
   table: boolean[][],
   connected: boolean,
+  iface_gain: number,
   outbox: WebMessage[],
 }
 
@@ -65,6 +67,15 @@ function reduce_inner(state: State, action: Action): State {
     case 'setConnected': {
       return produce(state, s => { s.connected = action.connected; });
     }
+    case 'setGain': {
+      const gain = MAX_GAIN * action.iface_gain / 100;
+      const ctl: ControlBlock = { t: 'Gain', scale: gain };
+      const msg: WebMessage = { t: 'setControlBlock', index: DEFAULT_GAIN_CONTROL_BLOCK, ctl };
+      return produce(state, s => {
+        s.iface_gain = action.iface_gain;
+        s.outbox.push(msg);
+      });
+    }
   }
 }
 
@@ -78,6 +89,7 @@ function mkState(): State {
     ],
     outbox: [],
     connected: true,
+    iface_gain: 10,
   };
 }
 
@@ -121,7 +133,6 @@ function App(props: AppProps): JSX.Element {
 
   const [state, dispatch] = useEffectfulReducer<Action, State, Effect>(mkState(), reduce, doEffect);
 
-  const [gain, setGain] = useState(10);
   const [highpassParam, setHighpassParam] = useState(50);
   const [allpassDelay, setAllpassDelay] = useState(50);
   const [allpassGain, setAllpassGain] = useState(50);
@@ -189,12 +200,8 @@ function App(props: AppProps): JSX.Element {
   }
 
   const gainOnInput = (e: React.FormEvent) => {
-    // interface_gain ranges from 1 to 99, so gain ranges from 0.1 to 9.9;
-    const interface_gain = parseInt((e.target as HTMLInputElement).value);
-    const gain = MAX_GAIN * interface_gain / 100;
-    const ctl: ControlBlock = { t: 'Gain', scale: gain };
-    send({ t: 'setControlBlock', index: DEFAULT_GAIN_CONTROL_BLOCK, ctl });
-    setGain(interface_gain);
+    // interface_gain ranges from 1 to 99, and gain ranges from ~0 to ~MAX_GAIN;
+    dispatch({ t: 'setGain', iface_gain: parseInt((e.target as HTMLInputElement).value) });
   };
 
   const highpassOnInput = (e: React.FormEvent) => {
@@ -269,11 +276,11 @@ function App(props: AppProps): JSX.Element {
   //  <Chart lowp_param={0.50} />
 
   const meterDb = meterValue < 1e-10 ? '-infinity' : 20 * Math.log(meterValue) / Math.log(10);
-  const { connected } = state;
+  const { connected, iface_gain } = state;
   return <div>
     <button disabled={!connected} onMouseDown={() => { send({ t: 'drum' }) }}>Action</button><br />
     <button disabled={!connected} onMouseDown={() => { send({ t: 'quit' }) }}>Quit</button><br />
-    <input disabled={!connected} type="range" min="1" max="99" value={gain} onInput={gainOnInput} />
+    <input disabled={!connected} type="range" min="1" max="99" value={iface_gain} onInput={gainOnInput} />
     <LowpassCfg cfg={cfg} setLowpassCfg={setLowpassCfg} />
     {!connected ? <span><br /><button style={{ backgroundColor: 'red', color: 'white' }}
       onClick={() => { reconnect(wsco.current!); }}>reconnect</button></span> : undefined}
