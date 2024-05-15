@@ -27,6 +27,7 @@ export type Action =
   | { t: 'setSequencer', inst: number, pat: number, on: boolean }
   | { t: 'setConnected', connected: boolean }
   | { t: 'setGain', iface_gain: number }
+  | { t: 'setHighpass', iface_highpass: number }
   ;
 
 type SequencerProps = {
@@ -38,6 +39,7 @@ export type State = {
   table: boolean[][],
   connected: boolean,
   iface_gain: number,
+  iface_highpass: number,
   outbox: WebMessage[],
 }
 
@@ -76,6 +78,21 @@ function reduce_inner(state: State, action: Action): State {
         s.outbox.push(msg);
       });
     }
+    case 'setHighpass': {
+      const alpha = action.iface_highpass / 100;
+      const ctl: ControlBlock = {
+        t: 'Low', taps: [
+          { tp: { t: 'Rec' }, pos: 1, weight: alpha },
+          { tp: { t: 'Input' }, pos: 0, weight: alpha },
+          { tp: { t: 'Input' }, pos: 1, weight: -alpha },
+        ]
+      };
+      const msg: WebMessage = { t: 'setControlBlock', index: DEFAULT_LOW_PASS_CONTROL_BLOCK, ctl };
+      return produce(state, s => {
+        s.iface_highpass = action.iface_highpass;
+        s.outbox.push(msg);
+      });
+    }
   }
 }
 
@@ -90,6 +107,7 @@ function mkState(): State {
     outbox: [],
     connected: true,
     iface_gain: 10,
+    iface_highpass: 50,
   };
 }
 
@@ -133,7 +151,6 @@ function App(props: AppProps): JSX.Element {
 
   const [state, dispatch] = useEffectfulReducer<Action, State, Effect>(mkState(), reduce, doEffect);
 
-  const [highpassParam, setHighpassParam] = useState(50);
   const [allpassDelay, setAllpassDelay] = useState(50);
   const [allpassGain, setAllpassGain] = useState(50);
   const [allpassNaive, setAllpassNaive] = useState(true);
@@ -205,18 +222,7 @@ function App(props: AppProps): JSX.Element {
   };
 
   const highpassOnInput = (e: React.FormEvent) => {
-    // interface_gain ranges from 1 to 99, so gain ranges from 0.1 to 9.9;
-    const interface_alpha = parseInt((e.target as HTMLInputElement).value);
-    const alpha = interface_alpha / 100;
-    const ctl: ControlBlock = {
-      t: 'Low', taps: [
-        { tp: { t: 'Rec' }, pos: 1, weight: alpha },
-        { tp: { t: 'Input' }, pos: 0, weight: alpha },
-        { tp: { t: 'Input' }, pos: 1, weight: -alpha },
-      ]
-    };
-    send({ t: 'setControlBlock', index: DEFAULT_LOW_PASS_CONTROL_BLOCK, ctl });
-    setHighpassParam(interface_alpha);
+    dispatch({ t: 'setHighpass', iface_highpass: parseInt((e.target as HTMLInputElement).value) });
   };
 
   const allpassOnDelayInput = (e: React.FormEvent) => {
@@ -276,7 +282,7 @@ function App(props: AppProps): JSX.Element {
   //  <Chart lowp_param={0.50} />
 
   const meterDb = meterValue < 1e-10 ? '-infinity' : 20 * Math.log(meterValue) / Math.log(10);
-  const { connected, iface_gain } = state;
+  const { connected, iface_gain, iface_highpass } = state;
   return <div>
     <button disabled={!connected} onMouseDown={() => { send({ t: 'drum' }) }}>Action</button><br />
     <button disabled={!connected} onMouseDown={() => { send({ t: 'quit' }) }}>Quit</button><br />
@@ -285,7 +291,7 @@ function App(props: AppProps): JSX.Element {
     {!connected ? <span><br /><button style={{ backgroundColor: 'red', color: 'white' }}
       onClick={() => { reconnect(wsco.current!); }}>reconnect</button></span> : undefined}
     <Sequencer dispatch={dispatch} table={state.table} />
-    highpass: <input type="range" min="1" max="99" value={highpassParam} onInput={highpassOnInput} /><br />
+    highpass: <input type="range" min="1" max="99" value={iface_highpass} onInput={highpassOnInput} /><br />
     allpass delay: <input type="range" min="1" max="20000" value={allpassDelay} onInput={allpassOnDelayInput} /><br />
     allpass gain: <input type="range" min="1" max="99" value={allpassGain} onInput={allpassOnGainInput} /><br />
     allpass naive: <input type="checkbox" checked={allpassNaive} onInput={allpassOnNaiveInput} /><br />
