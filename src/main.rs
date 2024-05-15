@@ -67,8 +67,7 @@ fn reduce_web_message(m: WebMessage, s: &mut State) {
         .collect();
     },
     WebMessage::SetControlBlock { index, ctl } => {
-      // XXX what if we need to extend the vector?
-      s.control_blocks[index] = ctl;
+      s.control_blocks[index] = Some(ctl);
     },
   }
 }

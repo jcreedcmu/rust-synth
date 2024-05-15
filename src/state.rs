@@ -33,7 +33,7 @@ pub enum ControlBlock {
   Gain(GainControlBlock),
 }
 
-pub type ControlBlocks = Vec<ControlBlock>;
+pub type ControlBlocks = Vec<Option<ControlBlock>>;
 
 /// Outer vector is list of different busses. Inner vectors each
 /// contain one monophonic buffer's worth of audio on
@@ -67,12 +67,16 @@ pub type StateGuard = Arc<Mutex<State>>;
 pub const DEFAULT_DRUM_CONTROL_BLOCK: usize = 0;
 pub const DEFAULT_LOW_PASS_CONTROL_BLOCK: usize = 1;
 pub const DEFAULT_GAIN_CONTROL_BLOCK: usize = 2;
+pub const DEFAULT_ALL_PASS_CONTROL_BLOCK: usize = 3;
+pub const NUM_CONTROL_BLOCKS: usize = 16;
 
 impl State {
   pub fn new(buf_size: usize) -> State {
-    let mut control_blocks: ControlBlocks = vec![];
-    control_blocks.push(ControlBlock::Drum(DrumControlBlock { vol: 1. }));
-    control_blocks.push(ControlBlock::Low(LowpassControlBlock {
+    let mut control_blocks: ControlBlocks = Vec::with_capacity(NUM_CONTROL_BLOCKS);
+    control_blocks.resize_with(NUM_CONTROL_BLOCKS, || None);
+    control_blocks[DEFAULT_DRUM_CONTROL_BLOCK] =
+      Some(ControlBlock::Drum(DrumControlBlock { vol: 1. }));
+    control_blocks[DEFAULT_LOW_PASS_CONTROL_BLOCK] = Some(ControlBlock::Low(LowpassControlBlock {
       taps: vec![
         Tap {
           tp: TapType::Input,
@@ -86,8 +90,9 @@ impl State {
         },
       ],
     }));
-    control_blocks.push(ControlBlock::Gain(GainControlBlock { scale: 1.0 }));
-    control_blocks.push(ControlBlock::All(AllpassControlBlock {
+    control_blocks[DEFAULT_GAIN_CONTROL_BLOCK] =
+      Some(ControlBlock::Gain(GainControlBlock { scale: 1.0 }));
+    control_blocks[DEFAULT_ALL_PASS_CONTROL_BLOCK] = Some(ControlBlock::All(AllpassControlBlock {
       delay: 10,
       gain: 0.7,
       naive: true,

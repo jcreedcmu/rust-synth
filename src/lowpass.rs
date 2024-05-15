@@ -83,7 +83,7 @@ impl Ugen for LowpassState {
   fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
     // XXX hard coded index
     match &ctl[1] {
-      ControlBlock::Low(ctl) => self.ctl_run(gen, tick_s, &ctl),
+      Some(ControlBlock::Low(ctl)) => self.ctl_run(gen, tick_s, &ctl),
       _ => false,
     }
   }
