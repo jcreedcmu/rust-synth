@@ -24,7 +24,7 @@ export function init(props: AppProps) {
 type WebSocketContainer = { ws: WebSocket };
 
 export type Action =
-  | { t: 'setSequencer', row: number, i: number, newVal: boolean }
+  | { t: 'setSequencer', inst: number, pat: number, on: boolean }
   ;
 
 type SequencerProps = {
@@ -56,8 +56,8 @@ function reduce_inner(state: State, action: Action): State {
   switch (action.t) {
     case 'setSequencer': {
       return produce(state, s => {
-        s.table[action.i][action.row] = action.newVal;
-        s.outbox.push({ t: 'setSequencer', inst: action.row, on: action.newVal, pat: action.i });
+        s.table[action.pat][action.inst] = action.on;
+        s.outbox.push(action);
       });
     }
   }
@@ -77,24 +77,24 @@ function mkState(): State {
 
 function Sequencer(props: SequencerProps): JSX.Element {
   const { table, dispatch } = props;
-  function cellsOfRow(row: number): JSX.Element[] {
+  function cellsOfInst(inst: number): JSX.Element[] {
     let rv: JSX.Element[] = [];
-    for (let i = 0; i < 16; i++) {
+    for (let pat = 0; pat < 16; pat++) {
       const style: CSSProperties = {
         height: 20,
         width: 20,
-        backgroundColor: table[i][row] ? 'black' : '#ddd'
+        backgroundColor: table[pat][inst] ? 'black' : '#ddd'
       };
       function onClick(e: React.MouseEvent) {
-        const oldVal = table[i][row];
-        const newVal = !oldVal;
-        dispatch({ t: 'setSequencer', i, newVal, row });
+        const oldVal = table[pat][inst];
+        const on = !oldVal;
+        dispatch({ t: 'setSequencer', pat, on, inst });
       }
       rv.push(<td><div style={style} onClick={onClick}></div></td>)
     }
     return rv;
   }
-  const rows = [2, 1, 0].map(row => <tr>{cellsOfRow(row)}</tr>);
+  const rows = [2, 1, 0].map(row => <tr>{cellsOfInst(row)}</tr>);
   return <table>{rows}</table>;
 }
 
