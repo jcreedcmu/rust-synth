@@ -9,6 +9,7 @@ import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
 const BUS_OUT = 0;
 const BUS_DRY = 1;
 const BUS_PREGAIN = 2;
+const BUS_PRELOW = 3;
 const MAX_GAIN = 40;
 
 type AppProps = {
@@ -60,11 +61,13 @@ function Sequencer(props: SequencerProps): JSX.Element {
 const DEFAULT_DRUM_CONTROL_BLOCK: number = 0;
 const DEFAULT_LOW_PASS_CONTROL_BLOCK: number = 1;
 const DEFAULT_GAIN_CONTROL_BLOCK: number = 2;
+const DEFAULT_ALLPASS_CONTROL_BLOCK: number = 3;
 
 function App(props: AppProps): JSX.Element {
   const [connected, setConnected] = useState(true);
   const [gain, setGain] = useState(10);
   const [highpassParam, setHighpassParam] = useState(50);
+  const [allpassParam, setAllpassParam] = useState(50);
   const [meterValue, setMeterValue] = useState(0);
   const [cfg, setCfg] = useState<LowpassWidgetState>([{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }]);
   const wsco = useRef<WebSocketContainer | undefined>(undefined);
@@ -150,6 +153,30 @@ function App(props: AppProps): JSX.Element {
     setHighpassParam(interface_alpha);
   };
 
+  const allpassOnInput = (e: React.FormEvent) => {
+    const interface_param = parseInt((e.target as HTMLInputElement).value);
+    setAllpassParam(interface_param);
+
+    const ctl: ControlBlock = {
+      t: 'All',
+      delay: interface_param,
+      gain: 0.7,
+    };
+    send({ t: 'setControlBlock', index: DEFAULT_LOW_PASS_CONTROL_BLOCK, ctl });
+
+    send({
+      t: 'reconfigure', specs: [
+        { t: 'midiManager', dst: BUS_DRY },
+        { t: 'ugenGroup', dst: BUS_DRY },
+        { t: 'allPass', src: BUS_DRY, dst: BUS_PRELOW, ctl: DEFAULT_ALLPASS_CONTROL_BLOCK },
+        { t: 'lowPass', src: BUS_PRELOW, dst: BUS_PREGAIN },
+        { t: 'gain', src: BUS_PREGAIN, dst: BUS_OUT },
+        { t: 'meter', src: BUS_OUT },
+      ]
+    });
+
+  };
+
   function setLowpassCfg(cfg: LowpassWidgetState): void {
     let taps: Tap[] = cfg.map(({ pos, weight }) => ({ pos, weight: weight / 100, tp: { t: 'Rec' } }));
     let sum = taps.map(x => x.weight).reduce((a, b) => a + b);
@@ -180,6 +207,7 @@ function App(props: AppProps): JSX.Element {
       onClick={() => { reconnect(wsco.current!); }}>reconnect</button></span> : undefined}
     <Sequencer send={send} />
     highpass: <input type="range" min="1" max="99" value={highpassParam} onInput={highpassOnInput} />
+    allpass: <input type="range" min="1" max="2000" value={allpassParam} onInput={allpassOnInput} />
     <br />
     <b>RMS</b>: {meterDb}dB
   </div>;

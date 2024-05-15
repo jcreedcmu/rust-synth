@@ -87,6 +87,10 @@ impl State {
       ],
     }));
     control_blocks.push(ControlBlock::Gain(GainControlBlock { scale: 1.0 }));
+    control_blocks.push(ControlBlock::All(AllpassControlBlock {
+      delay: 10,
+      gain: 0.7,
+    }));
     State {
       going: true,
       sequencer: Sequencer::new(),
