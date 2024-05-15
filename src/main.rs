@@ -1,5 +1,6 @@
 #![allow(unused_variables, unused_mut, dead_code, non_upper_case_globals)]
 
+mod allpass;
 mod audio;
 mod consts;
 mod drum;

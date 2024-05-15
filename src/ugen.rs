@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::allpass::AllpassState;
 use crate::drum::DrumSynthState;
 use crate::gain::GainState;
 use crate::lowpass::LowpassState;
@@ -17,6 +18,7 @@ pub trait Ugen: std::fmt::Debug + Sync + Send {
 #[serde(rename_all = "camelCase")]
 pub enum UgenSpec {
   LowPass { src: usize, dst: usize },
+  AllPass { src: usize, dst: usize },
   MidiManager { dst: usize },
   UgenGroup { dst: usize },
   Meter { src: usize },
@@ -27,6 +29,7 @@ pub enum UgenSpec {
 pub enum UgenState {
   DrumSynth(DrumSynthState),
   Lowpass(LowpassState),
+  Allpass(AllpassState),
   MidiManager(MidiManagerState),
   UgenGroup(UgenGroupState),
   Meter(MeterState),
@@ -39,6 +42,7 @@ impl Ugen for UgenState {
     match self {
       UgenState::DrumSynth(s) => s.run(gen, tick_s, ctl),
       UgenState::Lowpass(s) => s.run(gen, tick_s, ctl),
+      UgenState::Allpass(s) => s.run(gen, tick_s, ctl),
       UgenState::MidiManager(s) => s.run(gen, tick_s, ctl),
       UgenState::UgenGroup(s) => s.run(gen, tick_s, ctl),
       UgenState::Meter(s) => s.run(gen, tick_s, ctl),
@@ -51,6 +55,7 @@ impl UgenState {
   pub fn new(spec: UgenSpec) -> Self {
     match spec {
       UgenSpec::LowPass { src, dst } => UgenState::Lowpass(LowpassState::new(src, dst)),
+      UgenSpec::AllPass { src, dst } => UgenState::Allpass(AllpassState::new(src, dst)),
       UgenSpec::MidiManager { dst } => UgenState::MidiManager(MidiManagerState::new(dst)),
       UgenSpec::UgenGroup { dst } => UgenState::UgenGroup(UgenGroupState::new(dst)),
       UgenSpec::Meter { src } => UgenState::Meter(MeterState::new(src)),
