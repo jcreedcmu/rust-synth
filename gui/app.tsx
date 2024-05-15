@@ -25,6 +25,7 @@ type WebSocketContainer = { ws: WebSocket };
 
 export type Action =
   | { t: 'setSequencer', inst: number, pat: number, on: boolean }
+  | { t: 'setConnected', connected: boolean }
   ;
 
 type SequencerProps = {
@@ -34,6 +35,7 @@ type SequencerProps = {
 
 export type State = {
   table: boolean[][],
+  connected: boolean,
   outbox: WebMessage[],
 }
 
@@ -60,6 +62,9 @@ function reduce_inner(state: State, action: Action): State {
         s.outbox.push(action);
       });
     }
+    case 'setConnected': {
+      return produce(state, s => { s.connected = action.connected; });
+    }
   }
 }
 
@@ -72,6 +77,7 @@ function mkState(): State {
       [false, false], [false, false], [false, false], [false, false]
     ],
     outbox: [],
+    connected: true,
   };
 }
 
@@ -114,7 +120,7 @@ function App(props: AppProps): JSX.Element {
   }
 
   const [state, dispatch] = useEffectfulReducer<Action, State, Effect>(mkState(), reduce, doEffect);
-  const [connected, setConnected] = useState(true);
+
   const [gain, setGain] = useState(10);
   const [highpassParam, setHighpassParam] = useState(50);
   const [allpassDelay, setAllpassDelay] = useState(50);
@@ -139,7 +145,7 @@ function App(props: AppProps): JSX.Element {
     let wsc: WebSocketContainer = { ws: new WebSocket('/ws/') };
 
     wsc.ws.onopen = () => {
-      setConnected(true);
+      dispatch({ t: 'setConnected', connected: true });
       console.log('ws opened on browser');
       wsco.current = wsc;
       send({
@@ -155,7 +161,7 @@ function App(props: AppProps): JSX.Element {
     }
 
     wsc.ws.onclose = () => {
-      setConnected(false);
+      dispatch({ t: 'setConnected', connected: false });
       console.log('ws closed on browser')
     }
 
@@ -263,6 +269,7 @@ function App(props: AppProps): JSX.Element {
   //  <Chart lowp_param={0.50} />
 
   const meterDb = meterValue < 1e-10 ? '-infinity' : 20 * Math.log(meterValue) / Math.log(10);
+  const { connected } = state;
   return <div>
     <button disabled={!connected} onMouseDown={() => { send({ t: 'drum' }) }}>Action</button><br />
     <button disabled={!connected} onMouseDown={() => { send({ t: 'quit' }) }}>Quit</button><br />
