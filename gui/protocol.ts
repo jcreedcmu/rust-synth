@@ -1,5 +1,6 @@
 export type UgenSpec =
   | { t: 'lowPass', src: number, dst: number }
+  | { t: 'allPass', src: number, dst: number, ctl: number }
   | { t: 'midiManager', dst: number }
   | { t: 'ugenGroup', dst: number }
   | { t: 'meter', src: number }
@@ -21,10 +22,16 @@ export type LowpassControlBlock = {
   taps: Tap[],
 }
 
+export type AllpassControlBlock = {
+  gain: number,
+  delay: number,
+}
+
 export type ControlBlock =
   | { t: 'Reasonable' }
   | { t: 'Drum', vol: number }
   | { t: 'Low' } & LowpassControlBlock
+  | { t: 'All' } & AllpassControlBlock
   | { t: 'Gain', scale: number }
   ;
 

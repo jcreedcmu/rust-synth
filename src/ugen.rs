@@ -18,7 +18,7 @@ pub trait Ugen: std::fmt::Debug + Sync + Send {
 #[serde(rename_all = "camelCase")]
 pub enum UgenSpec {
   LowPass { src: usize, dst: usize },
-  AllPass { src: usize, dst: usize },
+  AllPass { src: usize, dst: usize, ctl: usize },
   MidiManager { dst: usize },
   UgenGroup { dst: usize },
   Meter { src: usize },
@@ -55,7 +55,7 @@ impl UgenState {
   pub fn new(spec: UgenSpec) -> Self {
     match spec {
       UgenSpec::LowPass { src, dst } => UgenState::Lowpass(LowpassState::new(src, dst)),
-      UgenSpec::AllPass { src, dst } => UgenState::Allpass(AllpassState::new(src, dst)),
+      UgenSpec::AllPass { src, dst, ctl } => UgenState::Allpass(AllpassState::new(src, dst, ctl)),
       UgenSpec::MidiManager { dst } => UgenState::MidiManager(MidiManagerState::new(dst)),
       UgenSpec::UgenGroup { dst } => UgenState::UgenGroup(UgenGroupState::new(dst)),
       UgenSpec::Meter { src } => UgenState::Meter(MeterState::new(src)),

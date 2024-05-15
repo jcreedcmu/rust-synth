@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 
+use crate::allpass::AllpassControlBlock;
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE};
 use crate::drum::{DrumControlBlock, DrumSynthState};
 use crate::envelope::Adsr;
@@ -28,6 +29,7 @@ pub enum ControlBlock {
   Reasonable(ReasonableControlBlock),
   Drum(DrumControlBlock),
   Low(LowpassControlBlock),
+  All(AllpassControlBlock),
   Gain(GainControlBlock),
 }
 

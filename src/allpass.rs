@@ -1,4 +1,5 @@
-use crate::lowpass::{LowpassControlBlock, Tap, TapType};
+use serde::{Deserialize, Serialize};
+
 use crate::state::{ControlBlock, ControlBlocks, GenState};
 use crate::ugen::Ugen;
 
@@ -8,48 +9,53 @@ const HISTORY_SIZE: usize = 35000;
 pub struct AllpassState {
   src: usize,
   dst: usize,
+  ctl: usize,
   ix: usize,
   memory_rec: Vec<f32>,
-  memory_input: Vec<f32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "t")]
+#[serde(rename_all = "camelCase")]
+pub struct AllpassControlBlock {
+  pub gain: f32,
+  pub delay: usize,
 }
 
 impl AllpassState {
-  pub fn new(src: usize, dst: usize) -> Self {
+  pub fn new(src: usize, dst: usize, ctl: usize) -> Self {
     AllpassState {
       src,
       dst,
+      ctl,
       ix: 0,
       memory_rec: vec![0.; HISTORY_SIZE],
-      memory_input: vec![0.; HISTORY_SIZE],
     }
   }
 
-  fn do_tap(&self, tap: &Tap) -> f32 {
-    let memory = match tap.tp {
-      TapType::Input => &self.memory_input,
-      TapType::Rec => &self.memory_rec,
-    };
-    let memval =
-      memory[((self.ix as i32) - (tap.pos as i32)).rem_euclid(HISTORY_SIZE as i32) as usize];
-    tap.weight * memval
+  fn do_tap(&self, delay: i32) -> f32 {
+    self.memory_rec[((self.ix as i32) - delay).rem_euclid(HISTORY_SIZE as i32) as usize]
   }
 
-  fn ctl_run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &LowpassControlBlock) -> bool {
+  fn ctl_run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &AllpassControlBlock) -> bool {
     for bus_ix in 0..gen.audio_bus[0].len() {
-      // bus_ix is the index into the snippet of audio we are
-      // currently processing self.ix is the index into the ring
-      // buffers that remember past input (memory_input), and past
-      // output (memory_rec) of this ugen.
+      // bus_ix is the index into the past output (memory_rec) of this
+      // ugen.
 
+      let AllpassControlBlock { gain: g, delay, .. } = ctl;
       // Make sure the current input value is in memory_input at the
       // current time (because do_tap might need to read it)
-      self.memory_input[self.ix] = gen.audio_bus[self.src][bus_ix];
-      let mut wet = 0.;
-      for tap in ctl.taps.iter() {
-        wet += self.do_tap(tap);
-      }
-      gen.audio_bus[self.dst][bus_ix] = wet;
+      let dry = gen.audio_bus[self.src][bus_ix];
+      // tapv = (Δ + gΔ² + g³Δ² + ⋯)dry
+      let tapv = self.do_tap(*delay as i32);
+      // wet = dry/(1-gΔ) = (1 + gΔ + (gΔ)² + (gΔ)³ + ⋯)dry
+      let wet = dry + g * tapv;
       self.memory_rec[self.ix] = wet;
+
+      // Schroeder & Logan 1960 "'Colorless' Artificial Reverberation"
+      let out = -g * dry + (1.0 - g * g) * tapv;
+
+      gen.audio_bus[self.dst][bus_ix] = out;
       self.ix = (self.ix + 1) % HISTORY_SIZE;
     }
     true
@@ -57,10 +63,9 @@ impl AllpassState {
 }
 
 impl Ugen for AllpassState {
-  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
-    // XXX hard coded index
-    match &ctl[1] {
-      ControlBlock::Low(ctl) => self.ctl_run(gen, tick_s, &ctl),
+  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctls: &ControlBlocks) -> bool {
+    match &ctls[self.ctl] {
+      ControlBlock::All(ctl) => self.ctl_run(gen, tick_s, ctl),
       _ => false,
     }
   }
