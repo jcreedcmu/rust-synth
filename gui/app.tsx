@@ -67,7 +67,8 @@ function App(props: AppProps): JSX.Element {
   const [connected, setConnected] = useState(true);
   const [gain, setGain] = useState(10);
   const [highpassParam, setHighpassParam] = useState(50);
-  const [allpassParam, setAllpassParam] = useState(50);
+  const [allpassDelay, setAllpassDelay] = useState(50);
+  const [allpassGain, setAllpassGain] = useState(50);
   const [meterValue, setMeterValue] = useState(0);
   const [cfg, setCfg] = useState<LowpassWidgetState>([{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }]);
   const wsco = useRef<WebSocketContainer | undefined>(undefined);
@@ -94,7 +95,8 @@ function App(props: AppProps): JSX.Element {
         t: 'reconfigure', specs: [
           { t: 'midiManager', dst: BUS_DRY },
           { t: 'ugenGroup', dst: BUS_DRY },
-          { t: 'lowPass', src: BUS_DRY, dst: BUS_PREGAIN },
+          { t: 'allPass', src: BUS_DRY, dst: BUS_PRELOW, ctl: DEFAULT_ALLPASS_CONTROL_BLOCK },
+          { t: 'lowPass', src: BUS_PRELOW, dst: BUS_PREGAIN },
           { t: 'gain', src: BUS_PREGAIN, dst: BUS_OUT },
           { t: 'meter', src: BUS_OUT },
         ]
@@ -153,29 +155,27 @@ function App(props: AppProps): JSX.Element {
     setHighpassParam(interface_alpha);
   };
 
-  const allpassOnInput = (e: React.FormEvent) => {
+  const allpassOnDelayInput = (e: React.FormEvent) => {
     const interface_param = parseInt((e.target as HTMLInputElement).value);
-    setAllpassParam(interface_param);
-
+    setAllpassDelay(interface_param);
     const ctl: ControlBlock = {
       t: 'All',
       delay: interface_param,
-      gain: 0.7,
+      gain: allpassGain / 100,
     };
-    send({ t: 'setControlBlock', index: DEFAULT_LOW_PASS_CONTROL_BLOCK, ctl });
-
-    send({
-      t: 'reconfigure', specs: [
-        { t: 'midiManager', dst: BUS_DRY },
-        { t: 'ugenGroup', dst: BUS_DRY },
-        { t: 'allPass', src: BUS_DRY, dst: BUS_PRELOW, ctl: DEFAULT_ALLPASS_CONTROL_BLOCK },
-        { t: 'lowPass', src: BUS_PRELOW, dst: BUS_PREGAIN },
-        { t: 'gain', src: BUS_PREGAIN, dst: BUS_OUT },
-        { t: 'meter', src: BUS_OUT },
-      ]
-    });
-
+    send({ t: 'setControlBlock', index: DEFAULT_ALLPASS_CONTROL_BLOCK, ctl });
   };
+
+  const allpassOnGainInput = (e: React.FormEvent) => {
+    const interface_param = parseInt((e.target as HTMLInputElement).value);
+    setAllpassGain(interface_param);
+    const ctl: ControlBlock = {
+      t: 'All',
+      delay: allpassDelay,
+      gain: interface_param / 100,
+    };
+    send({ t: 'setControlBlock', index: DEFAULT_ALLPASS_CONTROL_BLOCK, ctl });
+  }
 
   function setLowpassCfg(cfg: LowpassWidgetState): void {
     let taps: Tap[] = cfg.map(({ pos, weight }) => ({ pos, weight: weight / 100, tp: { t: 'Rec' } }));
@@ -206,8 +206,9 @@ function App(props: AppProps): JSX.Element {
     {!connected ? <span><br /><button style={{ backgroundColor: 'red', color: 'white' }}
       onClick={() => { reconnect(wsco.current!); }}>reconnect</button></span> : undefined}
     <Sequencer send={send} />
-    highpass: <input type="range" min="1" max="99" value={highpassParam} onInput={highpassOnInput} />
-    allpass: <input type="range" min="1" max="2000" value={allpassParam} onInput={allpassOnInput} />
+    highpass: <input type="range" min="1" max="99" value={highpassParam} onInput={highpassOnInput} /><br />
+    allpass delay: <input type="range" min="1" max="20000" value={allpassDelay} onInput={allpassOnDelayInput} /><br />
+    allpass gain: <input type="range" min="1" max="99" value={allpassGain} onInput={allpassOnGainInput} /><br />
     <br />
     <b>RMS</b>: {meterDb}dB
   </div>;
