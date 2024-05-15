@@ -25,6 +25,7 @@ export type LowpassControlBlock = {
 export type AllpassControlBlock = {
   gain: number,
   delay: number,
+  naive: boolean,
 }
 
 export type ControlBlock =

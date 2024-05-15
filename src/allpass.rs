@@ -20,6 +20,7 @@ pub struct AllpassState {
 pub struct AllpassControlBlock {
   pub gain: f32,
   pub delay: usize,
+  pub naive: bool,
 }
 
 impl AllpassState {
@@ -42,7 +43,11 @@ impl AllpassState {
       // bus_ix is the index into the past output (memory_rec) of this
       // ugen.
 
-      let AllpassControlBlock { gain: g, delay, .. } = ctl;
+      let AllpassControlBlock {
+        gain: g,
+        delay,
+        naive,
+      } = ctl;
       // Make sure the current input value is in memory_input at the
       // current time (because do_tap might need to read it)
       let dry = gen.audio_bus[self.src][bus_ix];
@@ -53,7 +58,11 @@ impl AllpassState {
       self.memory_rec[self.ix] = wet;
 
       // Schroeder & Logan 1960 "'Colorless' Artificial Reverberation"
-      let out = -g * dry + (1.0 - g * g) * tapv;
+      let out = if *naive {
+        dry + g * tapv
+      } else {
+        -g * dry + (1.0 - g * g) * tapv
+      };
 
       gen.audio_bus[self.dst][bus_ix] = out;
       self.ix = (self.ix + 1) % HISTORY_SIZE;

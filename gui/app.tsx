@@ -1,9 +1,10 @@
 import ReactDOM from 'react-dom';
-import { CSSProperties, useEffect, useRef, useState } from 'react';
+import { CSSProperties, useEffect, useReducer, useRef, useState } from 'react';
 import { ControlBlock, LowpassControlBlock, SynthMessage, Tap, WebMessage } from './protocol';
 import { produce } from 'immer';
 import { Chart } from './chart';
 import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
+import { useEffectfulReducer } from './use-effectful-reducer';
 
 // Should match consts.rs
 const BUS_OUT = 0;
@@ -22,18 +23,60 @@ export function init(props: AppProps) {
 
 type WebSocketContainer = { ws: WebSocket };
 
+export type Action =
+  | { t: 'setSequencer', row: number, i: number, newVal: boolean }
+  ;
+
 type SequencerProps = {
-  send(msg: WebMessage): void;
+  table: boolean[][],
+  dispatch(action: Action): void;
+}
+
+export type State = {
+  table: boolean[][],
+  outbox: WebMessage[],
+}
+
+
+type Effect =
+  | { t: 'send', msg: WebMessage }
+  ;
+
+
+function reduce(state: State, action: Action): { state: State, effects: Effect[] } {
+  let newState = reduce_inner(state, action);
+  const effects: Effect[] = newState.outbox.map(msg => ({ t: 'send', msg }));
+  newState = produce(newState, s => {
+    s.outbox = [];
+  });
+  return { state: newState, effects };
+}
+
+function reduce_inner(state: State, action: Action): State {
+  switch (action.t) {
+    case 'setSequencer': {
+      return produce(state, s => {
+        s.table[action.i][action.row] = action.newVal;
+        s.outbox.push({ t: 'setSequencer', inst: action.row, on: action.newVal, pat: action.i });
+      });
+    }
+  }
+}
+
+function mkState(): State {
+  return {
+    table: [
+      [false, false], [false, false], [false, false], [false, false],
+      [false, false], [false, false], [false, false], [false, false],
+      [false, false], [false, false], [false, false], [false, false],
+      [false, false], [false, false], [false, false], [false, false]
+    ],
+    outbox: [],
+  };
 }
 
 function Sequencer(props: SequencerProps): JSX.Element {
-  const initTable: boolean[][] = [
-    [false, false], [false, false], [false, false], [false, false],
-    [false, false], [false, false], [false, false], [false, false],
-    [false, false], [false, false], [false, false], [false, false],
-    [false, false], [false, false], [false, false], [false, false]
-  ];
-  const [table, setTable] = useState(initTable);
+  const { table, dispatch } = props;
   function cellsOfRow(row: number): JSX.Element[] {
     let rv: JSX.Element[] = [];
     for (let i = 0; i < 16; i++) {
@@ -45,10 +88,7 @@ function Sequencer(props: SequencerProps): JSX.Element {
       function onClick(e: React.MouseEvent) {
         const oldVal = table[i][row];
         const newVal = !oldVal;
-        setTable(produce(table, t => {
-          t[i][row] = newVal;
-        }));
-        props.send({ t: 'setSequencer', inst: row, on: newVal, pat: i });
+        dispatch({ t: 'setSequencer', i, newVal, row });
       }
       rv.push(<td><div style={style} onClick={onClick}></div></td>)
     }
@@ -63,12 +103,23 @@ const DEFAULT_LOW_PASS_CONTROL_BLOCK: number = 1;
 const DEFAULT_GAIN_CONTROL_BLOCK: number = 2;
 const DEFAULT_ALLPASS_CONTROL_BLOCK: number = 3;
 
+
+export type Dispatch = (action: Action) => void;
+
 function App(props: AppProps): JSX.Element {
+  function doEffect(s: State, dispatch: Dispatch, e: Effect) {
+    switch (e.t) {
+      case 'send': send(e.msg); break;
+    }
+  }
+
+  const [state, dispatch] = useEffectfulReducer<Action, State, Effect>(mkState(), reduce, doEffect);
   const [connected, setConnected] = useState(true);
   const [gain, setGain] = useState(10);
   const [highpassParam, setHighpassParam] = useState(50);
   const [allpassDelay, setAllpassDelay] = useState(50);
   const [allpassGain, setAllpassGain] = useState(50);
+  const [allpassNaive, setAllpassNaive] = useState(true);
   const [meterValue, setMeterValue] = useState(0);
   const [cfg, setCfg] = useState<LowpassWidgetState>([{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }]);
   const wsco = useRef<WebSocketContainer | undefined>(undefined);
@@ -162,6 +213,7 @@ function App(props: AppProps): JSX.Element {
       t: 'All',
       delay: interface_param,
       gain: allpassGain / 100,
+      naive: allpassNaive,
     };
     send({ t: 'setControlBlock', index: DEFAULT_ALLPASS_CONTROL_BLOCK, ctl });
   };
@@ -173,6 +225,19 @@ function App(props: AppProps): JSX.Element {
       t: 'All',
       delay: allpassDelay,
       gain: interface_param / 100,
+      naive: allpassNaive,
+    };
+    send({ t: 'setControlBlock', index: DEFAULT_ALLPASS_CONTROL_BLOCK, ctl });
+  }
+
+  const allpassOnNaiveInput = (e: React.FormEvent) => {
+    const interface_param = !(e.target as HTMLInputElement).checked;
+    setAllpassNaive(interface_param);
+    const ctl: ControlBlock = {
+      t: 'All',
+      delay: allpassDelay,
+      gain: allpassGain / 100,
+      naive: interface_param,
     };
     send({ t: 'setControlBlock', index: DEFAULT_ALLPASS_CONTROL_BLOCK, ctl });
   }
@@ -205,10 +270,11 @@ function App(props: AppProps): JSX.Element {
     <LowpassCfg cfg={cfg} setLowpassCfg={setLowpassCfg} />
     {!connected ? <span><br /><button style={{ backgroundColor: 'red', color: 'white' }}
       onClick={() => { reconnect(wsco.current!); }}>reconnect</button></span> : undefined}
-    <Sequencer send={send} />
+    <Sequencer dispatch={dispatch} table={state.table} />
     highpass: <input type="range" min="1" max="99" value={highpassParam} onInput={highpassOnInput} /><br />
     allpass delay: <input type="range" min="1" max="20000" value={allpassDelay} onInput={allpassOnDelayInput} /><br />
     allpass gain: <input type="range" min="1" max="99" value={allpassGain} onInput={allpassOnGainInput} /><br />
+    allpass naive: <input type="checkbox" checked={allpassNaive} onInput={allpassOnNaiveInput} /><br />
     <br />
     <b>RMS</b>: {meterDb}dB
   </div>;

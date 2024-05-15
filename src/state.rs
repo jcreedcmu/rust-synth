@@ -90,6 +90,7 @@ impl State {
     control_blocks.push(ControlBlock::All(AllpassControlBlock {
       delay: 10,
       gain: 0.7,
+      naive: true,
     }));
     State {
       going: true,
