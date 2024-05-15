@@ -32,6 +32,7 @@ export type Action =
   | { t: 'setAllpassGain', iface_allpass_gain: number }
   | { t: 'setAllpassNaive', iface_allpass_naive: boolean }
   | { t: 'setMeterValue', value: number }
+  | { t: 'setLowpassState', lowpassState: LowpassWidgetState }
   ;
 
 type SequencerProps = {
@@ -53,13 +54,12 @@ export type State = {
   allpass: AllpassState;
   outbox: WebMessage[],
   meterValue: number,
+  lowpassState: LowpassWidgetState,
 }
-
 
 type Effect =
   | { t: 'send', msg: WebMessage }
   ;
-
 
 function reduce(state: State, action: Action): { state: State, effects: Effect[] } {
   let newState = reduce_inner(state, action);
@@ -154,6 +154,31 @@ function reduce_inner(state: State, action: Action): State {
         s.meterValue = value;
       });
     }
+    case 'setLowpassState': {
+      const { lowpassState } = action;
+
+      let taps: Tap[] = lowpassState.map(({ pos, weight }) => ({ pos, weight: weight / 100, tp: { t: 'Rec' } }));
+      let sum = taps.map(x => x.weight).reduce((a, b) => a + b);
+      const minSelfWeight = 0.05;
+      const maxSum = 1 - minSelfWeight;
+      const s = maxSum / sum;
+      if (sum > maxSum) {
+        taps = taps.map(({ pos, weight }) => ({ pos, weight: weight * s, tp: { t: 'Rec' } }));
+        sum = sum * s;
+      }
+      const selfWeight = 1 - sum;
+      const ctl: ControlBlock = {
+        t: 'Low',
+        taps: [...taps, { pos: 0, weight: selfWeight, tp: { t: 'Input' } }],
+      };
+
+      const msg: WebMessage = { t: 'setControlBlock', index: DEFAULT_LOW_PASS_CONTROL_BLOCK, ctl };
+
+      return produce(state, s => {
+        s.lowpassState = lowpassState;
+        s.outbox.push(msg);
+      });
+    }
   }
 }
 
@@ -175,6 +200,7 @@ function mkState(): State {
       iface_allpass_naive: true,
     },
     meterValue: 0,
+    lowpassState: [{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }],
   };
 }
 
@@ -210,17 +236,14 @@ const DEFAULT_ALLPASS_CONTROL_BLOCK: number = 3;
 export type Dispatch = (action: Action) => void;
 
 function App(props: AppProps): JSX.Element {
+  const [state, dispatch] = useEffectfulReducer<Action, State, Effect>(mkState(), reduce, doEffect);
+  const wsco = useRef<WebSocketContainer | undefined>(undefined);
+
   function doEffect(s: State, dispatch: Dispatch, e: Effect) {
     switch (e.t) {
       case 'send': send(e.msg); break;
     }
   }
-
-  const [state, dispatch] = useEffectfulReducer<Action, State, Effect>(mkState(), reduce, doEffect);
-
-
-  const [cfg, setCfg] = useState<LowpassWidgetState>([{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }]);
-  const wsco = useRef<WebSocketContainer | undefined>(undefined);
 
   function reconnect(wsc: WebSocketContainer) {
     console.log('retrying...')
@@ -289,24 +312,6 @@ function App(props: AppProps): JSX.Element {
     dispatch({ t: 'setHighpass', iface_highpass: parseInt((e.target as HTMLInputElement).value) });
   };
 
-  function setLowpassCfg(cfg: LowpassWidgetState): void {
-    let taps: Tap[] = cfg.map(({ pos, weight }) => ({ pos, weight: weight / 100, tp: { t: 'Rec' } }));
-    let sum = taps.map(x => x.weight).reduce((a, b) => a + b);
-    const minSelfWeight = 0.05;
-    const maxSum = 1 - minSelfWeight;
-    const s = maxSum / sum;
-    if (sum > maxSum) {
-      taps = taps.map(({ pos, weight }) => ({ pos, weight: weight * s, tp: { t: 'Rec' } }));
-      sum = sum * s;
-    }
-    const selfWeight = 1 - sum;
-    const ctl: ControlBlock = {
-      t: 'Low',
-      taps: [...taps, { pos: 0, weight: selfWeight, tp: { t: 'Input' } }],
-    };
-    setCfg(cfg);
-    send({ t: 'setControlBlock', index: DEFAULT_LOW_PASS_CONTROL_BLOCK, ctl });
-  }
   //  <Chart lowp_param={0.50} />
 
   const { connected, iface_gain, iface_highpass, allpass, meterValue } = state;
@@ -316,9 +321,14 @@ function App(props: AppProps): JSX.Element {
     <button disabled={!connected} onMouseDown={() => { send({ t: 'drum' }) }}>Action</button><br />
     <button disabled={!connected} onMouseDown={() => { send({ t: 'quit' }) }}>Quit</button><br />
     <input disabled={!connected} type="range" min="1" max="99" value={iface_gain} onInput={gainOnInput} />
-    <LowpassCfg cfg={cfg} setLowpassCfg={setLowpassCfg} />
+    <LowpassCfg
+      cfg={state.lowpassState}
+      setLowpassCfg={cfg => dispatch({ t: 'setLowpassState', lowpassState: cfg })}
+    />
+
     {!connected ? <span><br /><button style={{ backgroundColor: 'red', color: 'white' }}
       onClick={() => { reconnect(wsco.current!); }}>reconnect</button></span> : undefined}
+
     <Sequencer dispatch={dispatch} table={state.table} />
     highpass: <input type="range" min="1" max="99" value={iface_highpass} onInput={highpassOnInput} /><br />
     allpass delay: <input type="range" min="1" max="20000" value={allpass.iface_allpass_delay}
