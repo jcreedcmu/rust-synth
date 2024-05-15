@@ -28,6 +28,9 @@ export type Action =
   | { t: 'setConnected', connected: boolean }
   | { t: 'setGain', iface_gain: number }
   | { t: 'setHighpass', iface_highpass: number }
+  | { t: 'setAllpassDelay', iface_allpass_delay: number }
+  | { t: 'setAllpassGain', iface_allpass_gain: number }
+  | { t: 'setAllpassNaive', iface_allpass_naive: boolean }
   ;
 
 type SequencerProps = {
@@ -35,11 +38,18 @@ type SequencerProps = {
   dispatch(action: Action): void;
 }
 
+export type AllpassState = {
+  iface_allpass_gain: number,
+  iface_allpass_delay: number,
+  iface_allpass_naive: boolean,
+};
+
 export type State = {
   table: boolean[][],
   connected: boolean,
   iface_gain: number,
   iface_highpass: number,
+  allpass: AllpassState;
   outbox: WebMessage[],
 }
 
@@ -56,6 +66,16 @@ function reduce(state: State, action: Action): { state: State, effects: Effect[]
     s.outbox = [];
   });
   return { state: newState, effects };
+}
+
+function allpassMsg(a: AllpassState): WebMessage {
+  const ctl: ControlBlock = {
+    t: 'All',
+    delay: a.iface_allpass_delay,
+    gain: a.iface_allpass_gain / 100,
+    naive: a.iface_allpass_naive,
+  };
+  return { t: 'setControlBlock', index: DEFAULT_ALLPASS_CONTROL_BLOCK, ctl };
 }
 
 function reduce_inner(state: State, action: Action): State {
@@ -93,6 +113,39 @@ function reduce_inner(state: State, action: Action): State {
         s.outbox.push(msg);
       });
     }
+    case 'setAllpassDelay': {
+      const { iface_allpass_delay } = action;
+      const allpass = produce(state.allpass, a => {
+        a.iface_allpass_delay = iface_allpass_delay;
+      });
+      const msg = allpassMsg(allpass);
+      return produce(state, s => {
+        s.allpass = allpass;
+        s.outbox.push(msg);
+      });
+    }
+    case 'setAllpassGain': {
+      const { iface_allpass_gain } = action;
+      const allpass = produce(state.allpass, a => {
+        a.iface_allpass_gain = iface_allpass_gain;
+      });
+      const msg = allpassMsg(allpass);
+      return produce(state, s => {
+        s.allpass = allpass;
+        s.outbox.push(msg);
+      });
+    }
+    case 'setAllpassNaive': {
+      const { iface_allpass_naive } = action;
+      const allpass = produce(state.allpass, a => {
+        a.iface_allpass_naive = iface_allpass_naive;
+      });
+      const msg = allpassMsg(allpass);
+      return produce(state, s => {
+        s.allpass = allpass;
+        s.outbox.push(msg);
+      });
+    }
   }
 }
 
@@ -108,6 +161,11 @@ function mkState(): State {
     connected: true,
     iface_gain: 10,
     iface_highpass: 50,
+    allpass: {
+      iface_allpass_gain: 50,
+      iface_allpass_delay: 50,
+      iface_allpass_naive: true,
+    },
   };
 }
 
@@ -151,9 +209,7 @@ function App(props: AppProps): JSX.Element {
 
   const [state, dispatch] = useEffectfulReducer<Action, State, Effect>(mkState(), reduce, doEffect);
 
-  const [allpassDelay, setAllpassDelay] = useState(50);
-  const [allpassGain, setAllpassGain] = useState(50);
-  const [allpassNaive, setAllpassNaive] = useState(true);
+
   const [meterValue, setMeterValue] = useState(0);
   const [cfg, setCfg] = useState<LowpassWidgetState>([{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }]);
   const wsco = useRef<WebSocketContainer | undefined>(undefined);
@@ -225,42 +281,6 @@ function App(props: AppProps): JSX.Element {
     dispatch({ t: 'setHighpass', iface_highpass: parseInt((e.target as HTMLInputElement).value) });
   };
 
-  const allpassOnDelayInput = (e: React.FormEvent) => {
-    const interface_param = parseInt((e.target as HTMLInputElement).value);
-    setAllpassDelay(interface_param);
-    const ctl: ControlBlock = {
-      t: 'All',
-      delay: interface_param,
-      gain: allpassGain / 100,
-      naive: allpassNaive,
-    };
-    send({ t: 'setControlBlock', index: DEFAULT_ALLPASS_CONTROL_BLOCK, ctl });
-  };
-
-  const allpassOnGainInput = (e: React.FormEvent) => {
-    const interface_param = parseInt((e.target as HTMLInputElement).value);
-    setAllpassGain(interface_param);
-    const ctl: ControlBlock = {
-      t: 'All',
-      delay: allpassDelay,
-      gain: interface_param / 100,
-      naive: allpassNaive,
-    };
-    send({ t: 'setControlBlock', index: DEFAULT_ALLPASS_CONTROL_BLOCK, ctl });
-  }
-
-  const allpassOnNaiveInput = (e: React.FormEvent) => {
-    const interface_param = !(e.target as HTMLInputElement).checked;
-    setAllpassNaive(interface_param);
-    const ctl: ControlBlock = {
-      t: 'All',
-      delay: allpassDelay,
-      gain: allpassGain / 100,
-      naive: interface_param,
-    };
-    send({ t: 'setControlBlock', index: DEFAULT_ALLPASS_CONTROL_BLOCK, ctl });
-  }
-
   function setLowpassCfg(cfg: LowpassWidgetState): void {
     let taps: Tap[] = cfg.map(({ pos, weight }) => ({ pos, weight: weight / 100, tp: { t: 'Rec' } }));
     let sum = taps.map(x => x.weight).reduce((a, b) => a + b);
@@ -282,7 +302,7 @@ function App(props: AppProps): JSX.Element {
   //  <Chart lowp_param={0.50} />
 
   const meterDb = meterValue < 1e-10 ? '-infinity' : 20 * Math.log(meterValue) / Math.log(10);
-  const { connected, iface_gain, iface_highpass } = state;
+  const { connected, iface_gain, iface_highpass, allpass } = state;
   return <div>
     <button disabled={!connected} onMouseDown={() => { send({ t: 'drum' }) }}>Action</button><br />
     <button disabled={!connected} onMouseDown={() => { send({ t: 'quit' }) }}>Quit</button><br />
@@ -292,9 +312,15 @@ function App(props: AppProps): JSX.Element {
       onClick={() => { reconnect(wsco.current!); }}>reconnect</button></span> : undefined}
     <Sequencer dispatch={dispatch} table={state.table} />
     highpass: <input type="range" min="1" max="99" value={iface_highpass} onInput={highpassOnInput} /><br />
-    allpass delay: <input type="range" min="1" max="20000" value={allpassDelay} onInput={allpassOnDelayInput} /><br />
-    allpass gain: <input type="range" min="1" max="99" value={allpassGain} onInput={allpassOnGainInput} /><br />
-    allpass naive: <input type="checkbox" checked={allpassNaive} onInput={allpassOnNaiveInput} /><br />
+    allpass delay: <input type="range" min="1" max="20000" value={allpass.iface_allpass_delay}
+      onInput={(e) => dispatch({ t: 'setAllpassDelay', iface_allpass_delay: parseInt((e.target as HTMLInputElement).value) })} />
+    <br />
+    allpass gain: <input type="range" min="1" max="99" value={allpass.iface_allpass_gain}
+      onInput={(e) => dispatch({ t: 'setAllpassGain', iface_allpass_gain: parseInt((e.target as HTMLInputElement).value) })} />
+    <br />
+    allpass naive: <input type="checkbox" checked={allpass.iface_allpass_naive}
+      onInput={(e) => dispatch({ t: 'setAllpassNaive', iface_allpass_naive: !((e.target as HTMLInputElement).checked) })} />
+    <br />
     <br />
     <b>RMS</b>: {meterDb}dB
   </div>;
