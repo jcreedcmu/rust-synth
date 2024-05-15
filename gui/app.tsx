@@ -31,6 +31,7 @@ export type Action =
   | { t: 'setAllpassDelay', iface_allpass_delay: number }
   | { t: 'setAllpassGain', iface_allpass_gain: number }
   | { t: 'setAllpassNaive', iface_allpass_naive: boolean }
+  | { t: 'setMeterValue', value: number }
   ;
 
 type SequencerProps = {
@@ -51,6 +52,7 @@ export type State = {
   iface_highpass: number,
   allpass: AllpassState;
   outbox: WebMessage[],
+  meterValue: number,
 }
 
 
@@ -146,6 +148,12 @@ function reduce_inner(state: State, action: Action): State {
         s.outbox.push(msg);
       });
     }
+    case 'setMeterValue': {
+      const { value } = action;
+      return produce(state, s => {
+        s.meterValue = value;
+      });
+    }
   }
 }
 
@@ -166,6 +174,7 @@ function mkState(): State {
       iface_allpass_delay: 50,
       iface_allpass_naive: true,
     },
+    meterValue: 0,
   };
 }
 
@@ -210,7 +219,6 @@ function App(props: AppProps): JSX.Element {
   const [state, dispatch] = useEffectfulReducer<Action, State, Effect>(mkState(), reduce, doEffect);
 
 
-  const [meterValue, setMeterValue] = useState(0);
   const [cfg, setCfg] = useState<LowpassWidgetState>([{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }]);
   const wsco = useRef<WebSocketContainer | undefined>(undefined);
 
@@ -254,7 +262,7 @@ function App(props: AppProps): JSX.Element {
       try {
         const msg: SynthMessage = JSON.parse(message.data);
         if (msg.t == 'meter') {
-          setMeterValue(msg.level);
+          dispatch({ t: 'setMeterValue', value: msg.level });
         }
       } catch (e) {
         console.log(`couldn't parse ${message.data}`);
@@ -301,8 +309,9 @@ function App(props: AppProps): JSX.Element {
   }
   //  <Chart lowp_param={0.50} />
 
+  const { connected, iface_gain, iface_highpass, allpass, meterValue } = state;
   const meterDb = meterValue < 1e-10 ? '-infinity' : 20 * Math.log(meterValue) / Math.log(10);
-  const { connected, iface_gain, iface_highpass, allpass } = state;
+
   return <div>
     <button disabled={!connected} onMouseDown={() => { send({ t: 'drum' }) }}>Action</button><br />
     <button disabled={!connected} onMouseDown={() => { send({ t: 'quit' }) }}>Quit</button><br />
