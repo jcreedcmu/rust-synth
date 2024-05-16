@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::consts::SAMPLE_RATE_hz;
 use crate::envelope::{Adsr, EnvPos, EnvState};
-use crate::notegen::Notegen;
 use crate::state::{ControlBlocks, GenState};
+use crate::ugen::Ugen;
 
 const reasonable_adsr: Adsr = Adsr {
   attack_s: 0.001,
@@ -23,7 +23,7 @@ pub struct ReasonableSynthState {
   dst: usize,
   freq_hz: f32,
   phase: f32,
-  env_state: EnvState,
+  pub env_state: EnvState, // XXX make private?
   wavetable: Arc<Vec<f32>>,
 }
 
@@ -47,7 +47,7 @@ impl ReasonableSynthState {
   }
 }
 
-impl Notegen for ReasonableSynthState {
+impl Ugen for ReasonableSynthState {
   fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
     for out in gen.audio_bus[self.dst].iter_mut() {
       let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
@@ -77,21 +77,5 @@ impl Notegen for ReasonableSynthState {
       }
     }
     true
-  }
-
-  fn release(&mut self) {
-    self.env_state.pos = EnvPos::Release {
-      t_s: 0.0,
-      amp: self.env_state.amp(),
-    };
-  }
-
-  fn restrike(&mut self, vel: f32) {
-    self.env_state.pos = EnvPos::On {
-      t_s: 0.0,
-      amp: self.env_state.amp(),
-      vel,
-      hold: true,
-    };
   }
 }
