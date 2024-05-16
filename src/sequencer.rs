@@ -1,5 +1,4 @@
-use crate::drum::{drum_adsr, DrumSynthState};
-use crate::envelope::Adsr;
+use crate::drum::DrumSynthState;
 use crate::state::{State, StateGuard, DEFAULT_DRUM_CONTROL_BLOCK};
 use crate::ugen::UgenState;
 use crate::ugen_group::UgenGroupState;
@@ -16,35 +15,19 @@ pub struct Sequencer {
 pub const SEQ_NUM_INSTRS: usize = 3;
 pub const SEQ_PATTERN_LEN: usize = 16;
 
-pub fn new_drum(wavetables: &Wavetables, adsr: Adsr, ctl: usize) -> UgenState {
-  UgenState::DrumSynth(DrumSynthState::new(
-    adsr,
-    wavetables.noise_wavetable.clone(),
-    ctl,
-  ))
+pub fn new_drum(wavetables: &Wavetables, ctl: usize) -> UgenState {
+  UgenState::DrumSynth(DrumSynthState::new(wavetables.noise_wavetable.clone(), ctl))
 }
 
 fn sequencer_loop_inner(col: &Vec<bool>, wavetables: &Wavetables, group: &mut UgenGroupState) {
   if col[0] {
-    group.add(new_drum(
-      wavetables,
-      drum_adsr(1.0),
-      DEFAULT_DRUM_CONTROL_BLOCK + 0,
-    ));
+    group.add(new_drum(wavetables, DEFAULT_DRUM_CONTROL_BLOCK + 0));
   }
   if col[1] {
-    group.add(new_drum(
-      wavetables,
-      drum_adsr(0.5),
-      DEFAULT_DRUM_CONTROL_BLOCK + 1,
-    ));
+    group.add(new_drum(wavetables, DEFAULT_DRUM_CONTROL_BLOCK + 1));
   }
   if col[2] {
-    group.add(new_drum(
-      wavetables,
-      drum_adsr(0.05),
-      DEFAULT_DRUM_CONTROL_BLOCK + 2,
-    ));
+    group.add(new_drum(wavetables, DEFAULT_DRUM_CONTROL_BLOCK + 2));
   }
 }
 

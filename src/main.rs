@@ -39,8 +39,6 @@ use std::error::Error;
 use std::io::stdin;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use crate::drum::drum_adsr;
-
 fn main() {
   match run() {
     Ok(_) => (),
@@ -51,7 +49,7 @@ fn main() {
 fn reduce_web_message(m: WebMessage, s: &mut State) {
   match m {
     WebMessage::Drum => {
-      let ugen = s.new_drum(drum_adsr(1.0), DEFAULT_DRUM_CONTROL_BLOCK);
+      let ugen = s.new_drum(DEFAULT_DRUM_CONTROL_BLOCK);
       add_ugen_to_group(&mut s.fixed_ugens, ugen);
     },
     WebMessage::Quit => {
@@ -132,7 +130,7 @@ fn mk_stdin_thread(sg: StateGuard) -> JoinHandle {
         },
         "k\n" => {
           let mut s: MutexGuard<State> = depoison(sg.lock())?;
-          let ugen = s.new_drum(drum_adsr(1.0), DEFAULT_DRUM_CONTROL_BLOCK);
+          let ugen = s.new_drum(DEFAULT_DRUM_CONTROL_BLOCK);
           add_ugen_to_group(&mut s.fixed_ugens, ugen);
         },
         _ => println!("Didn't recognize {input}."),

@@ -1,4 +1,7 @@
-#[derive(Clone, Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(tag = "t")]
 pub struct Adsr {
   pub attack_s: f32,
   pub decay_s: f32,
@@ -38,50 +41,41 @@ pub struct EnvState {
 
 impl EnvState {
   pub fn attack_len_s(&self) -> f32 {
-    self.adsr.attack_s + self.adsr.decay_s
+    self.adsr.attack_len_s()
   }
 
   pub fn time_s(&self) -> f32 {
-    match self.pos {
-      EnvPos::On { t_s, .. } => t_s,
-      EnvPos::Release { .. } => self.attack_len_s(),
-    }
+    self.pos.time_s(&self.adsr)
   }
 
   // advance ugen state forward by tick_s
   // returns true if we should keep going, false if we should terminate the ugen
   pub fn advance(&mut self, tick_s: f32) -> bool {
-    match self.pos {
-      EnvPos::On {
-        ref mut t_s, hold, ..
-      } => {
-        *t_s += tick_s;
-        if !hold && *t_s > self.adsr.attack_s + self.adsr.decay_s {
-          self.pos = EnvPos::Release {
-            t_s: 0.,
-            amp: self.adsr.sustain,
-          };
-          return self.adsr.release_s > 0f32;
-        }
-        true
-      },
-      EnvPos::Release { ref mut t_s, .. } => {
-        *t_s += tick_s;
-        *t_s <= self.adsr.release_s
-      },
-    }
+    self.pos.advance(tick_s, &self.adsr)
   }
 
   pub fn amp(&self) -> f32 {
+    self.pos.amp(&self.adsr)
+  }
+}
+
+impl Adsr {
+  pub fn attack_len_s(&self) -> f32 {
+    self.attack_s + self.decay_s
+  }
+}
+
+impl EnvPos {
+  pub fn amp(&self, adsr: &Adsr) -> f32 {
     let Adsr {
       attack_s,
       decay_s,
       sustain,
       release_s,
-    } = self.adsr;
-    match &self.pos {
+    } = adsr;
+    match &self {
       EnvPos::On { t_s, amp, vel, .. } => {
-        if *t_s < attack_s {
+        if *t_s < *attack_s {
           let a = t_s / attack_s;
           amp * (1.0 - a) + vel * a
         } else if *t_s < attack_s + decay_s {
@@ -92,6 +86,35 @@ impl EnvState {
         }
       },
       EnvPos::Release { t_s, amp } => amp * (1.0 - (t_s / release_s)),
+    }
+  }
+
+  pub fn time_s(&self, adsr: &Adsr) -> f32 {
+    match self {
+      EnvPos::On { t_s, .. } => *t_s,
+      EnvPos::Release { .. } => adsr.attack_len_s(),
+    }
+  }
+
+  pub fn advance(&mut self, tick_s: f32, adsr: &Adsr) -> bool {
+    match self {
+      EnvPos::On {
+        ref mut t_s, hold, ..
+      } => {
+        *t_s += tick_s;
+        if !*hold && *t_s > adsr.attack_s + adsr.decay_s {
+          *self = EnvPos::Release {
+            t_s: 0.,
+            amp: adsr.sustain,
+          };
+          return adsr.release_s > 0f32;
+        }
+        true
+      },
+      EnvPos::Release { ref mut t_s, .. } => {
+        *t_s += tick_s;
+        *t_s <= adsr.release_s
+      },
     }
   }
 }
