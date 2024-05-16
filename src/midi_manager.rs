@@ -1,5 +1,5 @@
 use crate::consts::NUM_KEYS;
-use crate::notegen::{Notegen, NotegenState};
+use crate::notegen::NotegenState;
 use crate::state::{ControlBlocks, GenState, KeyState};
 use crate::ugen::Ugen;
 

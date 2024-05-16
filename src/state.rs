@@ -9,7 +9,7 @@ use crate::envelope::Adsr;
 use crate::gain::GainControlBlock;
 use crate::lowpass::{LowpassControlBlock, Tap, TapType};
 use crate::notegen::NotegenState;
-use crate::reasonable_synth::ReasonableControlBlock;
+use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
 use crate::sequencer::Sequencer;
 use crate::ugen::{UgenState, UgensState};
 use crate::wavetables::Wavetables;
@@ -154,7 +154,13 @@ pub fn new_reasonable_of_tables(
   vel: f32,
   ci: usize,
 ) -> NotegenState {
-  NotegenState::new(dst, freq_hz, vel, wavetables.saw_wavetable.clone(), ci)
+  NotegenState::new(UgenState::ReasonableSynth(ReasonableSynthState::new(
+    dst,
+    freq_hz,
+    vel,
+    wavetables.saw_wavetable.clone(),
+    ci,
+  )))
 }
 
 // XXX move to MIDI manager maybe?

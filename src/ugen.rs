@@ -7,6 +7,7 @@ use crate::lowpass::LowpassState;
 use crate::meter::MeterState;
 use crate::midi_manager::MidiManagerState;
 use crate::notegen::NoteMode;
+use crate::reasonable_synth::ReasonableSynthState;
 use crate::state::{ControlBlocks, GenState};
 use crate::ugen_group::UgenGroupState;
 
@@ -40,6 +41,7 @@ pub enum UgenState {
   UgenGroup(UgenGroupState),
   Meter(MeterState),
   Gain(GainState),
+  ReasonableSynth(ReasonableSynthState),
 }
 
 // some boilerplate to wire things up
@@ -53,6 +55,7 @@ impl Ugen for UgenState {
       UgenState::UgenGroup(s) => s.run(gen, advice, tick_s, ctl),
       UgenState::Meter(s) => s.run(gen, advice, tick_s, ctl),
       UgenState::Gain(s) => s.run(gen, advice, tick_s, ctl),
+      UgenState::ReasonableSynth(s) => s.run(gen, advice, tick_s, ctl),
     }
   }
 }
