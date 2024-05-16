@@ -57,7 +57,7 @@ impl LowpassState {
     tap.weight * memval
   }
 
-  fn ctl_run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &LowpassControlBlock) -> bool {
+  fn ctl_run(&mut self, gen: GenState, tick_s: f32, ctl: &LowpassControlBlock) -> bool {
     for bus_ix in 0..gen.audio_bus[0].len() {
       // bus_ix is the index into the snippet of audio we are
       // currently processing self.ix is the index into the ring
@@ -82,7 +82,7 @@ impl LowpassState {
 impl Ugen for LowpassState {
   fn run(
     &mut self,
-    gen: &mut GenState,
+    gen: GenState,
     advice: &crate::ugen::Advice,
     tick_s: f32,
     ctl: &ControlBlocks,

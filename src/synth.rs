@@ -1,6 +1,6 @@
 use crate::consts::SAMPLE_RATE_hz;
 use crate::notegen::NoteMode;
-use crate::state::State;
+use crate::state::{GenState, State};
 use crate::ugen::{Advice, Ugen};
 
 pub const TABLE_SIZE: usize = 512;
@@ -26,12 +26,11 @@ impl Synth {
 
     for mut ugen in s.fixed_ugens.iter_mut() {
       // XXX This discards the boolean returned by run
-      ugen.run(
-        &mut s.gen_state,
-        &advice,
-        1.0 / SAMPLE_RATE_hz,
-        &s.control_blocks,
-      );
+      let gen_state = GenState {
+        audio_bus: &mut s.gen_state.audio_bus,
+        websocket: &mut s.gen_state.websocket,
+      };
+      ugen.run(gen_state, &advice, 1.0 / SAMPLE_RATE_hz, &s.control_blocks);
     }
   }
 }

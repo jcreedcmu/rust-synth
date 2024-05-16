@@ -27,18 +27,18 @@ impl MidiManagerState {
 impl Ugen for MidiManagerState {
   fn run(
     &mut self,
-    gen: &mut GenState,
+    gen: GenState,
     advice: &crate::ugen::Advice,
     tick_s: f32,
     ctl: &ControlBlocks,
   ) -> bool {
-    for mut onotegen in self.notegen_state.iter_mut() {
-      if let Some(notegen) = onotegen {
-        if !notegen.run(gen, advice, tick_s, ctl) {
-          *onotegen = None;
-        }
-      }
-    }
+    // for mut onotegen in self.notegen_state.iter_mut() {
+    //   if let Some(notegen) = onotegen {
+    //     if !notegen.run(gen, advice, tick_s, ctl) {
+    //       *onotegen = None;
+    //     }
+    //   }
+    // }
     true
   }
 }

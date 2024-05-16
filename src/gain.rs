@@ -30,7 +30,7 @@ impl GainState {
     GainState { src, dst }
   }
 
-  fn ctl_run(&mut self, gen: &mut GenState, ctl: &GainControlBlock) -> bool {
+  fn ctl_run(&mut self, gen: GenState, ctl: &GainControlBlock) -> bool {
     for bus_ix in 0..gen.audio_bus[0].len() {
       gen.audio_bus[self.dst][bus_ix] = gen.audio_bus[self.src][bus_ix] * ctl.scale;
     }
@@ -41,7 +41,7 @@ impl GainState {
 impl Ugen for GainState {
   fn run(
     &mut self,
-    gen: &mut GenState,
+    gen: GenState,
     advice: &crate::ugen::Advice,
     tick_s: f32,
     ctl: &ControlBlocks,

@@ -41,7 +41,13 @@ pub type ControlBlocks = Vec<Option<ControlBlock>>;
 pub type AudioBusses = Vec<Vec<f32>>;
 
 #[derive(Debug)]
-pub struct GenState {
+pub struct GenState<'a> {
+  pub audio_bus: &'a mut AudioBusses,
+  pub websocket: &'a mut Option<tokio::sync::mpsc::Sender<SynthMessage>>,
+}
+
+#[derive(Debug)]
+pub struct ComboState {
   pub audio_bus: AudioBusses,
   pub websocket: Option<tokio::sync::mpsc::Sender<SynthMessage>>,
 }
@@ -51,7 +57,7 @@ pub struct State {
   pub going: bool,
 
   // audio bus
-  pub gen_state: GenState,
+  pub gen_state: ComboState,
 
   pub fixed_ugens: UgensState,
 
@@ -132,7 +138,7 @@ impl State {
       control_blocks,
       write_to_file: true,
       wavetables: Wavetables::new(),
-      gen_state: GenState {
+      gen_state: ComboState {
         audio_bus: vec![vec![0.; buf_size]; AUDIO_BUS_LENGTH],
         websocket: None,
       },

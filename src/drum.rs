@@ -53,7 +53,7 @@ impl DrumSynthState {
     }
   }
 
-  fn ctl_run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &DrumControlBlock) -> bool {
+  fn ctl_run(&mut self, gen: GenState, tick_s: f32, ctl: &DrumControlBlock) -> bool {
     let DrumControlBlock { adsr, .. } = ctl;
     for out in gen.audio_bus[self.dst].iter_mut() {
       let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
@@ -85,7 +85,7 @@ impl DrumSynthState {
 impl Ugen for DrumSynthState {
   fn run(
     &mut self,
-    gen: &mut GenState,
+    gen: GenState,
     advice: &crate::ugen::Advice,
     tick_s: f32,
     ctl: &ControlBlocks,

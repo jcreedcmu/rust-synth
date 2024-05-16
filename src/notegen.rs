@@ -19,7 +19,7 @@ pub struct NotegenState {
 impl NotegenState {
   pub fn run(
     &mut self,
-    gen: &mut GenState,
+    gen: GenState,
     advice: &Advice,
     tick_s: f32,
     ctl: &ControlBlocks,

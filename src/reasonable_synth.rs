@@ -43,7 +43,7 @@ impl ReasonableSynthState {
 
   fn ctl_run(
     &mut self,
-    gen: &mut GenState,
+    gen: GenState,
     advice: &Advice,
     tick_s: f32,
     ctl: &ReasonableControlBlock,
@@ -103,7 +103,7 @@ impl ReasonableSynthState {
 impl Ugen for ReasonableSynthState {
   fn run(
     &mut self,
-    gen: &mut GenState,
+    gen: GenState,
     advice: &crate::ugen::Advice,
     tick_s: f32,
     ctl: &ControlBlocks,

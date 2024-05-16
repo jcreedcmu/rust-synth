@@ -38,7 +38,7 @@ impl AllpassState {
     self.memory_rec[((self.ix as i32) - delay).rem_euclid(HISTORY_SIZE as i32) as usize]
   }
 
-  fn ctl_run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &AllpassControlBlock) -> bool {
+  fn ctl_run(&mut self, gen: GenState, tick_s: f32, ctl: &AllpassControlBlock) -> bool {
     for bus_ix in 0..gen.audio_bus[0].len() {
       // bus_ix is the index into the past output (memory_rec) of this
       // ugen.
@@ -74,7 +74,7 @@ impl AllpassState {
 impl Ugen for AllpassState {
   fn run(
     &mut self,
-    gen: &mut GenState,
+    gen: GenState,
     advice: &crate::ugen::Advice,
     tick_s: f32,
     ctl: &ControlBlocks,

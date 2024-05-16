@@ -24,7 +24,7 @@ impl MeterState {
 impl Ugen for MeterState {
   fn run(
     &mut self,
-    gen: &mut GenState,
+    gen: GenState,
     advice: &crate::ugen::Advice,
     tick_s: f32,
     ctl: &ControlBlocks,
