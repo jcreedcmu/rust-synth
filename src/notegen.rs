@@ -17,13 +17,7 @@ pub struct NotegenState {
 }
 
 impl NotegenState {
-  pub fn run(
-    &mut self,
-    mut gen: GenState,
-    advice: &Advice,
-    tick_s: f32,
-    ctl: &ControlBlocks,
-  ) -> bool {
+  pub fn run(&mut self, mut gen: GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
     // Maybe this is unnecessarily tricky, but what really needs to happen here is merely:
     // - replace advice.note_mode with self.note_mote before calling run
     // - set self.note_mode = NoteMode::Run
@@ -31,7 +25,7 @@ impl NotegenState {
     let mut note_mode = NoteMode::Run;
     mem::swap(&mut self.mode, &mut note_mode);
     let advice = Advice { note_mode };
-    self.ugen.run(gen.readvise(&advice), &advice, tick_s, &ctl)
+    self.ugen.run(gen.readvise(&advice), tick_s, &ctl)
   }
 
   pub fn release(&mut self) {

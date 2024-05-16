@@ -41,13 +41,7 @@ impl ReasonableSynthState {
     }
   }
 
-  fn ctl_run(
-    &mut self,
-    gen: GenState,
-    advice: &Advice,
-    tick_s: f32,
-    ctl: &ReasonableControlBlock,
-  ) -> bool {
+  fn ctl_run(&mut self, gen: GenState, tick_s: f32, ctl: &ReasonableControlBlock) -> bool {
     let ReasonableControlBlock { adsr } = ctl;
     let Advice { note_mode } = gen.advice;
 
@@ -101,15 +95,9 @@ impl ReasonableSynthState {
 }
 
 impl Ugen for ReasonableSynthState {
-  fn run(
-    &mut self,
-    gen: GenState,
-    advice: &crate::ugen::Advice,
-    tick_s: f32,
-    ctl: &ControlBlocks,
-  ) -> bool {
+  fn run(&mut self, gen: GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
     match &ctl[self.ci] {
-      Some(ControlBlock::Reasonable(ctl)) => self.ctl_run(gen, advice, tick_s, &ctl),
+      Some(ControlBlock::Reasonable(ctl)) => self.ctl_run(gen, tick_s, &ctl),
       _ => false,
     }
   }

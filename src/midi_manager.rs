@@ -25,16 +25,10 @@ impl MidiManagerState {
 }
 
 impl Ugen for MidiManagerState {
-  fn run(
-    &mut self,
-    mut gen: GenState,
-    advice: &crate::ugen::Advice,
-    tick_s: f32,
-    ctl: &ControlBlocks,
-  ) -> bool {
+  fn run(&mut self, mut gen: GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
     for mut onotegen in self.notegen_state.iter_mut() {
       if let Some(notegen) = onotegen {
-        if !notegen.run(gen.reborrow(), advice, tick_s, ctl) {
+        if !notegen.run(gen.reborrow(), tick_s, ctl) {
           *onotegen = None;
         }
       }

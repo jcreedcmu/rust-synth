@@ -17,7 +17,7 @@ pub struct Advice {
 }
 
 pub trait Ugen: std::fmt::Debug + Sync + Send {
-  fn run(&mut self, gen: GenState, advice: &Advice, tick_s: f32, ctl: &ControlBlocks) -> bool;
+  fn run(&mut self, gen: GenState, tick_s: f32, ctl: &ControlBlocks) -> bool;
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -46,16 +46,16 @@ pub enum UgenState {
 
 // some boilerplate to wire things up
 impl Ugen for UgenState {
-  fn run(&mut self, gen: GenState, advice: &Advice, tick_s: f32, ctl: &ControlBlocks) -> bool {
+  fn run(&mut self, gen: GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
     match self {
-      UgenState::DrumSynth(s) => s.run(gen, advice, tick_s, ctl),
-      UgenState::Lowpass(s) => s.run(gen, advice, tick_s, ctl),
-      UgenState::Allpass(s) => s.run(gen, advice, tick_s, ctl),
-      UgenState::MidiManager(s) => s.run(gen, advice, tick_s, ctl),
-      UgenState::UgenGroup(s) => s.run(gen, advice, tick_s, ctl),
-      UgenState::Meter(s) => s.run(gen, advice, tick_s, ctl),
-      UgenState::Gain(s) => s.run(gen, advice, tick_s, ctl),
-      UgenState::ReasonableSynth(s) => s.run(gen, advice, tick_s, ctl),
+      UgenState::DrumSynth(s) => s.run(gen, tick_s, ctl),
+      UgenState::Lowpass(s) => s.run(gen, tick_s, ctl),
+      UgenState::Allpass(s) => s.run(gen, tick_s, ctl),
+      UgenState::MidiManager(s) => s.run(gen, tick_s, ctl),
+      UgenState::UgenGroup(s) => s.run(gen, tick_s, ctl),
+      UgenState::Meter(s) => s.run(gen, tick_s, ctl),
+      UgenState::Gain(s) => s.run(gen, tick_s, ctl),
+      UgenState::ReasonableSynth(s) => s.run(gen, tick_s, ctl),
     }
   }
 }

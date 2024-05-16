@@ -31,7 +31,7 @@ impl Synth {
         websocket: &mut s.gen_state.websocket,
         advice: &advice,
       };
-      ugen.run(gen_state, &advice, 1.0 / SAMPLE_RATE_hz, &s.control_blocks);
+      ugen.run(gen_state, 1.0 / SAMPLE_RATE_hz, &s.control_blocks);
     }
   }
 }

@@ -39,13 +39,7 @@ impl GainState {
 }
 
 impl Ugen for GainState {
-  fn run(
-    &mut self,
-    gen: GenState,
-    advice: &crate::ugen::Advice,
-    tick_s: f32,
-    ctl: &ControlBlocks,
-  ) -> bool {
+  fn run(&mut self, gen: GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
     // XXX hard coded index
     match &ctl[2] {
       Some(ControlBlock::Gain(ctl)) => self.ctl_run(gen, &ctl),
