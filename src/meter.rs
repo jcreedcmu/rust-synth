@@ -9,6 +9,7 @@ pub struct MeterState {
   src: usize,
   ix: usize,
   memory: Vec<f32>,
+  peak: f32,
 }
 
 impl MeterState {
@@ -17,6 +18,7 @@ impl MeterState {
       src,
       ix: 0,
       memory: vec![0.; METER_AMOUNT],
+      peak: 0.0,
     }
   }
 }
@@ -34,6 +36,7 @@ impl Ugen for MeterState {
       let a = 0.99;
       let sig = gen.audio_bus[self.src][bus_ix];
       let mut mean_square = (1.0 - a) * sig * sig;
+      self.peak = self.peak.max(sig.abs());
 
       mean_square += do_tap(1, a);
 
@@ -43,11 +46,16 @@ impl Ugen for MeterState {
       if self.ix == 0 {
         if let Some(ws) = &gen.websocket {
           let rms = mean_square.sqrt();
-          let send_result = ws.try_send(SynthMessage::Meter { level: rms });
+          let msg = SynthMessage::Meter {
+            level: rms,
+            peak: self.peak,
+          };
+          let send_result = ws.try_send(msg);
           if let Err(e) = send_result {
             println!("meter error {:?}", e);
           }
         }
+        self.peak = 0.0;
       }
     }
     true

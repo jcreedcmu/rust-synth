@@ -64,7 +64,12 @@ export type MidiMessage =
   | { t: 'pedalOff' }
   ;
 
+export type MeterData = {
+  level: number, // rms
+  peak: number
+};
+
 export type SynthMessage =
   | { t: 'midi', msg: MidiMessage }
-  | { t: 'meter', level: number } // rms
+  | { t: 'meter' } & MeterData
   ;

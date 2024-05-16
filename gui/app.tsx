@@ -1,6 +1,6 @@
 import ReactDOM from 'react-dom';
 import { CSSProperties, useEffect, useReducer, useRef, useState } from 'react';
-import { Adsr, ControlBlock, LowpassControlBlock, SynthMessage, Tap, WebMessage } from './protocol';
+import { Adsr, ControlBlock, LowpassControlBlock, MeterData, SynthMessage, Tap, WebMessage } from './protocol';
 import { produce } from 'immer';
 import { Chart } from './chart';
 import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
@@ -31,7 +31,7 @@ export type Action =
   | { t: 'setAllpassDelay', iface_allpass_delay: number }
   | { t: 'setAllpassGain', iface_allpass_gain: number }
   | { t: 'setAllpassNaive', iface_allpass_naive: boolean }
-  | { t: 'setMeterValue', value: number }
+  | { t: 'setMeterValues', msg: MeterData }
   | { t: 'setLowpassState', lowpassState: LowpassWidgetState }
   ;
 
@@ -53,7 +53,7 @@ export type State = {
   iface_highpass: number,
   allpass: AllpassState;
   outbox: WebMessage[],
-  meterValue: number,
+  meterData: MeterData,
   lowpassState: LowpassWidgetState,
 }
 
@@ -148,10 +148,9 @@ function reduce_inner(state: State, action: Action): State {
         s.outbox.push(msg);
       });
     }
-    case 'setMeterValue': {
-      const { value } = action;
+    case 'setMeterValues': {
       return produce(state, s => {
-        s.meterValue = value;
+        s.meterData = action.msg;
       });
     }
     case 'setLowpassState': {
@@ -199,7 +198,7 @@ function mkState(): State {
       iface_allpass_delay: 50,
       iface_allpass_naive: true,
     },
-    meterValue: 0,
+    meterData: { level: 0, peak: 0 },
     lowpassState: [{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }],
   };
 }
@@ -343,7 +342,7 @@ function App(props: AppProps): JSX.Element {
       try {
         const msg: SynthMessage = JSON.parse(message.data);
         if (msg.t == 'meter') {
-          dispatch({ t: 'setMeterValue', value: msg.level });
+          dispatch({ t: 'setMeterValues', msg });
         }
       } catch (e) {
         console.log(`couldn't parse ${message.data}`);
@@ -372,8 +371,12 @@ function App(props: AppProps): JSX.Element {
 
   //  <Chart lowp_param={0.50} />
 
-  const { connected, iface_gain, iface_highpass, allpass, meterValue } = state;
-  const meterDb = meterValue < 1e-10 ? '-infinity' : 20 * Math.log(meterValue) / Math.log(10);
+  function dbOfLevel(x: number) {
+    return x < 1e-10 ? '-infinity' : 20 * Math.log(x) / Math.log(10);
+  }
+  const { connected, iface_gain, iface_highpass, allpass, meterData } = state;
+  const meterDb = dbOfLevel(meterData.level);
+  const peakDb = dbOfLevel(meterData.peak);
 
   return <div>
     <button disabled={!connected} onMouseDown={() => { send({ t: 'drum' }) }}>Action</button><br />
@@ -399,6 +402,7 @@ function App(props: AppProps): JSX.Element {
       onInput={(e) => dispatch({ t: 'setAllpassNaive', iface_allpass_naive: !((e.target as HTMLInputElement).checked) })} />
     <br />
     <br />
-    <b>RMS</b>: {meterDb}dB
+    <b>RMS</b>: {meterDb}dB<br />
+    <b>Peak</b>: {peakDb}dB
   </div>;
 }
