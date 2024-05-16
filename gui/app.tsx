@@ -5,6 +5,7 @@ import { produce } from 'immer';
 import { Chart } from './chart';
 import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
 import { useEffectfulReducer } from './use-effectful-reducer';
+import { DbMeter } from './db-meter';
 
 // Should match consts.rs
 const BUS_OUT = 0;
@@ -371,12 +372,7 @@ function App(props: AppProps): JSX.Element {
 
   //  <Chart lowp_param={0.50} />
 
-  function dbOfLevel(x: number) {
-    return x < 1e-10 ? '-infinity' : 20 * Math.log(x) / Math.log(10);
-  }
   const { connected, iface_gain, iface_highpass, allpass, meterData } = state;
-  const meterDb = dbOfLevel(meterData.level);
-  const peakDb = dbOfLevel(meterData.peak);
 
   return <div>
     <button disabled={!connected} onMouseDown={() => { send({ t: 'drum' }) }}>Action</button><br />
@@ -402,7 +398,7 @@ function App(props: AppProps): JSX.Element {
       onInput={(e) => dispatch({ t: 'setAllpassNaive', iface_allpass_naive: !((e.target as HTMLInputElement).checked) })} />
     <br />
     <br />
-    <b>RMS</b>: {meterDb}dB<br />
-    <b>Peak</b>: {peakDb}dB
+    <b>RMS</b>: <DbMeter value={meterData.level} /><br />
+    <b>Peak</b>: <DbMeter value={meterData.peak} /><br />
   </div>;
 }
