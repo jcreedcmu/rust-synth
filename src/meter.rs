@@ -22,7 +22,13 @@ impl MeterState {
 }
 
 impl Ugen for MeterState {
-  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
+  fn run(
+    &mut self,
+    gen: &mut GenState,
+    advice: &crate::ugen::Advice,
+    tick_s: f32,
+    ctl: &ControlBlocks,
+  ) -> bool {
     let len = self.memory.len();
     for bus_ix in 0..gen.audio_bus[0].len() {
       // advance

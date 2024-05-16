@@ -22,10 +22,16 @@ impl UgenGroupState {
 }
 
 impl Ugen for UgenGroupState {
-  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
+  fn run(
+    &mut self,
+    gen: &mut GenState,
+    advice: &crate::ugen::Advice,
+    tick_s: f32,
+    ctl: &ControlBlocks,
+  ) -> bool {
     for mut ougen in self.ugen_state.iter_mut() {
       if let Some(ugen) = ougen {
-        if !ugen.run(gen, tick_s, ctl) {
+        if !ugen.run(gen, advice, tick_s, ctl) {
           *ougen = None;
         }
       }

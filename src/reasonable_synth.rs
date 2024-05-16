@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::consts::SAMPLE_RATE_hz;
 use crate::envelope::{Adsr, EnvState};
+use crate::notegen::NoteMode;
 use crate::state::{ControlBlock, ControlBlocks, GenState};
-use crate::ugen::Ugen;
+use crate::ugen::{Advice, Ugen};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "t")]
@@ -40,9 +41,34 @@ impl ReasonableSynthState {
     }
   }
 
-  // XXX make private?
-  pub fn ctl_run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ReasonableControlBlock) -> bool {
+  fn ctl_run(
+    &mut self,
+    gen: &mut GenState,
+    advice: &Advice,
+    tick_s: f32,
+    ctl: &ReasonableControlBlock,
+  ) -> bool {
     let ReasonableControlBlock { adsr } = ctl;
+    let Advice { note_mode } = advice;
+
+    match note_mode {
+      NoteMode::Release => {
+        self.env_state = EnvState::Release {
+          t_s: 0.0,
+          amp: self.env_state.amp(adsr),
+        };
+      },
+      NoteMode::Restrike { vel } => {
+        self.env_state = EnvState::On {
+          t_s: 0.0,
+          amp: self.env_state.amp(adsr),
+          vel: *vel,
+          hold: true,
+        };
+      },
+      NoteMode::Run => (),
+    }
+
     for out in gen.audio_bus[self.dst].iter_mut() {
       let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
       let offset = table_phase.floor() as usize;
@@ -75,9 +101,15 @@ impl ReasonableSynthState {
 }
 
 impl Ugen for ReasonableSynthState {
-  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
+  fn run(
+    &mut self,
+    gen: &mut GenState,
+    advice: &crate::ugen::Advice,
+    tick_s: f32,
+    ctl: &ControlBlocks,
+  ) -> bool {
     match &ctl[self.ci] {
-      Some(ControlBlock::Reasonable(ctl)) => self.ctl_run(gen, tick_s, &ctl),
+      Some(ControlBlock::Reasonable(ctl)) => self.ctl_run(gen, advice, tick_s, &ctl),
       _ => false,
     }
   }

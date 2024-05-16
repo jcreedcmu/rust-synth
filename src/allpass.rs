@@ -72,8 +72,14 @@ impl AllpassState {
 }
 
 impl Ugen for AllpassState {
-  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctls: &ControlBlocks) -> bool {
-    match &ctls[self.ctl] {
+  fn run(
+    &mut self,
+    gen: &mut GenState,
+    advice: &crate::ugen::Advice,
+    tick_s: f32,
+    ctl: &ControlBlocks,
+  ) -> bool {
+    match &ctl[self.ctl] {
       Some(ControlBlock::All(ctl)) => self.ctl_run(gen, tick_s, ctl),
       _ => false,
     }

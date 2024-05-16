@@ -1,18 +1,19 @@
+use std::mem;
 use std::sync::Arc;
 
-use crate::envelope::EnvState;
-use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
-use crate::state::{ControlBlock, ControlBlocks, GenState};
+use crate::reasonable_synth::ReasonableSynthState;
+use crate::state::{ControlBlocks, GenState};
+use crate::ugen::{Advice, Ugen};
 
 #[derive(Debug)]
-enum NoteMode {
+pub enum NoteMode {
   Run,
   Release,
   Restrike { vel: f32 },
 }
 
 pub trait Notegen: std::fmt::Debug + Sync + Send {
-  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool;
+  fn run(&mut self, gen: &mut GenState, advice: &Advice, tick_s: f32, ctl: &ControlBlocks) -> bool;
   fn release(&mut self);
   fn restrike(&mut self, vel: f32);
 }
@@ -23,38 +24,16 @@ pub struct NotegenState {
   ugen: ReasonableSynthState,
 }
 
-impl NotegenState {
-  fn ctl_run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ReasonableControlBlock) -> bool {
-    let ReasonableControlBlock { adsr, .. } = ctl;
-    match self.mode {
-      NoteMode::Release => {
-        self.ugen.env_state = EnvState::Release {
-          t_s: 0.0,
-          amp: self.ugen.env_state.amp(adsr),
-        };
-      },
-      NoteMode::Restrike { vel } => {
-        self.ugen.env_state = EnvState::On {
-          t_s: 0.0,
-          amp: self.ugen.env_state.amp(adsr),
-          vel,
-          hold: true,
-        };
-      },
-      NoteMode::Run => (),
-    }
-    self.mode = NoteMode::Run;
-    self.ugen.ctl_run(gen, tick_s, ctl)
-  }
-}
-
-// some boilerplate to wire things up
 impl Notegen for NotegenState {
-  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
-    match &ctl[self.ugen.ci] {
-      Some(ControlBlock::Reasonable(ctl)) => self.ctl_run(gen, tick_s, &ctl),
-      _ => false,
-    }
+  fn run(&mut self, gen: &mut GenState, advice: &Advice, tick_s: f32, ctl: &ControlBlocks) -> bool {
+    // Maybe this is unnecessarily tricky, but what really needs to happen here is merely:
+    // - replace advice.note_mode with self.note_mote before calling run
+    // - set self.note_mode = NoteMode::Run
+    // and this is one way of accomplishing that.
+    let mut note_mode = NoteMode::Run;
+    mem::swap(&mut self.mode, &mut note_mode);
+    let advice = Advice { note_mode };
+    self.ugen.run(gen, &advice, tick_s, &ctl)
   }
 
   fn release(&mut self) {

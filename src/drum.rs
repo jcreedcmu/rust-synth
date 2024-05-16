@@ -83,7 +83,13 @@ impl DrumSynthState {
 }
 
 impl Ugen for DrumSynthState {
-  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
+  fn run(
+    &mut self,
+    gen: &mut GenState,
+    advice: &crate::ugen::Advice,
+    tick_s: f32,
+    ctl: &ControlBlocks,
+  ) -> bool {
     match &ctl[self.ci] {
       Some(ControlBlock::Drum(ctl)) => self.ctl_run(gen, tick_s, &ctl),
       _ => false,
