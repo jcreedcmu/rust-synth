@@ -101,16 +101,6 @@ impl State {
     let mut control_blocks: ControlBlocks = Vec::with_capacity(NUM_CONTROL_BLOCKS);
     control_blocks.resize_with(NUM_CONTROL_BLOCKS, || None);
 
-    control_blocks[DEFAULT_REASONABLE_CONTROL_BLOCK] =
-      Some(ControlBlock::Reasonable(ReasonableControlBlock {
-        adsr: Adsr {
-          attack_s: 0.001,
-          decay_s: 0.005,
-          sustain: 0.3,
-          release_s: 0.05,
-        },
-      }));
-
     control_blocks[DEFAULT_LOW_PASS_CONTROL_BLOCK] = Some(ControlBlock::Low(LowpassControlBlock {
       taps: vec![
         Tap {

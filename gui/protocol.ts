@@ -36,7 +36,7 @@ export type Adsr = {
 };
 
 export type ControlBlock =
-  | { t: 'Reasonable' }
+  | { t: 'Reasonable', adsr: Adsr }
   | {
     t: 'Drum',
     vol: number,

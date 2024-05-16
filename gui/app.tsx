@@ -227,6 +227,7 @@ function Sequencer(props: SequencerProps): JSX.Element {
   return <table>{rows}</table>;
 }
 
+const DEFAULT_REASONABLE_CONTROL_BLOCK = 0
 const DEFAULT_DRUM_CONTROL_BLOCK: number = 10;
 const DEFAULT_LOW_PASS_CONTROL_BLOCK: number = 1;
 const DEFAULT_GAIN_CONTROL_BLOCK: number = 2;
@@ -296,6 +297,18 @@ function App(props: AppProps): JSX.Element {
           t: 'Drum', vol: 1, adsr: drum_adsr(0.1), freq_hz: 6760, freq2_hz: 5000,
         }
       });
+
+      send({
+        t: 'setControlBlock', index: DEFAULT_REASONABLE_CONTROL_BLOCK, ctl: {
+          t: 'Reasonable', adsr: {
+            attack_s: 0.001,
+            decay_s: 0.005,
+            sustain: 0.3,
+            release_s: 0.05,
+          },
+        }
+      });
+
     }
 
     wsc.ws.onclose = () => {
