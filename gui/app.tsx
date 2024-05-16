@@ -398,7 +398,7 @@ function App(props: AppProps): JSX.Element {
       onInput={(e) => dispatch({ t: 'setAllpassNaive', iface_allpass_naive: !((e.target as HTMLInputElement).checked) })} />
     <br />
     <br />
-    <b>RMS</b>: <DbMeter value={meterData.level} /><br />
-    <b>Peak</b>: <DbMeter value={meterData.peak} /><br />
+    <DbMeter label="RMS" value={meterData.level} /><br />
+    <DbMeter label="Peak" value={meterData.peak} /><br />
   </div>;
 }

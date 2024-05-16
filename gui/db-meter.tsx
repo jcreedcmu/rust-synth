@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 
 export type DbProps = {
   value: number,
+  label: string,
 }
 
 function dbOfLevel(x: number) {
@@ -14,7 +15,7 @@ export function DbMeter(props: DbProps): JSX.Element {
   const labelStyle: CSSProperties = {
     display: 'inline-block',
     margin: 1,
-    width: 100,
+    width: 200,
     height: 20,
     whiteSpace: 'nowrap',
     overflowX: 'hidden',
@@ -27,5 +28,5 @@ export function DbMeter(props: DbProps): JSX.Element {
     margin: 1,
     width: barWidth,
   };
-  return <span><div style={labelStyle}>{dbOfLevel(props.value)} dB</div><div style={divStyle} >&nbsp;</div></span>;
+  return <span><div style={labelStyle}><b>{props.label}:</b> {dbOfLevel(props.value)} dB</div><div style={divStyle} >&nbsp;</div></span>;
 }
