@@ -135,7 +135,7 @@ impl AudioService {
           synth.synth_buf(&mut s);
 
           for (ix, ch) in buf.chunks_mut(CHANNELS as usize).enumerate() {
-            let samp_f32 = &s.gen_state.audio_bus[BUS_OUT][ix];
+            let samp_f32 = &s.audio_bus[BUS_OUT][ix];
             let samp_i16 = (samp_f32 * 32767.0) as i16;
 
             ch[0] = samp_i16;

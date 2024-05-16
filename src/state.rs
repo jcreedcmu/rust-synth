@@ -71,17 +71,12 @@ impl<'a> GenState<'a> {
 }
 
 #[derive(Debug)]
-pub struct ComboState {
-  pub audio_bus: AudioBusses,
-  pub websocket: Option<tokio::sync::mpsc::Sender<SynthMessage>>,
-}
-
-#[derive(Debug)]
 pub struct State {
   pub going: bool,
 
   // audio bus
-  pub gen_state: ComboState,
+  pub audio_bus: AudioBusses,
+  pub websocket: Option<tokio::sync::mpsc::Sender<SynthMessage>>,
 
   pub fixed_ugens: UgensState,
 
@@ -162,10 +157,8 @@ impl State {
       control_blocks,
       write_to_file: true,
       wavetables: Wavetables::new(),
-      gen_state: ComboState {
-        audio_bus: vec![vec![0.; buf_size]; AUDIO_BUS_LENGTH],
-        websocket: None,
-      },
+      audio_bus: vec![vec![0.; buf_size]; AUDIO_BUS_LENGTH],
+      websocket: None,
     }
   }
 
