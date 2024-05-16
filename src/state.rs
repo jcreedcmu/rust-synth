@@ -98,15 +98,10 @@ pub const NUM_CONTROL_BLOCKS: usize = 16;
 impl State {
   pub fn new(buf_size: usize) -> State {
     let mut control_blocks: ControlBlocks = Vec::with_capacity(NUM_CONTROL_BLOCKS);
+    // XXX should be more dynamic, but currently there's too much
+    // hardcoded reading from ctl block vector in individual ugens
     control_blocks.resize_with(NUM_CONTROL_BLOCKS, || None);
 
-    control_blocks[DEFAULT_GAIN_CONTROL_BLOCK] =
-      Some(ControlBlock::Gain(GainControlBlock { scale: 1.0 }));
-    control_blocks[DEFAULT_ALL_PASS_CONTROL_BLOCK] = Some(ControlBlock::All(AllpassControlBlock {
-      delay: 10,
-      gain: 0.7,
-      naive: true,
-    }));
     State {
       going: true,
       sequencer: Sequencer::new(),

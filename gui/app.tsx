@@ -317,6 +317,20 @@ function App(props: AppProps): JSX.Element {
           ],
         }
       });
+
+      send({
+        t: 'setControlBlock', index: DEFAULT_GAIN_CONTROL_BLOCK, ctl: {
+          t: 'Gain', scale: 1.0,
+        }
+      });
+
+      send({
+        t: 'setControlBlock', index: DEFAULT_ALLPASS_CONTROL_BLOCK, ctl: {
+          t: 'All', delay: 10, gain: 0.7, naive: true,
+        }
+      });
+
+
     }
 
     wsc.ws.onclose = () => {
