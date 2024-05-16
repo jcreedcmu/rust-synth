@@ -49,7 +49,7 @@ impl ReasonableSynthState {
     ctl: &ReasonableControlBlock,
   ) -> bool {
     let ReasonableControlBlock { adsr } = ctl;
-    let Advice { note_mode } = advice;
+    let Advice { note_mode } = gen.advice;
 
     match note_mode {
       NoteMode::Release => {

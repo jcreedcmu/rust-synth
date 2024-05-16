@@ -19,7 +19,7 @@ pub struct NotegenState {
 impl NotegenState {
   pub fn run(
     &mut self,
-    gen: GenState,
+    mut gen: GenState,
     advice: &Advice,
     tick_s: f32,
     ctl: &ControlBlocks,
@@ -31,7 +31,7 @@ impl NotegenState {
     let mut note_mode = NoteMode::Run;
     mem::swap(&mut self.mode, &mut note_mode);
     let advice = Advice { note_mode };
-    self.ugen.run(gen, &advice, tick_s, &ctl)
+    self.ugen.run(gen.readvise(&advice), &advice, tick_s, &ctl)
   }
 
   pub fn release(&mut self) {

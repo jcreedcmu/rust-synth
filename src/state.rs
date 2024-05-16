@@ -11,7 +11,7 @@ use crate::lowpass::{LowpassControlBlock, Tap, TapType};
 use crate::notegen::NotegenState;
 use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
 use crate::sequencer::Sequencer;
-use crate::ugen::{UgenState, UgensState};
+use crate::ugen::{Advice, UgenState, UgensState};
 use crate::wavetables::Wavetables;
 use crate::webserver::SynthMessage;
 
@@ -44,6 +44,7 @@ pub type AudioBusses = Vec<Vec<f32>>;
 pub struct GenState<'a> {
   pub audio_bus: &'a mut AudioBusses,
   pub websocket: &'a mut Option<tokio::sync::mpsc::Sender<SynthMessage>>,
+  pub advice: &'a Advice,
 }
 
 impl<'a> GenState<'a> {
@@ -57,6 +58,14 @@ impl<'a> GenState<'a> {
     GenState {
       audio_bus: self.audio_bus,
       websocket: self.websocket,
+      advice: self.advice,
+    }
+  }
+
+  pub fn readvise<'b>(&'b mut self, advice: &'b Advice) -> GenState<'b> {
+    GenState {
+      advice,
+      ..self.reborrow()
     }
   }
 }

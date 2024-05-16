@@ -29,6 +29,7 @@ impl Synth {
       let gen_state = GenState {
         audio_bus: &mut s.gen_state.audio_bus,
         websocket: &mut s.gen_state.websocket,
+        advice: &advice,
       };
       ugen.run(gen_state, &advice, 1.0 / SAMPLE_RATE_hz, &s.control_blocks);
     }
