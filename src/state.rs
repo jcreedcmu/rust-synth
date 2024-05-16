@@ -46,6 +46,15 @@ pub struct GenState<'a> {
   pub websocket: &'a mut Option<tokio::sync::mpsc::Sender<SynthMessage>>,
 }
 
+impl<'a> GenState<'a> {
+  pub fn reborrow<'b>(&'b mut self) -> GenState<'b> {
+    GenState {
+      audio_bus: self.audio_bus,
+      websocket: self.websocket,
+    }
+  }
+}
+
 #[derive(Debug)]
 pub struct ComboState {
   pub audio_bus: AudioBusses,
