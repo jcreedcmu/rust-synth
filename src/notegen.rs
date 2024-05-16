@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
-use crate::envelope::EnvPos;
-use crate::reasonable_synth::ReasonableSynthState;
-use crate::state::{ControlBlocks, GenState};
-use crate::ugen::Ugen;
+use crate::envelope::EnvState;
+use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
+use crate::state::{ControlBlock, ControlBlocks, GenState};
 
 #[derive(Debug)]
 enum NoteMode {
@@ -24,20 +23,20 @@ pub struct NotegenState {
   ugen: ReasonableSynthState,
 }
 
-// some boilerplate to wire things up
-impl Notegen for NotegenState {
-  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
+impl NotegenState {
+  fn ctl_run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ReasonableControlBlock) -> bool {
+    let ReasonableControlBlock { adsr, .. } = ctl;
     match self.mode {
       NoteMode::Release => {
-        self.ugen.env_state.pos = EnvPos::Release {
+        self.ugen.env_state = EnvState::Release {
           t_s: 0.0,
-          amp: self.ugen.env_state.amp(),
+          amp: self.ugen.env_state.amp(adsr),
         };
       },
       NoteMode::Restrike { vel } => {
-        self.ugen.env_state.pos = EnvPos::On {
+        self.ugen.env_state = EnvState::On {
           t_s: 0.0,
-          amp: self.ugen.env_state.amp(),
+          amp: self.ugen.env_state.amp(adsr),
           vel,
           hold: true,
         };
@@ -45,7 +44,17 @@ impl Notegen for NotegenState {
       NoteMode::Run => (),
     }
     self.mode = NoteMode::Run;
-    self.ugen.run(gen, tick_s, ctl)
+    self.ugen.ctl_run(gen, tick_s, ctl)
+  }
+}
+
+// some boilerplate to wire things up
+impl Notegen for NotegenState {
+  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
+    match &ctl[self.ugen.ci] {
+      Some(ControlBlock::Reasonable(ctl)) => self.ctl_run(gen, tick_s, &ctl),
+      _ => false,
+    }
   }
 
   fn release(&mut self) {
@@ -58,9 +67,9 @@ impl Notegen for NotegenState {
 }
 
 impl NotegenState {
-  pub fn new(dst: usize, freq_hz: f32, vel: f32, wavetable: Arc<Vec<f32>>) -> Self {
+  pub fn new(dst: usize, freq_hz: f32, vel: f32, wavetable: Arc<Vec<f32>>, ci: usize) -> Self {
     NotegenState {
-      ugen: ReasonableSynthState::new(dst, freq_hz, vel, wavetable),
+      ugen: ReasonableSynthState::new(dst, freq_hz, vel, wavetable, ci),
       mode: NoteMode::Run,
     }
   }

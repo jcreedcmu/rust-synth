@@ -3,7 +3,10 @@ use anyhow::anyhow;
 use crate::midi::Message;
 use crate::midi_manager::MidiManagerState;
 use crate::notegen::{Notegen, NotegenState};
-use crate::state::{get_key_state_mut, new_reasonable_of_tables, GenState, KeyState, State};
+use crate::state::{
+  get_key_state_mut, new_reasonable_of_tables, GenState, KeyState, State,
+  DEFAULT_REASONABLE_CONTROL_BLOCK,
+};
 use crate::ugen::UgenState;
 use crate::util;
 use crate::wavetables::Wavetables;
@@ -69,7 +72,13 @@ pub fn midi_reducer_inner(
 
         let ugen_ix = match pre {
           None => {
-            let ugen = new_reasonable_of_tables(*dst, wavetables, freq, vel);
+            let ugen = new_reasonable_of_tables(
+              *dst,
+              wavetables,
+              freq,
+              vel,
+              DEFAULT_REASONABLE_CONTROL_BLOCK,
+            );
             add_gen(notegen_state, ugen)
           },
           Some(ugen_ix) => match &mut notegen_state[ugen_ix] {

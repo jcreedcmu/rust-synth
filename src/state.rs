@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::allpass::AllpassControlBlock;
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE};
 use crate::drum::{drum_adsr, DrumControlBlock};
+use crate::envelope::Adsr;
 use crate::gain::GainControlBlock;
 use crate::lowpass::{LowpassControlBlock, Tap, TapType};
 use crate::notegen::NotegenState;
@@ -64,6 +65,7 @@ pub struct State {
 pub type StateGuard = Arc<Mutex<State>>;
 
 pub const DEFAULT_DRUM_CONTROL_BLOCK: usize = 10;
+pub const DEFAULT_REASONABLE_CONTROL_BLOCK: usize = 0;
 pub const DEFAULT_LOW_PASS_CONTROL_BLOCK: usize = 1;
 pub const DEFAULT_GAIN_CONTROL_BLOCK: usize = 2;
 pub const DEFAULT_ALL_PASS_CONTROL_BLOCK: usize = 3;
@@ -73,6 +75,16 @@ impl State {
   pub fn new(buf_size: usize) -> State {
     let mut control_blocks: ControlBlocks = Vec::with_capacity(NUM_CONTROL_BLOCKS);
     control_blocks.resize_with(NUM_CONTROL_BLOCKS, || None);
+
+    control_blocks[DEFAULT_REASONABLE_CONTROL_BLOCK] =
+      Some(ControlBlock::Reasonable(ReasonableControlBlock {
+        adsr: Adsr {
+          attack_s: 0.001,
+          decay_s: 0.005,
+          sustain: 0.3,
+          release_s: 0.05,
+        },
+      }));
     control_blocks[DEFAULT_DRUM_CONTROL_BLOCK] = Some(ControlBlock::Drum(DrumControlBlock {
       vol: 1.,
       freq_hz: 660.0,
@@ -140,8 +152,9 @@ pub fn new_reasonable_of_tables(
   wavetables: &Wavetables,
   freq_hz: f32,
   vel: f32,
+  ci: usize,
 ) -> NotegenState {
-  NotegenState::new(dst, freq_hz, vel, wavetables.saw_wavetable.clone())
+  NotegenState::new(dst, freq_hz, vel, wavetables.saw_wavetable.clone(), ci)
 }
 
 // XXX move to MIDI manager maybe?

@@ -3,20 +3,15 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 use crate::consts::SAMPLE_RATE_hz;
-use crate::envelope::{Adsr, EnvPos, EnvState};
-use crate::state::{ControlBlocks, GenState};
+use crate::envelope::{Adsr, EnvState};
+use crate::state::{ControlBlock, ControlBlocks, GenState};
 use crate::ugen::Ugen;
-
-const reasonable_adsr: Adsr = Adsr {
-  attack_s: 0.001,
-  decay_s: 0.005,
-  sustain: 0.3,
-  release_s: 0.05,
-};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "t")]
-pub struct ReasonableControlBlock {}
+pub struct ReasonableControlBlock {
+  pub adsr: Adsr, // XXX make private?
+}
 
 #[derive(Clone, Debug)]
 pub struct ReasonableSynthState {
@@ -25,30 +20,29 @@ pub struct ReasonableSynthState {
   phase: f32,
   pub env_state: EnvState, // XXX make private?
   wavetable: Arc<Vec<f32>>,
+  pub ci: usize, // XXX make private?
 }
 
 impl ReasonableSynthState {
-  pub fn new(dst: usize, freq_hz: f32, vel: f32, wavetable: Arc<Vec<f32>>) -> Self {
+  pub fn new(dst: usize, freq_hz: f32, vel: f32, wavetable: Arc<Vec<f32>>, ci: usize) -> Self {
     ReasonableSynthState {
       dst,
       phase: 0.0,
       freq_hz,
-      env_state: EnvState {
-        adsr: reasonable_adsr,
-        pos: EnvPos::On {
-          amp: 0.0,
-          t_s: 0.0,
-          vel,
-          hold: true,
-        },
+      env_state: EnvState::On {
+        amp: 0.0,
+        t_s: 0.0,
+        vel,
+        hold: true,
       },
       wavetable,
+      ci,
     }
   }
-}
 
-impl Ugen for ReasonableSynthState {
-  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
+  // XXX make private?
+  pub fn ctl_run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ReasonableControlBlock) -> bool {
+    let ReasonableControlBlock { adsr } = ctl;
     for out in gen.audio_bus[self.dst].iter_mut() {
       let table_phase: f32 = self.phase * ((self.wavetable.len() - 1) as f32);
       let offset = table_phase.floor() as usize;
@@ -64,7 +58,7 @@ impl Ugen for ReasonableSynthState {
         fpart * self.wavetable[offset + 1] + (1.0 - fpart) * self.wavetable[offset]
       };
 
-      let scale = self.env_state.amp();
+      let scale = self.env_state.amp(adsr);
       *out += (scale as f32) * table_val;
 
       // advance
@@ -72,10 +66,19 @@ impl Ugen for ReasonableSynthState {
       if self.phase > 1. {
         self.phase -= 1.;
       }
-      if !self.env_state.advance(tick_s) {
+      if !self.env_state.advance(tick_s, adsr) {
         return false;
       }
     }
     true
+  }
+}
+
+impl Ugen for ReasonableSynthState {
+  fn run(&mut self, gen: &mut GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
+    match &ctl[self.ci] {
+      Some(ControlBlock::Reasonable(ctl)) => self.ctl_run(gen, tick_s, &ctl),
+      _ => false,
+    }
   }
 }

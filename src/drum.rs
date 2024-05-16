@@ -3,7 +3,7 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 use crate::consts::BUS_DRY;
-use crate::envelope::{Adsr, EnvPos};
+use crate::envelope::{Adsr, EnvState};
 use crate::state::{ControlBlock, ControlBlocks, GenState};
 use crate::synth::TABLE_SIZE;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
@@ -31,7 +31,7 @@ pub struct DrumSynthState {
   dst: usize,
   t_s: f32,
   phase: f32,
-  env_state: EnvPos,
+  env_state: EnvState,
   wavetable: Arc<Vec<f32>>,
   ci: usize,
 }
@@ -42,7 +42,7 @@ impl DrumSynthState {
       dst: BUS_DRY,
       t_s: 0.0,
       phase: 0.0,
-      env_state: EnvPos::On {
+      env_state: EnvState::On {
         amp: 0.0,
         t_s: 0.0,
         hold: false,

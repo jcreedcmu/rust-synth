@@ -12,7 +12,7 @@ pub struct Adsr {
 // This is the part of the state that tracks where a note is in its
 // ADSR envelope.
 #[derive(Clone, Debug)]
-pub enum EnvPos {
+pub enum EnvState {
   // Note is activeply sounding. Its pre-existing amplitude at onset
   // time is `amp`. The goal amplitude, at the peak of attack, is
   // `vel`. The amount of time elapsed since its onset is `t_s`.
@@ -33,39 +33,13 @@ pub enum EnvPos {
   },
 }
 
-#[derive(Clone, Debug)]
-pub struct EnvState {
-  pub adsr: Adsr,
-  pub pos: EnvPos,
-}
-
-impl EnvState {
-  pub fn attack_len_s(&self) -> f32 {
-    self.adsr.attack_len_s()
-  }
-
-  pub fn time_s(&self) -> f32 {
-    self.pos.time_s(&self.adsr)
-  }
-
-  // advance ugen state forward by tick_s
-  // returns true if we should keep going, false if we should terminate the ugen
-  pub fn advance(&mut self, tick_s: f32) -> bool {
-    self.pos.advance(tick_s, &self.adsr)
-  }
-
-  pub fn amp(&self) -> f32 {
-    self.pos.amp(&self.adsr)
-  }
-}
-
 impl Adsr {
   pub fn attack_len_s(&self) -> f32 {
     self.attack_s + self.decay_s
   }
 }
 
-impl EnvPos {
+impl EnvState {
   pub fn amp(&self, adsr: &Adsr) -> f32 {
     let Adsr {
       attack_s,
@@ -74,7 +48,7 @@ impl EnvPos {
       release_s,
     } = adsr;
     match &self {
-      EnvPos::On { t_s, amp, vel, .. } => {
+      EnvState::On { t_s, amp, vel, .. } => {
         if *t_s < *attack_s {
           let a = t_s / attack_s;
           amp * (1.0 - a) + vel * a
@@ -85,25 +59,25 @@ impl EnvPos {
           sustain * vel
         }
       },
-      EnvPos::Release { t_s, amp } => amp * (1.0 - (t_s / release_s)),
+      EnvState::Release { t_s, amp } => amp * (1.0 - (t_s / release_s)),
     }
   }
 
   pub fn time_s(&self, adsr: &Adsr) -> f32 {
     match self {
-      EnvPos::On { t_s, .. } => *t_s,
-      EnvPos::Release { .. } => adsr.attack_len_s(),
+      EnvState::On { t_s, .. } => *t_s,
+      EnvState::Release { .. } => adsr.attack_len_s(),
     }
   }
 
   pub fn advance(&mut self, tick_s: f32, adsr: &Adsr) -> bool {
     match self {
-      EnvPos::On {
+      EnvState::On {
         ref mut t_s, hold, ..
       } => {
         *t_s += tick_s;
         if !*hold && *t_s > adsr.attack_s + adsr.decay_s {
-          *self = EnvPos::Release {
+          *self = EnvState::Release {
             t_s: 0.,
             amp: adsr.sustain,
           };
@@ -111,7 +85,7 @@ impl EnvPos {
         }
         true
       },
-      EnvPos::Release { ref mut t_s, .. } => {
+      EnvState::Release { ref mut t_s, .. } => {
         *t_s += tick_s;
         *t_s <= adsr.release_s
       },
