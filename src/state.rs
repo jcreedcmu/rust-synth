@@ -89,10 +89,6 @@ pub struct State {
 pub type StateGuard = Arc<Mutex<State>>;
 
 pub const DEFAULT_DRUM_CONTROL_BLOCK: usize = 10;
-pub const DEFAULT_REASONABLE_CONTROL_BLOCK: usize = 0;
-pub const DEFAULT_LOW_PASS_CONTROL_BLOCK: usize = 1;
-pub const DEFAULT_GAIN_CONTROL_BLOCK: usize = 2;
-pub const DEFAULT_ALL_PASS_CONTROL_BLOCK: usize = 3;
 pub const NUM_CONTROL_BLOCKS: usize = 16;
 
 impl State {

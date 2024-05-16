@@ -274,7 +274,7 @@ function App(props: AppProps): JSX.Element {
       wsco.current = wsc;
       send({
         t: 'reconfigure', specs: [
-          { t: 'midiManager', dst: BUS_DRY },
+          { t: 'midiManager', dst: BUS_DRY, ci: DEFAULT_REASONABLE_CONTROL_BLOCK },
           { t: 'ugenGroup', dst: BUS_DRY },
           { t: 'allPass', src: BUS_DRY, dst: BUS_PRELOW, ctl: DEFAULT_ALLPASS_CONTROL_BLOCK },
           { t: 'lowPass', src: BUS_PRELOW, dst: BUS_PREGAIN },

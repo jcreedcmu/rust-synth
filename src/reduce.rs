@@ -3,9 +3,7 @@ use anyhow::anyhow;
 use crate::midi::Message;
 use crate::midi_manager::MidiManagerState;
 use crate::notegen::NotegenState;
-use crate::state::{
-  get_key_state_mut, new_reasonable_of_tables, KeyState, State, DEFAULT_REASONABLE_CONTROL_BLOCK,
-};
+use crate::state::{get_key_state_mut, new_reasonable_of_tables, KeyState, State};
 use crate::ugen::UgenState;
 use crate::util;
 use crate::wavetables::Wavetables;
@@ -55,6 +53,7 @@ pub fn midi_reducer_inner(
       ref mut pedal,
       ref mut key_state,
       ref mut notegen_state,
+      ref ci,
       ..
     } = midi_manager;
     match msg {
@@ -71,13 +70,7 @@ pub fn midi_reducer_inner(
 
         let ugen_ix = match pre {
           None => {
-            let ugen = new_reasonable_of_tables(
-              *dst,
-              wavetables,
-              freq,
-              vel,
-              DEFAULT_REASONABLE_CONTROL_BLOCK,
-            );
+            let ugen = new_reasonable_of_tables(*dst, wavetables, freq, vel, *ci);
             add_gen(notegen_state, ugen)
           },
           Some(ugen_ix) => match &mut notegen_state[ugen_ix] {

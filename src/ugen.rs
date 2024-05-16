@@ -26,7 +26,7 @@ pub trait Ugen: std::fmt::Debug + Sync + Send {
 pub enum UgenSpec {
   LowPass { src: usize, dst: usize },
   AllPass { src: usize, dst: usize, ctl: usize },
-  MidiManager { dst: usize },
+  MidiManager { dst: usize, ci: usize },
   UgenGroup { dst: usize },
   Meter { src: usize },
   Gain { src: usize, dst: usize },
@@ -65,7 +65,7 @@ impl UgenState {
     match spec {
       UgenSpec::LowPass { src, dst } => UgenState::Lowpass(LowpassState::new(src, dst)),
       UgenSpec::AllPass { src, dst, ctl } => UgenState::Allpass(AllpassState::new(src, dst, ctl)),
-      UgenSpec::MidiManager { dst } => UgenState::MidiManager(MidiManagerState::new(dst)),
+      UgenSpec::MidiManager { dst, ci } => UgenState::MidiManager(MidiManagerState::new(dst, ci)),
       UgenSpec::UgenGroup { dst } => UgenState::UgenGroup(UgenGroupState::new(dst)),
       UgenSpec::Meter { src } => UgenState::Meter(MeterState::new(src)),
       UgenSpec::Gain { src, dst } => UgenState::Gain(GainState::new(src, dst)),

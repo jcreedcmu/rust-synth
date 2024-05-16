@@ -1,7 +1,7 @@
 export type UgenSpec =
   | { t: 'lowPass', src: number, dst: number }
   | { t: 'allPass', src: number, dst: number, ctl: number }
-  | { t: 'midiManager', dst: number }
+  | { t: 'midiManager', dst: number, ci: number }
   | { t: 'ugenGroup', dst: number }
   | { t: 'meter', src: number }
   | { t: 'gain', src: number, dst: number }

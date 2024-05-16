@@ -11,15 +11,17 @@ pub struct MidiManagerState {
   // This is NUM_KEYS long, one keystate for every physical key.
   pub key_state: Vec<KeyState>,
   pub notegen_state: Vec<Option<NotegenState>>,
+  pub ci: usize, // control block for new notes
 }
 
 impl MidiManagerState {
-  pub fn new(dst: usize) -> MidiManagerState {
+  pub fn new(dst: usize, ci: usize) -> MidiManagerState {
     MidiManagerState {
       dst,
       pedal: false,
       key_state: vec![KeyState::Off; NUM_KEYS],
       notegen_state: vec![],
+      ci,
     }
   }
 }

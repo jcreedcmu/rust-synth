@@ -27,7 +27,6 @@ use clap::Parser;
 use consts::{BUS_DRY, BUS_OUT};
 use lowpass::LowpassState;
 use midi::{Message, MidiService};
-use midi_manager::MidiManagerState;
 use sequencer::sequencer_loop;
 use state::{State, StateGuard, DEFAULT_DRUM_CONTROL_BLOCK};
 use ugen::UgenState;
@@ -167,7 +166,6 @@ fn run() -> Result<(), Box<dyn Error>> {
   let mut state = State::new(mono_buf_size);
 
   state.fixed_ugens = vec![
-    ugen::UgenState::MidiManager(MidiManagerState::new(BUS_DRY)),
     ugen::UgenState::UgenGroup(UgenGroupState::new(BUS_DRY)),
     ugen::UgenState::Lowpass(LowpassState::new(BUS_DRY, BUS_OUT)),
   ];
