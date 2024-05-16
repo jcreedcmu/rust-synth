@@ -47,6 +47,12 @@ pub struct GenState<'a> {
 }
 
 impl<'a> GenState<'a> {
+  /*
+   * Issue: a bundle of mutable references does not automatically
+   * reborrow, e.g. in loops. I'm following the model of
+   * https://dwrensha.github.io/capnproto-rust/2014/12/27/custom-mutable-references.html
+   * to solve this.
+   */
   pub fn reborrow<'b>(&'b mut self) -> GenState<'b> {
     GenState {
       audio_bus: self.audio_bus,
