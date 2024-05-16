@@ -309,6 +309,14 @@ function App(props: AppProps): JSX.Element {
         }
       });
 
+      send({
+        t: 'setControlBlock', index: DEFAULT_LOW_PASS_CONTROL_BLOCK, ctl: {
+          t: 'Low', taps: [
+            { tp: { t: 'Input' }, pos: 0, weight: 0.5 },
+            { tp: { t: 'Rec' }, pos: 1, weight: 0.5 },
+          ],
+        }
+      });
     }
 
     wsc.ws.onclose = () => {

@@ -5,9 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::allpass::AllpassControlBlock;
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE};
 use crate::drum::DrumControlBlock;
-use crate::envelope::Adsr;
 use crate::gain::GainControlBlock;
-use crate::lowpass::{LowpassControlBlock, Tap, TapType};
+use crate::lowpass::LowpassControlBlock;
 use crate::notegen::NotegenState;
 use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
 use crate::sequencer::Sequencer;
@@ -101,20 +100,6 @@ impl State {
     let mut control_blocks: ControlBlocks = Vec::with_capacity(NUM_CONTROL_BLOCKS);
     control_blocks.resize_with(NUM_CONTROL_BLOCKS, || None);
 
-    control_blocks[DEFAULT_LOW_PASS_CONTROL_BLOCK] = Some(ControlBlock::Low(LowpassControlBlock {
-      taps: vec![
-        Tap {
-          tp: TapType::Input,
-          pos: 0,
-          weight: 0.5,
-        },
-        Tap {
-          tp: TapType::Rec,
-          pos: 1,
-          weight: 0.5,
-        },
-      ],
-    }));
     control_blocks[DEFAULT_GAIN_CONTROL_BLOCK] =
       Some(ControlBlock::Gain(GainControlBlock { scale: 1.0 }));
     control_blocks[DEFAULT_ALL_PASS_CONTROL_BLOCK] = Some(ControlBlock::All(AllpassControlBlock {
