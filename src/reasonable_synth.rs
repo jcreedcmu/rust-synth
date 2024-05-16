@@ -11,7 +11,7 @@ use crate::ugen::{Advice, Ugen};
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "t")]
 pub struct ReasonableControlBlock {
-  pub adsr: Adsr, // XXX make private?
+  pub adsr: Adsr,
 }
 
 #[derive(Clone, Debug)]
@@ -19,9 +19,9 @@ pub struct ReasonableSynthState {
   dst: usize,
   freq_hz: f32,
   phase: f32,
-  pub env_state: EnvState, // XXX make private?
+  env_state: EnvState,
   wavetable: Arc<Vec<f32>>,
-  pub ci: usize, // XXX make private?
+  ci: usize,
 }
 
 impl ReasonableSynthState {
