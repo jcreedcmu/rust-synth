@@ -227,7 +227,7 @@ function Sequencer(props: SequencerProps): JSX.Element {
   return <table>{rows}</table>;
 }
 
-const DEFAULT_DRUM_CONTROL_BLOCK: number = 0;
+const DEFAULT_DRUM_CONTROL_BLOCK: number = 10;
 const DEFAULT_LOW_PASS_CONTROL_BLOCK: number = 1;
 const DEFAULT_GAIN_CONTROL_BLOCK: number = 2;
 const DEFAULT_ALLPASS_CONTROL_BLOCK: number = 3;

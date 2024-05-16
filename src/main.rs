@@ -29,7 +29,7 @@ use lowpass::LowpassState;
 use midi::{Message, MidiService};
 use midi_manager::MidiManagerState;
 use sequencer::sequencer_loop;
-use state::{State, StateGuard};
+use state::{State, StateGuard, DEFAULT_DRUM_CONTROL_BLOCK};
 use ugen::UgenState;
 use ugen_group::UgenGroupState;
 use util::{depoison, JoinHandle, UnitHandle};
@@ -51,7 +51,7 @@ fn main() {
 fn reduce_web_message(m: WebMessage, s: &mut State) {
   match m {
     WebMessage::Drum => {
-      let ugen = s.new_drum(440.0, 440.0, drum_adsr(1.0));
+      let ugen = s.new_drum(drum_adsr(1.0), DEFAULT_DRUM_CONTROL_BLOCK);
       add_ugen_to_group(&mut s.fixed_ugens, ugen);
     },
     WebMessage::Quit => {
@@ -132,7 +132,7 @@ fn mk_stdin_thread(sg: StateGuard) -> JoinHandle {
         },
         "k\n" => {
           let mut s: MutexGuard<State> = depoison(sg.lock())?;
-          let ugen = s.new_drum(440.0, 440.0, drum_adsr(1.0));
+          let ugen = s.new_drum(drum_adsr(1.0), DEFAULT_DRUM_CONTROL_BLOCK);
           add_ugen_to_group(&mut s.fixed_ugens, ugen);
         },
         _ => println!("Didn't recognize {input}."),

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::consts::BUS_DRY;
 use crate::envelope::{Adsr, EnvPos, EnvState};
-use crate::state::{ControlBlock, ControlBlocks, GenState, DEFAULT_DRUM_CONTROL_BLOCK};
+use crate::state::{ControlBlock, ControlBlocks, GenState};
 use crate::synth::TABLE_SIZE;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
@@ -21,14 +21,14 @@ pub fn drum_adsr(dur_scale: f32) -> Adsr {
 #[serde(tag = "t")]
 pub struct DrumControlBlock {
   pub vol: f32,
+  pub freq_hz: f32,
+  pub freq2_hz: f32,
 }
 
 #[derive(Clone, Debug)]
 pub struct DrumSynthState {
   dst: usize,
   t_s: f32,
-  freq_hz: f32,
-  freq2_hz: f32,
   phase: f32,
   env_state: EnvState,
   wavetable: Arc<Vec<f32>>,
@@ -36,13 +36,11 @@ pub struct DrumSynthState {
 }
 
 impl DrumSynthState {
-  pub fn new(freq_hz: f32, freq2_hz: f32, adsr: Adsr, wavetable: Arc<Vec<f32>>) -> DrumSynthState {
+  pub fn new(adsr: Adsr, wavetable: Arc<Vec<f32>>, ci: usize) -> DrumSynthState {
     DrumSynthState {
       dst: BUS_DRY,
       t_s: 0.0,
       phase: 0.0,
-      freq_hz,
-      freq2_hz,
       env_state: EnvState {
         pos: EnvPos::On {
           amp: 0.0,
@@ -53,7 +51,7 @@ impl DrumSynthState {
         adsr,
       },
       wavetable,
-      ci: DEFAULT_DRUM_CONTROL_BLOCK,
+      ci,
     }
   }
 
@@ -71,7 +69,7 @@ impl DrumSynthState {
 
       // advance
       let a = self.env_state.time_s() / self.env_state.attack_len_s();
-      let eff_freq_hz = a * self.freq2_hz + (1.0 - a) * self.freq_hz;
+      let eff_freq_hz = a * ctl.freq2_hz + (1.0 - a) * ctl.freq_hz;
       let drum_freq_hz: f32 = eff_freq_hz / (TABLE_SIZE as f32);
       self.phase += drum_freq_hz / SAMPLE_RATE_hz;
       if self.phase > 1. {
