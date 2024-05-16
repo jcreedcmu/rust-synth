@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::allpass::AllpassControlBlock;
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE};
-use crate::drum::{drum_adsr, DrumControlBlock};
+use crate::drum::DrumControlBlock;
 use crate::envelope::Adsr;
 use crate::gain::GainControlBlock;
 use crate::lowpass::{LowpassControlBlock, Tap, TapType};
@@ -110,24 +110,6 @@ impl State {
           release_s: 0.05,
         },
       }));
-    control_blocks[DEFAULT_DRUM_CONTROL_BLOCK] = Some(ControlBlock::Drum(DrumControlBlock {
-      vol: 1.,
-      freq_hz: 660.0,
-      freq2_hz: 1.0,
-      adsr: drum_adsr(1.0),
-    }));
-    control_blocks[DEFAULT_DRUM_CONTROL_BLOCK + 1] = Some(ControlBlock::Drum(DrumControlBlock {
-      vol: 1.,
-      freq_hz: 1760.0,
-      freq2_hz: 1000.0,
-      adsr: drum_adsr(0.5),
-    }));
-    control_blocks[DEFAULT_DRUM_CONTROL_BLOCK + 2] = Some(ControlBlock::Drum(DrumControlBlock {
-      vol: 1.,
-      freq_hz: 6760.0,
-      freq2_hz: 5760.0,
-      adsr: drum_adsr(0.05),
-    }));
 
     control_blocks[DEFAULT_LOW_PASS_CONTROL_BLOCK] = Some(ControlBlock::Low(LowpassControlBlock {
       taps: vec![

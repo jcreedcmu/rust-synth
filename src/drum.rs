@@ -8,15 +8,6 @@ use crate::state::{ControlBlock, ControlBlocks, GenState};
 use crate::synth::TABLE_SIZE;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
-pub fn drum_adsr(dur_scale: f32) -> Adsr {
-  Adsr {
-    attack_s: 0.01 * dur_scale,
-    decay_s: 0.05 * dur_scale,
-    sustain: 0.2,
-    release_s: 0.2 * dur_scale,
-  }
-}
-
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "t")]
 pub struct DrumControlBlock {

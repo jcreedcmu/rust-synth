@@ -28,9 +28,22 @@ export type AllpassControlBlock = {
   naive: boolean,
 }
 
+export type Adsr = {
+  attack_s: number,
+  decay_s: number,
+  sustain: number,
+  release_s: number,
+};
+
 export type ControlBlock =
   | { t: 'Reasonable' }
-  | { t: 'Drum', vol: number }
+  | {
+    t: 'Drum',
+    vol: number,
+    freq_hz: number,
+    freq2_hz: number,
+    adsr: Adsr,
+  }
   | { t: 'Low' } & LowpassControlBlock
   | { t: 'All' } & AllpassControlBlock
   | { t: 'Gain', scale: number }

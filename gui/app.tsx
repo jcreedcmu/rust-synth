@@ -1,6 +1,6 @@
 import ReactDOM from 'react-dom';
 import { CSSProperties, useEffect, useReducer, useRef, useState } from 'react';
-import { ControlBlock, LowpassControlBlock, SynthMessage, Tap, WebMessage } from './protocol';
+import { Adsr, ControlBlock, LowpassControlBlock, SynthMessage, Tap, WebMessage } from './protocol';
 import { produce } from 'immer';
 import { Chart } from './chart';
 import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
@@ -232,6 +232,14 @@ const DEFAULT_LOW_PASS_CONTROL_BLOCK: number = 1;
 const DEFAULT_GAIN_CONTROL_BLOCK: number = 2;
 const DEFAULT_ALLPASS_CONTROL_BLOCK: number = 3;
 
+function drum_adsr(dur_scale: number): Adsr {
+  return {
+    attack_s: 0.01 * dur_scale,
+    decay_s: 0.05 * dur_scale,
+    sustain: 0.2,
+    release_s: 0.2 * dur_scale,
+  };
+}
 
 export type Dispatch = (action: Action) => void;
 
@@ -272,6 +280,21 @@ function App(props: AppProps): JSX.Element {
           { t: 'gain', src: BUS_PREGAIN, dst: BUS_OUT },
           { t: 'meter', src: BUS_OUT },
         ]
+      });
+      send({
+        t: 'setControlBlock', index: DEFAULT_DRUM_CONTROL_BLOCK, ctl: {
+          t: 'Drum', vol: 1, adsr: drum_adsr(1.0), freq_hz: 660, freq2_hz: 1,
+        }
+      });
+      send({
+        t: 'setControlBlock', index: DEFAULT_DRUM_CONTROL_BLOCK + 1, ctl: {
+          t: 'Drum', vol: 1, adsr: drum_adsr(0.5), freq_hz: 1760, freq2_hz: 1000,
+        }
+      });
+      send({
+        t: 'setControlBlock', index: DEFAULT_DRUM_CONTROL_BLOCK + 2, ctl: {
+          t: 'Drum', vol: 1, adsr: drum_adsr(0.1), freq_hz: 6760, freq2_hz: 5000,
+        }
       });
     }
 
