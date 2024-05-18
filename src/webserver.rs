@@ -19,6 +19,7 @@ pub enum WebMessage {
   SetControlBlock { index: usize, ctl: ControlBlock },
   SetSequencer { inst: usize, pat: usize, on: bool },
   Reconfigure { specs: Vec<UgenSpec> },
+  SetText { text: String },
 }
 
 // Messages to the synth, either

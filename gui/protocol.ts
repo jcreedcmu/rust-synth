@@ -52,6 +52,7 @@ export type ControlBlock =
 export type WebMessage =
   | { t: 'quit' }
   | { t: 'drum' }
+  | { t: 'setText', text: string }
   | { t: 'setControlBlock', index: number, ctl: ControlBlock }
   | { t: 'setSequencer', inst: number, pat: number, on: boolean }
   | { t: 'reconfigure', specs: UgenSpec[] }
