@@ -67,7 +67,7 @@ fn reduce_web_message(m: WebMessage, s: &mut State) {
       s.control_blocks[index] = Some(ctl);
     },
     WebMessage::SetText { text } => {
-      println!("{:?}", text);
+      s.engine.update_with_code(&text);
     },
   }
 }

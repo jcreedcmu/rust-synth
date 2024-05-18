@@ -5,7 +5,6 @@ use crate::{Args, State, StateGuard};
 use alsa::pcm::{Access, Format, HwParams, PCM};
 use alsa::{Direction, ValueOr};
 use dbus::blocking as dbus;
-use glicol::Engine;
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
@@ -125,8 +124,10 @@ impl AudioService {
       let mut buf = [0i16; BUF_SIZE];
       let mut now: Instant = Instant::now();
 
-      let mut engine = Engine::<HALF_BUF_SIZE>::new();
-      engine.update_with_code(r#"o: 0"#);
+      {
+        let mut s: MutexGuard<State> = depoison(sg.lock())?;
+        s.engine.update_with_code(r#"o: 0"#);
+      }
 
       loop {
         {
@@ -149,7 +150,7 @@ impl AudioService {
             ch[1] = samp;
           }
 
-          let (block, other) = engine.next_block(vec![]);
+          let (block, other) = s.engine.next_block(vec![]);
           for (ix, ch) in buf.chunks_mut(CHANNELS as usize).enumerate() {
             ch[0] += convert_sample(block[0][ix]);
             ch[1] += convert_sample(block[1][ix]);

@@ -1,8 +1,11 @@
+use std::fmt::Debug;
+use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 
 use crate::allpass::AllpassControlBlock;
+use crate::audio::HALF_BUF_SIZE;
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE};
 use crate::drum::DrumControlBlock;
 use crate::gain::GainControlBlock;
@@ -69,6 +72,30 @@ impl<'a> GenState<'a> {
   }
 }
 
+pub struct NoDebug<T> {
+  body: T,
+}
+
+impl<T> Deref for NoDebug<T> {
+  type Target = T;
+
+  fn deref(&self) -> &Self::Target {
+    &self.body
+  }
+}
+
+impl<T> DerefMut for NoDebug<T> {
+  fn deref_mut(&mut self) -> &mut Self::Target {
+    &mut self.body
+  }
+}
+
+impl<T> Debug for NoDebug<T> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "---")
+  }
+}
+
 #[derive(Debug)]
 pub struct State {
   pub going: bool,
@@ -84,6 +111,7 @@ pub struct State {
   pub control_blocks: ControlBlocks,
   pub wavetables: Wavetables,
   pub sequencer: Sequencer,
+  pub engine: NoDebug<glicol::Engine<HALF_BUF_SIZE>>,
 }
 
 pub type StateGuard = Arc<Mutex<State>>;
@@ -107,6 +135,9 @@ impl State {
       wavetables: Wavetables::new(),
       audio_bus: vec![vec![0.; buf_size]; AUDIO_BUS_LENGTH],
       websocket: None,
+      engine: NoDebug {
+        body: glicol::Engine::<HALF_BUF_SIZE>::new(),
+      },
     }
   }
 
