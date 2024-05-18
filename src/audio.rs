@@ -5,6 +5,7 @@ use crate::{Args, State, StateGuard};
 use alsa::pcm::{Access, Format, HwParams, PCM};
 use alsa::{Direction, ValueOr};
 use dbus::blocking as dbus;
+use glicol::Engine;
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
@@ -18,6 +19,7 @@ pub struct AudioService {
 
 pub const CHANNELS: u32 = 2;
 pub const BUF_SIZE: usize = 128;
+pub const HALF_BUF_SIZE: usize = BUF_SIZE / 2;
 
 struct Reservation {
   conn: dbus::Connection,
@@ -122,6 +124,10 @@ impl AudioService {
       let mut iters: usize = 0;
       let mut buf = [0i16; BUF_SIZE];
       let mut now: Instant = Instant::now();
+
+      let mut engine = Engine::<HALF_BUF_SIZE>::new();
+      engine.update_with_code(r#"o: 0"#);
+
       loop {
         {
           if do_profile(&args, iters) {
@@ -132,14 +138,21 @@ impl AudioService {
             break;
           }
 
+          fn convert_sample(samp_f32: f32) -> i16 {
+            (samp_f32 * 32767.0) as i16
+          }
+
           synth.synth_buf(&mut s);
-
           for (ix, ch) in buf.chunks_mut(CHANNELS as usize).enumerate() {
-            let samp_f32 = &s.audio_bus[BUS_OUT][ix];
-            let samp_i16 = (samp_f32 * 32767.0) as i16;
+            let samp = convert_sample(s.audio_bus[BUS_OUT][ix]);
+            ch[0] = samp;
+            ch[1] = samp;
+          }
 
-            ch[0] = samp_i16;
-            ch[1] = samp_i16;
+          let (block, other) = engine.next_block(vec![]);
+          for (ix, ch) in buf.chunks_mut(CHANNELS as usize).enumerate() {
+            ch[0] += convert_sample(block[0][ix]);
+            ch[1] += convert_sample(block[1][ix]);
           }
 
           if s.write_to_file {
