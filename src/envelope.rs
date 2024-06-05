@@ -56,7 +56,8 @@ impl EnvState {
           let a = (t_s - attack_s) / decay_s;
           vel * (1.0 - a) + vel * sustain * a
         } else {
-          sustain * vel
+          let a = (t_s - attack_s - decay_s) / 1.0;
+          sustain * vel * (-1.0f32 * a).exp()
         }
       },
       EnvState::Release { t_s, amp } => amp * (1.0 - (t_s / release_s)),
