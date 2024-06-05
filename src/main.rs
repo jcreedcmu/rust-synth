@@ -5,6 +5,7 @@ mod audio;
 mod consts;
 mod drum;
 mod envelope;
+mod freeverb;
 mod gain;
 mod lowpass;
 mod meter;
