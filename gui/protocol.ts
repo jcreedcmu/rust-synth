@@ -5,6 +5,7 @@ export type UgenSpec =
   | { t: 'ugenGroup', dst: number }
   | { t: 'meter', src: number }
   | { t: 'gain', src: number, dst: number }
+  | { t: 'reverb', src: number, dst: number }
   ;
 
 export type TapType =
@@ -47,6 +48,7 @@ export type ControlBlock =
   | { t: 'Low' } & LowpassControlBlock
   | { t: 'All' } & AllpassControlBlock
   | { t: 'Gain', scale: number }
+  | { t: 'Reverb' }
   ;
 
 export type WebMessage =

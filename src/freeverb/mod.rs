@@ -4,4 +4,4 @@ mod delay_line;
 
 mod freeverb;
 
-// pub use self::freeverb::Freeverb;
+pub use self::freeverb::Freeverb;

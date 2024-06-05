@@ -12,6 +12,7 @@ use crate::gain::GainControlBlock;
 use crate::lowpass::LowpassControlBlock;
 use crate::notegen::NotegenState;
 use crate::reasonable_synth::{ReasonableControlBlock, ReasonableSynthState};
+use crate::reverb::ReverbControlBlock;
 use crate::sequencer::Sequencer;
 use crate::ugen::{Advice, UgenState, UgensState};
 use crate::wavetables::Wavetables;
@@ -33,6 +34,7 @@ pub enum ControlBlock {
   Low(LowpassControlBlock),
   All(AllpassControlBlock),
   Gain(GainControlBlock),
+  Reverb(ReverbControlBlock),
 }
 
 pub type ControlBlocks = Vec<Option<ControlBlock>>;

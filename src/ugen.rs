@@ -8,6 +8,7 @@ use crate::meter::MeterState;
 use crate::midi_manager::MidiManagerState;
 use crate::notegen::NoteMode;
 use crate::reasonable_synth::ReasonableSynthState;
+use crate::reverb::ReverbState;
 use crate::state::{ControlBlocks, GenState};
 use crate::ugen_group::UgenGroupState;
 
@@ -30,6 +31,7 @@ pub enum UgenSpec {
   UgenGroup { dst: usize },
   Meter { src: usize },
   Gain { src: usize, dst: usize },
+  Reverb { src: usize, dst: usize },
 }
 
 #[derive(Debug)]
@@ -42,6 +44,7 @@ pub enum UgenState {
   Meter(MeterState),
   Gain(GainState),
   ReasonableSynth(ReasonableSynthState),
+  Reverb(ReverbState),
 }
 
 // some boilerplate to wire things up
@@ -56,6 +59,7 @@ impl Ugen for UgenState {
       UgenState::Meter(s) => s.run(gen, tick_s, ctl),
       UgenState::Gain(s) => s.run(gen, tick_s, ctl),
       UgenState::ReasonableSynth(s) => s.run(gen, tick_s, ctl),
+      UgenState::Reverb(s) => s.run(gen, tick_s, ctl),
     }
   }
 }
@@ -69,6 +73,7 @@ impl UgenState {
       UgenSpec::UgenGroup { dst } => UgenState::UgenGroup(UgenGroupState::new(dst)),
       UgenSpec::Meter { src } => UgenState::Meter(MeterState::new(src)),
       UgenSpec::Gain { src, dst } => UgenState::Gain(GainState::new(src, dst)),
+      UgenSpec::Reverb { src, dst } => UgenState::Reverb(ReverbState::new(src, dst)),
     }
   }
 }

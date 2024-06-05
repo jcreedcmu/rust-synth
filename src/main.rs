@@ -14,6 +14,7 @@ mod midi_manager;
 mod notegen;
 mod reasonable_synth;
 mod reduce;
+mod reverb;
 mod sequencer;
 mod state;
 mod synth;

@@ -240,6 +240,7 @@ const DEFAULT_DRUM_CONTROL_BLOCK: number = 10;
 const DEFAULT_LOW_PASS_CONTROL_BLOCK: number = 1;
 const DEFAULT_GAIN_CONTROL_BLOCK: number = 2;
 const DEFAULT_ALLPASS_CONTROL_BLOCK: number = 3;
+const DEFAULT_REVERB_CONTROL_BLOCK: number = 4;
 
 function drum_adsr(dur_scale: number): Adsr {
   return {
@@ -285,7 +286,8 @@ function App(props: AppProps): JSX.Element {
           { t: 'midiManager', dst: BUS_DRY, ci: DEFAULT_REASONABLE_CONTROL_BLOCK },
           { t: 'ugenGroup', dst: BUS_DRY },
           { t: 'allPass', src: BUS_DRY, dst: BUS_PRELOW, ctl: DEFAULT_ALLPASS_CONTROL_BLOCK },
-          { t: 'lowPass', src: BUS_PRELOW, dst: BUS_PREGAIN },
+          //          { t: 'lowPass', src: BUS_PRELOW, dst: BUS_PREGAIN },
+          { t: 'reverb', src: BUS_PRELOW, dst: BUS_PREGAIN },
           { t: 'gain', src: BUS_PREGAIN, dst: BUS_OUT },
           { t: 'meter', src: BUS_OUT },
         ]
@@ -335,6 +337,12 @@ function App(props: AppProps): JSX.Element {
       send({
         t: 'setControlBlock', index: DEFAULT_ALLPASS_CONTROL_BLOCK, ctl: {
           t: 'All', delay: 10, gain: 0.7, naive: true,
+        }
+      });
+
+      send({
+        t: 'setControlBlock', index: DEFAULT_REVERB_CONTROL_BLOCK, ctl: {
+          t: 'Reverb',
         }
       });
 
