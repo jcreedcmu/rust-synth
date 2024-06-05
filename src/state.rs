@@ -162,7 +162,7 @@ pub fn new_reasonable_of_tables(
     dst,
     freq_hz,
     vel,
-    wavetables.saw_wavetable.clone(),
+    wavetables.tri_wavetable.clone(),
     ci,
   )))
 }

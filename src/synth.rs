@@ -3,7 +3,7 @@ use crate::notegen::NoteMode;
 use crate::state::{GenState, State};
 use crate::ugen::{Advice, Ugen};
 
-pub const TABLE_SIZE: usize = 512;
+pub const TABLE_SIZE: usize = 512 * 16;
 
 pub struct Synth;
 

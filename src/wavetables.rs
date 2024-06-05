@@ -7,6 +7,7 @@ use crate::synth::TABLE_SIZE;
 #[derive(Debug)]
 pub struct Wavetables {
   pub saw_wavetable: Arc<Vec<f32>>,
+  pub tri_wavetable: Arc<Vec<f32>>,
   pub sqr_wavetable: Arc<Vec<f32>>,
   pub noise_wavetable: Arc<Vec<f32>>,
 }
@@ -25,6 +26,7 @@ impl Wavetables {
 
     // Initialise wavetables
     let mut saw_wavetable = vec![0.0; TABLE_SIZE + 1];
+    let mut tri_wavetable = vec![0.0; TABLE_SIZE + 1];
     let mut sqr_wavetable = vec![0.0; TABLE_SIZE + 1];
     let mut noise_wavetable = vec![0.0; TABLE_SIZE + 1];
 
@@ -36,6 +38,14 @@ impl Wavetables {
       saw_wavetable[i] = (2.0 * (i as f64 / TABLE_SIZE as f64) - 1.0) as f32;
     }
     saw_wavetable[TABLE_SIZE] = saw_wavetable[0];
+
+    for i in 0..TABLE_SIZE / 2 {
+      tri_wavetable[i] = (2.0 * (i as f64 / (TABLE_SIZE / 2) as f64) - 1.0) as f32;
+    }
+    for i in TABLE_SIZE / 2..TABLE_SIZE {
+      tri_wavetable[i] = -(2.0 * (i as f64 / (TABLE_SIZE / 2) as f64) - 1.0) as f32;
+    }
+    tri_wavetable[TABLE_SIZE] = tri_wavetable[0];
 
     for i in 0..TABLE_SIZE {
       sqr_wavetable[i] = if i < TABLE_SIZE / 2 { 1.0 } else { -1.0 };
@@ -49,6 +59,7 @@ impl Wavetables {
 
     Self {
       saw_wavetable: Arc::new(saw_wavetable),
+      tri_wavetable: Arc::new(tri_wavetable),
       sqr_wavetable: Arc::new(sqr_wavetable),
       noise_wavetable: Arc::new(noise_wavetable),
     }

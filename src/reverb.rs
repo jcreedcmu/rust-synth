@@ -42,9 +42,9 @@ impl Debug for ReverbState {
 impl ReverbState {
   pub fn new(src: usize, dst: usize) -> Self {
     let mut freeverb_state = Freeverb::new(44100);
-    freeverb_state.set_room_size(0.1f64);
-    freeverb_state.set_dry(0.1f64);
-    freeverb_state.set_wet(0.9f64);
+    freeverb_state.set_room_size(0.2f64);
+    freeverb_state.set_dry(0.9f64);
+    freeverb_state.set_wet(0.1f64);
     ReverbState {
       src,
       dst,
