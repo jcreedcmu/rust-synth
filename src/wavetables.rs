@@ -13,6 +13,13 @@ pub struct Wavetables {
   pub noise_wavetable: Arc<Vec<f32>>,
 }
 
+fn limit(x: f32) -> f32 {
+  if x == 0. {
+    return 0.;
+  }
+  ((1. + 4. * x * x).sqrt() - 1.) / (2. * x)
+}
+
 impl Wavetables {
   pub fn new() -> Self {
     // // SINE
@@ -35,7 +42,7 @@ impl Wavetables {
     saw_wavetable[TABLE_SIZE] = saw_wavetable[0];
 
     for i in 0..TABLE_SIZE {
-      sin_wavetable[i] = (i as f64 / TABLE_SIZE as f64 * PI * 2.0).sin() as f32;
+      sin_wavetable[i] = limit(3. * (i as f64 / TABLE_SIZE as f64 * PI * 2.0).sin() as f32);
     }
     sin_wavetable[TABLE_SIZE] = sin_wavetable[0];
 
