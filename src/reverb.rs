@@ -25,7 +25,10 @@ pub struct Tap {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
-pub struct ReverbControlBlock {}
+pub struct ReverbControlBlock {
+  room_size: f32,
+  wet: f32,
+}
 
 pub struct ReverbState {
   src: usize,
@@ -52,7 +55,12 @@ impl ReverbState {
     }
   }
 
-  fn ctl_run(&mut self, gen: GenState, tick_s: f32, _ctl: &ReverbControlBlock) -> bool {
+  fn ctl_run(&mut self, gen: GenState, tick_s: f32, ctl: &ReverbControlBlock) -> bool {
+    let freeverb_state = &mut self.freeverb_state;
+    freeverb_state.set_room_size((0.01 + 0.98 * ctl.room_size) as f64);
+    freeverb_state.set_dry((1.0 - ctl.wet) as f64);
+    freeverb_state.set_wet(ctl.wet as f64);
+
     for bus_ix in 0..gen.audio_bus[0].len() {
       let inv = gen.audio_bus[self.src][bus_ix];
       let (left, right) = self.freeverb_state.tick((inv as f64, inv as f64));

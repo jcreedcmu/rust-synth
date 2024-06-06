@@ -35,6 +35,8 @@ export type Action =
   | { t: 'setMeterValues', msg: MeterData }
   | { t: 'setLowpassState', lowpassState: LowpassWidgetState }
   | { t: 'setText', text: string }
+  | { t: 'setRoomSize', iface_roomsize: number }
+  | { t: 'setWet', iface_wet: number }
   ;
 
 type SequencerProps = {
@@ -53,6 +55,8 @@ export type State = {
   connected: boolean,
   iface_gain: number,
   iface_highpass: number,
+  iface_roomsize: number,
+  iface_wet: number,
   allpass: AllpassState;
   outbox: WebMessage[],
   meterData: MeterData,
@@ -186,6 +190,34 @@ function reduce_inner(state: State, action: Action): State {
         s.text = action.text;
       });
     }
+    case 'setRoomSize': {
+      const newState = produce(state, s => {
+        s.iface_roomsize = action.iface_roomsize;
+      });
+      const ctl: ControlBlock = {
+        t: 'Reverb',
+        roomSize: newState.iface_roomsize / 100,
+        wet: newState.iface_wet / 100,
+      };
+      const msg: WebMessage = { t: 'setControlBlock', index: DEFAULT_REVERB_CONTROL_BLOCK, ctl };
+      return produce(newState, s => {
+        s.outbox.push(msg);
+      });
+    }
+    case 'setWet': {
+      const newState = produce(state, s => {
+        s.iface_wet = action.iface_wet;
+      });
+      const ctl: ControlBlock = {
+        t: 'Reverb',
+        roomSize: newState.iface_roomsize / 100,
+        wet: newState.iface_wet / 100,
+      };
+      const msg: WebMessage = { t: 'setControlBlock', index: DEFAULT_REVERB_CONTROL_BLOCK, ctl };
+      return produce(newState, s => {
+        s.outbox.push(msg);
+      });
+    }
   }
 }
 
@@ -201,6 +233,8 @@ function mkState(): State {
     connected: true,
     iface_gain: 10,
     iface_highpass: 50,
+    iface_roomsize: 50,
+    iface_wet: 50,
     allpass: {
       iface_allpass_gain: 50,
       iface_allpass_delay: 50,
@@ -343,6 +377,8 @@ function App(props: AppProps): JSX.Element {
       send({
         t: 'setControlBlock', index: DEFAULT_REVERB_CONTROL_BLOCK, ctl: {
           t: 'Reverb',
+          roomSize: 0.5,
+          wet: 0.5,
         }
       });
 
@@ -380,6 +416,15 @@ function App(props: AppProps): JSX.Element {
   const gainOnInput = (e: React.FormEvent) => {
     // interface_gain ranges from 1 to 99, and gain ranges from ~0 to ~MAX_GAIN;
     dispatch({ t: 'setGain', iface_gain: parseInt((e.target as HTMLInputElement).value) });
+  };
+
+
+  const roomsizeOnInput = (e: React.FormEvent) => {
+    dispatch({ t: 'setRoomSize', iface_roomsize: parseInt((e.target as HTMLInputElement).value) });
+  };
+
+  const wetOnInput = (e: React.FormEvent) => {
+    dispatch({ t: 'setWet', iface_wet: parseInt((e.target as HTMLInputElement).value) });
   };
 
   const highpassOnInput = (e: React.FormEvent) => {
@@ -420,6 +465,12 @@ function App(props: AppProps): JSX.Element {
     <br />
     allpass naive: <input type="checkbox" checked={allpass.iface_allpass_naive}
       onInput={(e) => dispatch({ t: 'setAllpassNaive', iface_allpass_naive: !((e.target as HTMLInputElement).checked) })} />
+    <hr />
+
+
+    room size: <input style={{ width: '90%' }} type="range" min="1" max="99" value={state.iface_roomsize} onInput={roomsizeOnInput} /><br />
+    reverb wet: <input style={{ width: '90%' }} type="range" min="1" max="99" value={state.iface_wet} onInput={wetOnInput} /><br />
+
     <br />
     <br />
     <DbMeter label="RMS" value={meterData.level} /><br />

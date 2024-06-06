@@ -23,6 +23,11 @@ export type LowpassControlBlock = {
   taps: Tap[],
 }
 
+export type ReverbControlBlock = {
+  roomSize: number,
+  wet: number,
+}
+
 export type AllpassControlBlock = {
   gain: number,
   delay: number,
@@ -48,7 +53,7 @@ export type ControlBlock =
   | { t: 'Low' } & LowpassControlBlock
   | { t: 'All' } & AllpassControlBlock
   | { t: 'Gain', scale: number }
-  | { t: 'Reverb' }
+  | { t: 'Reverb' } & ReverbControlBlock
   ;
 
 export type WebMessage =
