@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{f64::consts::PI, sync::Arc};
 
 use rand::Rng;
 
@@ -7,6 +7,7 @@ use crate::synth::TABLE_SIZE;
 #[derive(Debug)]
 pub struct Wavetables {
   pub saw_wavetable: Arc<Vec<f32>>,
+  pub sin_wavetable: Arc<Vec<f32>>,
   pub tri_wavetable: Arc<Vec<f32>>,
   pub sqr_wavetable: Arc<Vec<f32>>,
   pub noise_wavetable: Arc<Vec<f32>>,
@@ -15,17 +16,11 @@ pub struct Wavetables {
 impl Wavetables {
   pub fn new() -> Self {
     // // SINE
-    // wavetable[i] = (i as f64 / TABLE_SIZE as f64 * PI * 2.0).sin() as f32;
-
-    // // SQUARE
-    // wavetable[i] = if (i as f64 / TABLE_SIZE as f64) < 0.5 {
-    //   -1.0
-    // } else {
-    //   1.0
-    // };
+    // wavetable[i] =
 
     // Initialise wavetables
     let mut saw_wavetable = vec![0.0; TABLE_SIZE + 1];
+    let mut sin_wavetable = vec![0.0; TABLE_SIZE + 1];
     let mut tri_wavetable = vec![0.0; TABLE_SIZE + 1];
     let mut sqr_wavetable = vec![0.0; TABLE_SIZE + 1];
     let mut noise_wavetable = vec![0.0; TABLE_SIZE + 1];
@@ -38,6 +33,11 @@ impl Wavetables {
       saw_wavetable[i] = (2.0 * (i as f64 / TABLE_SIZE as f64) - 1.0) as f32;
     }
     saw_wavetable[TABLE_SIZE] = saw_wavetable[0];
+
+    for i in 0..TABLE_SIZE {
+      sin_wavetable[i] = (i as f64 / TABLE_SIZE as f64 * PI * 2.0).sin() as f32;
+    }
+    sin_wavetable[TABLE_SIZE] = sin_wavetable[0];
 
     for i in 0..TABLE_SIZE / 2 {
       tri_wavetable[i] = (2.0 * (i as f64 / (TABLE_SIZE / 2) as f64) - 1.0) as f32;
@@ -59,6 +59,7 @@ impl Wavetables {
 
     Self {
       saw_wavetable: Arc::new(saw_wavetable),
+      sin_wavetable: Arc::new(sin_wavetable),
       tri_wavetable: Arc::new(tri_wavetable),
       sqr_wavetable: Arc::new(sqr_wavetable),
       noise_wavetable: Arc::new(noise_wavetable),
