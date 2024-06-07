@@ -16,7 +16,6 @@ pub enum TapType {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "t")]
 pub struct Tap {
   pub tp: TapType,
   pub pos: usize,
@@ -24,7 +23,6 @@ pub struct Tap {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
 #[derive(TS)]
 #[ts(export)]

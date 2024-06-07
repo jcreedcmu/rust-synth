@@ -9,9 +9,7 @@ use crate::notegen::NoteMode;
 use crate::state::{ControlBlock, ControlBlocks, GenState};
 use crate::ugen::{Advice, Ugen};
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "t")]
-#[derive(TS)]
+#[derive(Serialize, Deserialize, Debug, TS)]
 #[ts(export)]
 pub struct ReasonableControlBlock {
   pub adsr: Adsr,

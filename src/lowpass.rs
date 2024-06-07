@@ -16,9 +16,7 @@ pub enum TapType {
   Input,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "t")]
-#[derive(TS)]
+#[derive(Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct Tap {
   pub tp: TapType,
@@ -27,7 +25,6 @@ pub struct Tap {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
 #[derive(TS)]
 #[ts(export)]

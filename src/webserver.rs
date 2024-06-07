@@ -40,6 +40,8 @@ pub enum WebOrSubMessage {
 #[derive(Serialize, Debug)]
 #[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
+#[derive(TS)]
+#[ts(export)]
 pub enum SynthMessage {
   Midi {
     msg: midi::Message,

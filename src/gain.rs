@@ -7,14 +7,12 @@ use crate::ugen::Ugen;
 const LOW_PASS_AMOUNT: usize = 35000;
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "t")]
 pub struct Tap {
   pub pos: usize,
   pub weight: f32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
 #[derive(TS)]
 #[ts(export)]

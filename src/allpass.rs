@@ -16,7 +16,6 @@ pub struct AllpassState {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
 #[derive(TS)]
 #[ts(export)]

@@ -9,9 +9,7 @@ use crate::state::{ControlBlock, ControlBlocks, GenState};
 use crate::synth::TABLE_SIZE;
 use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "t")]
-#[derive(TS)]
+#[derive(Serialize, Deserialize, Debug, TS)]
 #[ts(export)]
 pub struct DrumControlBlock {
   pub vol: f32,

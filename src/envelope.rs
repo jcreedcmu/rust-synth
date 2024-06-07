@@ -1,9 +1,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
-#[serde(tag = "t")]
-#[derive(TS)]
+#[derive(Clone, Serialize, Deserialize, Debug, TS)]
 #[ts(export)]
 pub struct Adsr {
   pub attack_s: f32,

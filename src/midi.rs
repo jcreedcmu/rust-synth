@@ -4,6 +4,7 @@ use std::fmt;
 use anyhow::{anyhow, bail};
 use midir::{Ignore, MidiInput};
 use serde::Serialize;
+use ts_rs::TS;
 
 pub struct MidiService {
   conn_in: midir::MidiInputConnection<()>,
@@ -14,6 +15,8 @@ type Pitch = u8;
 #[derive(Debug, Serialize, Clone)]
 #[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
+#[derive(TS)]
+#[ts(export)]
 pub enum Message {
   NoteOn {
     pitch: Pitch,
