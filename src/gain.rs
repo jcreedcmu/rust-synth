@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::state::{ControlBlock, ControlBlocks, GenState};
 use crate::ugen::Ugen;
@@ -15,6 +16,8 @@ pub struct Tap {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
+#[derive(TS)]
+#[ts(export)]
 pub struct GainControlBlock {
   pub scale: f32,
 }

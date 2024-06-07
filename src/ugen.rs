@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::allpass::AllpassState;
 use crate::drum::DrumSynthState;
@@ -24,6 +25,8 @@ pub trait Ugen: std::fmt::Debug + Sync + Send {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
+#[derive(TS)]
+#[ts(export)]
 pub enum UgenSpec {
   LowPass { src: usize, dst: usize },
   AllPass { src: usize, dst: usize, ctl: usize },

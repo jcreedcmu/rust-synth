@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::consts::BUS_DRY;
 use crate::envelope::{Adsr, EnvState};
@@ -10,6 +11,8 @@ use crate::{consts::SAMPLE_RATE_hz, ugen::Ugen};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "t")]
+#[derive(TS)]
+#[ts(export)]
 pub struct DrumControlBlock {
   pub vol: f32,
   pub freq_hz: f32,

@@ -17,6 +17,7 @@ use crate::sequencer::Sequencer;
 use crate::ugen::{Advice, UgenState, UgensState};
 use crate::wavetables::Wavetables;
 use crate::webserver::SynthMessage;
+use ts_rs::TS;
 
 // XXX move to midi manager or reduce
 #[derive(Clone, Debug)]
@@ -28,6 +29,8 @@ pub enum KeyState {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "t")]
+#[derive(TS)]
+#[ts(export)]
 pub enum ControlBlock {
   Reasonable(ReasonableControlBlock),
   Drum(DrumControlBlock),

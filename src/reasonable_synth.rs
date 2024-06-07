@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::consts::SAMPLE_RATE_hz;
 use crate::envelope::{Adsr, EnvState};
@@ -10,6 +11,8 @@ use crate::ugen::{Advice, Ugen};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "t")]
+#[derive(TS)]
+#[ts(export)]
 pub struct ReasonableControlBlock {
   pub adsr: Adsr,
 }

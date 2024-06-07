@@ -1,6 +1,7 @@
 use crate::freeverb::Freeverb;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use ts_rs::TS;
 
 use crate::state::{ControlBlock, ControlBlocks, GenState};
 use crate::ugen::Ugen;
@@ -25,6 +26,8 @@ pub struct Tap {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
+#[derive(TS)]
+#[ts(export)]
 pub struct ReverbControlBlock {
   room_size: f32,
   wet: f32,

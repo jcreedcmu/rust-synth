@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::state::{ControlBlock, ControlBlocks, GenState};
 use crate::ugen::Ugen;
@@ -17,6 +18,8 @@ pub struct AllpassState {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
+#[derive(TS)]
+#[ts(export)]
 pub struct AllpassControlBlock {
   pub gain: f32,
   pub delay: usize,

@@ -7,12 +7,15 @@ use rocket::{get, routes};
 use rocket_ws::{stream::DuplexStream, Message as RocketWsMessage, WebSocket};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{channel, Sender};
+use ts_rs::TS;
 
 const CHANNEL_CAPACITY: usize = 100;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
+#[derive(TS)]
+#[ts(export)]
 pub enum WebMessage {
   Quit,
   Drum,

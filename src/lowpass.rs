@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::state::{ControlBlock, ControlBlocks, GenState};
 use crate::ugen::Ugen;
@@ -8,6 +9,8 @@ const HISTORY_SIZE: usize = 35000;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "t")]
+#[derive(TS)]
+#[ts(export)]
 pub enum TapType {
   Rec,
   Input,
@@ -15,6 +18,8 @@ pub enum TapType {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "t")]
+#[derive(TS)]
+#[ts(export)]
 pub struct Tap {
   pub tp: TapType,
   pub pos: usize,
@@ -24,6 +29,8 @@ pub struct Tap {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "t")]
 #[serde(rename_all = "camelCase")]
+#[derive(TS)]
+#[ts(export)]
 pub struct LowpassControlBlock {
   pub taps: Vec<Tap>,
 }
