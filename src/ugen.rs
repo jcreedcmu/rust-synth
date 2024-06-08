@@ -28,13 +28,13 @@ pub trait Ugen: std::fmt::Debug + Sync + Send {
 #[derive(TS)]
 #[ts(export)]
 pub enum UgenSpec {
-  LowPass { src: usize, dst: usize },
-  AllPass { src: usize, dst: usize, ctl: usize },
+  LowPass { src: usize, dst: usize, ci: usize },
+  AllPass { src: usize, dst: usize, ci: usize },
   MidiManager { dst: usize, ci: usize },
   UgenGroup { dst: usize },
   Meter { src: usize },
-  Gain { src: usize, dst: usize },
-  Reverb { src: usize, dst: usize },
+  Gain { src: usize, dst: usize, ci: usize },
+  Reverb { src: usize, dst: usize, ci: usize },
 }
 
 #[derive(Debug)]
@@ -70,13 +70,13 @@ impl Ugen for UgenState {
 impl UgenState {
   pub fn new(spec: UgenSpec) -> Self {
     match spec {
-      UgenSpec::LowPass { src, dst } => UgenState::Lowpass(LowpassState::new(src, dst)),
-      UgenSpec::AllPass { src, dst, ctl } => UgenState::Allpass(AllpassState::new(src, dst, ctl)),
+      UgenSpec::LowPass { src, dst, ci } => UgenState::Lowpass(LowpassState::new(src, dst, ci)),
+      UgenSpec::AllPass { src, dst, ci } => UgenState::Allpass(AllpassState::new(src, dst, ci)),
       UgenSpec::MidiManager { dst, ci } => UgenState::MidiManager(MidiManagerState::new(dst, ci)),
       UgenSpec::UgenGroup { dst } => UgenState::UgenGroup(UgenGroupState::new(dst)),
       UgenSpec::Meter { src } => UgenState::Meter(MeterState::new(src)),
-      UgenSpec::Gain { src, dst } => UgenState::Gain(GainState::new(src, dst)),
-      UgenSpec::Reverb { src, dst } => UgenState::Reverb(ReverbState::new(src, dst)),
+      UgenSpec::Gain { src, dst, ci } => UgenState::Gain(GainState::new(src, dst, ci)),
+      UgenSpec::Reverb { src, dst, ci } => UgenState::Reverb(ReverbState::new(src, dst, ci)),
     }
   }
 }

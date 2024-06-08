@@ -37,16 +37,18 @@ pub struct LowpassState {
   src: usize,
   dst: usize,
   ix: usize,
+  ci: usize,
   offset: i32,
   memory_rec: Vec<f32>,
   memory_input: Vec<f32>,
 }
 
 impl LowpassState {
-  pub fn new(src: usize, dst: usize) -> Self {
+  pub fn new(src: usize, dst: usize, ci: usize) -> Self {
     LowpassState {
       src,
       dst,
+      ci,
       offset: 0,
       ix: 0,
       memory_rec: vec![0.; HISTORY_SIZE],
@@ -90,8 +92,7 @@ impl LowpassState {
 
 impl Ugen for LowpassState {
   fn run(&mut self, gen: GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
-    // XXX hard coded index
-    match &ctl[1] {
+    match &ctl[self.ci] {
       Some(ControlBlock::Low(ctl)) => self.ctl_run(gen, tick_s, &ctl),
       _ => false,
     }

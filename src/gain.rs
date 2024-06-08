@@ -24,11 +24,12 @@ pub struct GainControlBlock {
 pub struct GainState {
   src: usize,
   dst: usize,
+  ci: usize,
 }
 
 impl GainState {
-  pub fn new(src: usize, dst: usize) -> Self {
-    GainState { src, dst }
+  pub fn new(src: usize, dst: usize, ci: usize) -> Self {
+    GainState { src, dst, ci }
   }
 
   fn ctl_run(&mut self, gen: GenState, ctl: &GainControlBlock) -> bool {
@@ -41,8 +42,7 @@ impl GainState {
 
 impl Ugen for GainState {
   fn run(&mut self, gen: GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
-    // XXX hard coded index
-    match &ctl[2] {
+    match &ctl[self.ci] {
       Some(ControlBlock::Gain(ctl)) => self.ctl_run(gen, &ctl),
       _ => false,
     }

@@ -319,10 +319,10 @@ function App(props: AppProps): JSX.Element {
         t: 'reconfigure', specs: [
           { t: 'midiManager', dst: BUS_DRY, ci: DEFAULT_REASONABLE_CONTROL_BLOCK },
           { t: 'ugenGroup', dst: BUS_DRY },
-          { t: 'allPass', src: BUS_DRY, dst: BUS_PRELOW, ctl: DEFAULT_ALLPASS_CONTROL_BLOCK },
+          { t: 'allPass', src: BUS_DRY, dst: BUS_PRELOW, ci: DEFAULT_ALLPASS_CONTROL_BLOCK },
           //          { t: 'lowPass', src: BUS_PRELOW, dst: BUS_PREGAIN },
-          { t: 'reverb', src: BUS_PRELOW, dst: BUS_PREGAIN },
-          { t: 'gain', src: BUS_PREGAIN, dst: BUS_OUT },
+          { t: 'reverb', src: BUS_PRELOW, dst: BUS_PREGAIN, ci: DEFAULT_REVERB_CONTROL_BLOCK },
+          { t: 'gain', src: BUS_PREGAIN, dst: BUS_OUT, ci: DEFAULT_GAIN_CONTROL_BLOCK },
           { t: 'meter', src: BUS_OUT },
         ]
       });

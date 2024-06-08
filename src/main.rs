@@ -26,8 +26,7 @@ mod webserver;
 
 use audio::{BUF_SIZE, CHANNELS};
 use clap::Parser;
-use consts::{BUS_DRY, BUS_OUT};
-use lowpass::LowpassState;
+use consts::BUS_OUT;
 use midi::{Message, MidiService};
 use sequencer::sequencer_loop;
 use state::{State, StateGuard, DEFAULT_DRUM_CONTROL_BLOCK};
@@ -171,8 +170,8 @@ fn run() -> Result<(), Box<dyn Error>> {
   let mut state = State::new(mono_buf_size);
 
   state.fixed_ugens = vec![
-    ugen::UgenState::UgenGroup(UgenGroupState::new(BUS_DRY)),
-    ugen::UgenState::Lowpass(LowpassState::new(BUS_DRY, BUS_OUT)),
+    // send midi notes straight to out
+    ugen::UgenState::UgenGroup(UgenGroupState::new(BUS_OUT)),
   ];
 
   let state = Arc::new(Mutex::new(state));

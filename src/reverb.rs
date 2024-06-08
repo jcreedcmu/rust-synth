@@ -35,6 +35,7 @@ pub struct ReverbState {
   src: usize,
   dst: usize,
   freeverb_state: Freeverb,
+  ci: usize,
 }
 
 impl Debug for ReverbState {
@@ -44,7 +45,7 @@ impl Debug for ReverbState {
 }
 
 impl ReverbState {
-  pub fn new(src: usize, dst: usize) -> Self {
+  pub fn new(src: usize, dst: usize, ci: usize) -> Self {
     let mut freeverb_state = Freeverb::new(44100);
     freeverb_state.set_room_size(0.2f64);
     freeverb_state.set_dry(0.9f64);
@@ -53,6 +54,7 @@ impl ReverbState {
       src,
       dst,
       freeverb_state,
+      ci,
     }
   }
 
@@ -73,8 +75,7 @@ impl ReverbState {
 
 impl Ugen for ReverbState {
   fn run(&mut self, gen: GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
-    // XXX hard coded index
-    match &ctl[4] {
+    match &ctl[self.ci] {
       Some(ControlBlock::Reverb(ctl)) => self.ctl_run(gen, tick_s, &ctl),
       _ => false,
     }

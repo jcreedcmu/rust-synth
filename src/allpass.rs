@@ -10,7 +10,7 @@ const HISTORY_SIZE: usize = 35000;
 pub struct AllpassState {
   src: usize,
   dst: usize,
-  ctl: usize,
+  ci: usize,
   ix: usize,
   memory_rec: Vec<f32>,
 }
@@ -26,11 +26,11 @@ pub struct AllpassControlBlock {
 }
 
 impl AllpassState {
-  pub fn new(src: usize, dst: usize, ctl: usize) -> Self {
+  pub fn new(src: usize, dst: usize, ci: usize) -> Self {
     AllpassState {
       src,
       dst,
-      ctl,
+      ci,
       ix: 0,
       memory_rec: vec![0.; HISTORY_SIZE],
     }
@@ -75,7 +75,7 @@ impl AllpassState {
 
 impl Ugen for AllpassState {
   fn run(&mut self, gen: GenState, tick_s: f32, ctl: &ControlBlocks) -> bool {
-    match &ctl[self.ctl] {
+    match &ctl[self.ci] {
       Some(ControlBlock::All(ctl)) => self.ctl_run(gen, tick_s, ctl),
       _ => false,
     }
