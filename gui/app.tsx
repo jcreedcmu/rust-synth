@@ -7,11 +7,8 @@ import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
 import { useEffectfulReducer } from './use-effectful-reducer';
 import { DbMeter } from './db-meter';
 
-// Should match consts.rs
+// BUS_OUT should match consts.rs, rest are conventional
 const BUS_OUT = 0;
-const BUS_DRY = 1;
-const BUS_PREGAIN = 2;
-const BUS_PRELOW = 3;
 const MAX_GAIN = 40;
 
 type AppProps = {
@@ -315,14 +312,20 @@ function App(props: AppProps): JSX.Element {
       dispatch({ t: 'setConnected', connected: true });
       console.log('ws opened on browser');
       wsco.current = wsc;
+
+      const BUS_DRY = 1;
+      const BUS_PREGAIN = 2;
+      const BUS_PRELOW = 3;
+
       send({
         t: 'reconfigure', specs: [
           { t: 'midiManager', dst: BUS_DRY, ci: DEFAULT_REASONABLE_CONTROL_BLOCK },
           { t: 'ugenGroup', dst: BUS_DRY },
-          { t: 'allPass', src: BUS_DRY, dst: BUS_PRELOW, ci: DEFAULT_ALLPASS_CONTROL_BLOCK },
-          //          { t: 'lowPass', src: BUS_PRELOW, dst: BUS_PREGAIN },
-          { t: 'reverb', src: BUS_PRELOW, dst: BUS_PREGAIN, ci: DEFAULT_REVERB_CONTROL_BLOCK },
+          //          { t: 'allPass', src: BUS_DRY, dst: BUS_PRELOW, ci: DEFAULT_ALLPASS_CONTROL_BLOCK },
+          { t: 'reverb', src: BUS_DRY, dst: BUS_PRELOW, ci: DEFAULT_REVERB_CONTROL_BLOCK },
+          { t: 'lowPass', src: BUS_PRELOW, dst: BUS_PREGAIN, ci: DEFAULT_LOW_PASS_CONTROL_BLOCK },
           { t: 'gain', src: BUS_PREGAIN, dst: BUS_OUT, ci: DEFAULT_GAIN_CONTROL_BLOCK },
+
           { t: 'meter', src: BUS_OUT },
         ]
       });
