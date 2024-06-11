@@ -32,7 +32,6 @@ export type Action =
   | { t: 'setAllpassNaive', iface_allpass_naive: boolean }
   | { t: 'setMeterValues', msg: MeterData }
   | { t: 'setLowpassState', lowpassState: LowpassWidgetState }
-  | { t: 'setText', text: string }
   | { t: 'setRoomSize', iface_roomsize: number }
   | { t: 'setWet', iface_wet: number }
   ;
@@ -182,11 +181,6 @@ function reduce_inner(state: State, action: Action): State {
       return produce(state, s => {
         s.lowpassState = lowpassState;
         s.outbox.push(msg);
-      });
-    }
-    case 'setText': {
-      return produce(state, s => {
-        s.text = action.text;
       });
     }
     case 'setRoomSize': {
@@ -450,14 +444,6 @@ function App(props: AppProps): JSX.Element {
     dispatch({ t: 'setHighpass', iface_highpass: parseInt((e.target as HTMLInputElement).value) });
   };
 
-  const textareaOnInput = (e: React.FormEvent) => {
-    dispatch({ t: 'setText', text: (e.target as HTMLInputElement).value });
-  };
-
-  const updateText = (e: React.MouseEvent) => {
-    send({ t: 'setText', text: state.text });
-  };
-
   //  <Chart lowp_param={0.50} />
 
   const { connected, iface_gain, iface_highpass, allpass, meterData, text } = state;
@@ -496,8 +482,6 @@ function App(props: AppProps): JSX.Element {
     <br />
     <DbMeter label="RMS" value={meterData.level} /><br />
     <DbMeter label="Peak" value={meterData.peak} /><br />
-    <textarea value={text} onInput={textareaOnInput}>d</textarea>
-    <button onMouseDown={updateText}>update</button><br />
     <RollEditor {...rollEditorProps} />
   </div>;
 }
