@@ -5,7 +5,6 @@ use std::sync::{Arc, Mutex};
 use serde::{Deserialize, Serialize};
 
 use crate::allpass::AllpassControlBlock;
-use crate::audio::HALF_BUF_SIZE;
 use crate::consts::{AUDIO_BUS_LENGTH, BOTTOM_NOTE};
 use crate::drum::DrumControlBlock;
 use crate::gain::GainControlBlock;
@@ -116,7 +115,6 @@ pub struct State {
   pub control_blocks: ControlBlocks,
   pub wavetables: Wavetables,
   pub sequencer: Sequencer,
-  pub engine: NoDebug<glicol::Engine<HALF_BUF_SIZE>>,
 }
 
 pub type StateGuard = Arc<Mutex<State>>;
@@ -140,9 +138,6 @@ impl State {
       wavetables: Wavetables::new(),
       audio_bus: vec![vec![0.; buf_size]; AUDIO_BUS_LENGTH],
       websocket: None,
-      engine: NoDebug {
-        body: glicol::Engine::<HALF_BUF_SIZE>::new(),
-      },
     }
   }
 

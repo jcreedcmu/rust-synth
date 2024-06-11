@@ -124,11 +124,6 @@ impl AudioService {
       let mut buf = [0i16; BUF_SIZE];
       let mut now: Instant = Instant::now();
 
-      {
-        let mut s: MutexGuard<State> = depoison(sg.lock())?;
-        s.engine.update_with_code(r#"o: 0"#);
-      }
-
       loop {
         {
           if do_profile(&args, iters) {
@@ -148,12 +143,6 @@ impl AudioService {
             let samp = convert_sample(s.audio_bus[BUS_OUT][ix]);
             ch[0] = samp;
             ch[1] = samp;
-          }
-
-          let (block, other) = s.engine.next_block(vec![]);
-          for (ix, ch) in buf.chunks_mut(CHANNELS as usize).enumerate() {
-            ch[0] += convert_sample(block[0][ix]);
-            ch[1] += convert_sample(block[1][ix]);
           }
 
           if s.write_to_file {
