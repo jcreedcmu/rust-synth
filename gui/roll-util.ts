@@ -1,4 +1,4 @@
-import { Note, Point } from './types'
+import { Note, Point, Rect } from './types'
 
 export const SCALE = 2; // units: pixels per fat pixel
 export const PIANO_H = 97;
@@ -53,3 +53,42 @@ export function drawBox(d: CanvasRenderingContext2D, x: number, y: number, w: nu
 
 // 0 for white key, 1 for black key
 export const keytype = [0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0];
+
+export function y0pitch_of_scrollOctave(scrollOctave: number) {
+  return 12 * (9 - scrollOctave) - 1;
+}
+
+export function get_camera(scrollOctave: number): Point {
+  return {
+    x: PIANO_WIDTH + GUTTER_WIDTH,
+    y: y0pitch_of_scrollOctave(scrollOctave) * PITCH_HEIGHT * SCALE
+  };
+}
+
+export const noteColors = [
+  "#7882e2",
+  "#38396e",
+  "#df4f48",
+  "#696800",
+  "#fffd58",
+  "#f47937",
+  "#782a00",
+  "#71d256",
+  "#790061",
+  "#d343b6",
+  "#075152",
+  "#75c4c5",
+];
+
+export type Camera = Point;
+
+export function rect_of_note(n: Note, c: Camera): Rect {
+  return [c.x + n.time[0] * PIXELS_PER_TICK,
+  c.y - n.pitch * PITCH_HEIGHT * SCALE,
+  (n.time[1] - n.time[0]) * PIXELS_PER_TICK + SCALE,
+  SCALE * (PITCH_HEIGHT + 1)];
+}
+
+export function inset(rect: Rect): Rect {
+  return [rect[0] + SCALE, rect[1] + SCALE, rect[2] - 2 * SCALE, rect[3] - 2 * SCALE];
+}

@@ -1,5 +1,6 @@
 import { RollEditorProps, Style } from "./roll";
-import { BLACK_NOTE_WIDTH, DARKER_DARK_GRAY, FAT_PIXELS_PER_TICK, GUTTER_WIDTH, LIGHTER_DARK_GRAY, PIANO_H, PIANO_OCTAVE_VSPACE, PIANO_W, PIANO_WIDTH, PITCH_HEIGHT, PIXELS_PER_TICK, SCALE, drawBox, keytype } from "./roll-util";
+import { BLACK_NOTE_WIDTH, DARKER_DARK_GRAY, FAT_PIXELS_PER_TICK, GUTTER_WIDTH, LIGHTER_DARK_GRAY, PIANO_H, PIANO_OCTAVE_VSPACE, PIANO_W, PIANO_WIDTH, PITCH_HEIGHT, PIXELS_PER_TICK, SCALE, noteColors, drawBox, get_camera, keytype, rect_of_note, Camera, inset } from "./roll-util";
+import { Note } from "./types";
 import { CanvasInfo, useCanvas } from "./use-canvas";
 
 export type RollEditorMainProps = RollEditorProps & { scroll: number };
@@ -53,9 +54,19 @@ function draw_staff_octave(d: CanvasRenderingContext2D, x: number, y: number, w:
   d.restore();
 }
 
+function draw_notes(d: CanvasRenderingContext2D, notes: Note[], camera: Camera) {
+  notes.forEach(note => {
+    const r = rect_of_note(note, camera);
+    d.fillStyle = "black";
+    d.fillRect.apply(d, r);
+    d.fillStyle = noteColors[note.pitch % 12];
+    d.fillRect.apply(d, inset(r));
+  });
+}
+
 // XXX cut down rolleditormainprops to what's necessary
 function render(ci: CanvasInfo, props: RollEditorMainProps) {
-  const { pattern } = props;
+  const { pattern, scrollOctave } = props;
   const { notes, length } = pattern;
   const { d } = ci;
   d.fillStyle = LIGHTER_DARK_GRAY;
@@ -67,6 +78,7 @@ function render(ci: CanvasInfo, props: RollEditorMainProps) {
     draw_gutter(d, PIANO_WIDTH + SCALE, oc * PIANO_OCTAVE_VSPACE, 10, props.style);
     draw_staff_octave(d, PIANO_WIDTH + GUTTER_WIDTH, 0 + oc * PIANO_OCTAVE_VSPACE, length * FAT_PIXELS_PER_TICK + 1, props.style, props.gridSize);
   }
+  draw_notes(d, notes, get_camera(scrollOctave));
 }
 
 export function RollEditorMain(props: RollEditorMainProps): JSX.Element {
