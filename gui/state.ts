@@ -1,6 +1,6 @@
 import { LowpassWidgetState } from './lowpass-widget';
 import { MeterData, WebMessage } from './protocol';
-import { RollEditorProps } from './roll';
+import { RollEditorState } from './roll';
 import { rollDims } from './roll-util';
 
 export type AppProps = {
@@ -22,6 +22,8 @@ export type Action =
   | { t: 'setRoomSize', iface_roomsize: number }
   | { t: 'setWet', iface_wet: number }
   ;
+
+export type Dispatch = (action: Action) => void;
 
 export type AllpassState = {
   iface_allpass_gain: number,
@@ -45,7 +47,7 @@ export type State = {
   meterData: MeterData,
   lowpassState: LowpassWidgetState,
   text: string,
-  rollEditorState: RollEditorProps,
+  rollEditorState: RollEditorState,
 }
 export function mkState(): State {
   return {

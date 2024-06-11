@@ -1,6 +1,9 @@
-import { Pattern, Note } from "./types";
+import { CSSProperties } from "react";
+import { RollEditorMain } from "./roll-editor-main";
+import { RollEditorOverlay } from "./roll-editor-overlay";
 import { mpoint } from "./roll-util";
-import { useCanvas, CanvasInfo } from './use-canvas';
+import { Dispatch } from "./state";
+import { Note, Pattern } from "./types";
 
 export type Style = "piano" | "drums";
 
@@ -17,7 +20,7 @@ export type DerivedState = {
   previewNote: Note | null,
 }
 
-export type RollEditorProps = {
+export type RollEditorState = {
   offsetTicks: number | null,
   debugOffsetTicks: number | null,
   useOffsetTicks: number,
@@ -29,14 +32,34 @@ export type RollEditorProps = {
   pattern: Pattern,
 } & DerivedState & { w: number, h: number };
 
-function render(ci: CanvasInfo, state: RollEditorProps) {
-  const { d } = ci;
-  d.fillRect(0, 0, ci.size.x, ci.size.y);
-}
+export type RollEditorProps = RollEditorState & { dispatch: Dispatch };
+
 
 export function RollEditor(props: RollEditorProps): JSX.Element {
-  function onLoad() { }
-  const deps = [props];
-  const [cref, mc] = useCanvas(props, render, deps, onLoad);
-  return <canvas style={{ width: props.w, height: props.h }} ref={cref} />
+  const { dispatch } = props;
+
+  const vscroller = <div></div>; // XXX
+  const hscroller = <div></div>; // XXX
+
+  const style: CSSProperties = {
+    width: props.w, height: props.h,
+    position: "relative", display: "inline-block"
+  };
+
+  const cursorState = props.mouseState.t == "resizeNote" ? "resize" : undefined;
+  function goBack() {
+    //// XXX go back to editing song
+    // dispatch({ t: "EditSong" })
+  }
+  const elt = <div>
+    <img className="button" src="img/back.png" onClick={goBack}></img><br />
+    <div style={style} className={cursorState} >
+      <RollEditorMain {...props} scroll={0} />
+      <RollEditorOverlay {...props} />
+      {vscroller}
+      {hscroller}
+    </div>
+  </div>;
+  return elt;
+
 }

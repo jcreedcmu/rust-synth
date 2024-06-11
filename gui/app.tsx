@@ -5,7 +5,7 @@ import { DbMeter } from './db-meter';
 import { LowpassCfg } from './lowpass-widget';
 import { Adsr, ControlBlock, SynthMessage, Tap, WebMessage } from './protocol';
 import { RollEditor } from './roll';
-import { Action, AllpassState, AppProps, Effect, State, WebSocketContainer, mkState } from './state';
+import { Action, AllpassState, AppProps, Dispatch, Effect, State, WebSocketContainer, mkState } from './state';
 import { useEffectfulReducer } from './use-effectful-reducer';
 
 // BUS_OUT should match consts.rs, rest are conventional
@@ -208,8 +208,6 @@ function drum_adsr(dur_scale: number): Adsr {
   };
 }
 
-export type Dispatch = (action: Action) => void;
-
 function App(props: AppProps): JSX.Element {
   const [state, dispatch] = useEffectfulReducer<Action, State, Effect>(mkState(), reduce, doEffect);
   const wsco = useRef<WebSocketContainer | undefined>(undefined);
@@ -398,6 +396,6 @@ function App(props: AppProps): JSX.Element {
     <br />
     <DbMeter label="RMS" value={meterData.level} /><br />
     <DbMeter label="Peak" value={meterData.peak} /><br />
-    <RollEditor {...rollEditorProps} />
+    <RollEditor {...rollEditorProps} dispatch={dispatch} />
   </div>;
 }
