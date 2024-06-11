@@ -14,6 +14,9 @@ export const PIXELS_PER_TICK = FAT_PIXELS_PER_TICK * SCALE;
 export const PITCH_HEIGHT = 8;
 export const BLACK_NOTE_WIDTH = 34;
 
+export const LIGHTER_DARK_GRAY = "#262626";
+export const DARKER_DARK_GRAY = "#141414";
+
 export const rollDims = {
   w: PIANO_WIDTH + GUTTER_WIDTH + SCORE_WIDTH,
   h: PIANO_OCTAVE_VSPACE * 3 + SCALE
@@ -40,3 +43,13 @@ export type RollMode = {
 // XXX rename 'time' to 'ticks'
 // XXX rename 'mpoint' to 'Mpoint'
 export type mpoint = { pitch: number, time: number } & Point // point also in "musical coordinates"
+
+export function drawBox(d: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, border: number, c: string, bc: string) {
+  d.fillStyle = bc;
+  d.fillRect(x * SCALE, y * SCALE, w * SCALE, h * SCALE);
+  d.fillStyle = c;
+  d.fillRect((x + border) * SCALE, (y + border) * SCALE, (w - 2 * border) * SCALE, (h - 2 * border) * SCALE);
+}
+
+// 0 for white key, 1 for black key
+export const keytype = [0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0];

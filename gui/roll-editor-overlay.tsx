@@ -6,7 +6,6 @@ export type RollEditorOverlayProps = RollEditorProps;
 // XXX cut down rolleditoroverlayprops to what's necessary
 function render(ci: CanvasInfo, state: RollEditorOverlayProps) {
   const { d } = ci;
-  d.fillRect(0, 0, ci.size.x, ci.size.y);
 }
 
 export function RollEditorOverlay(props: RollEditorOverlayProps): JSX.Element {
@@ -14,5 +13,5 @@ export function RollEditorOverlay(props: RollEditorOverlayProps): JSX.Element {
   function onLoad() { }
 
   const [cref, mc] = useCanvas(props, render, deps, onLoad);
-  return <canvas style={{ width: props.w, height: props.h }} ref={cref} />
+  return <canvas style={{ position: 'absolute', width: props.w, height: props.h }} ref={cref} />
 }
