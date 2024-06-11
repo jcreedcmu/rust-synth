@@ -6,6 +6,7 @@ import { Chart } from './chart';
 import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
 import { useEffectfulReducer } from './use-effectful-reducer';
 import { DbMeter } from './db-meter';
+import { RollEditor, RollEditorProps } from './roll';
 
 // BUS_OUT should match consts.rs, rest are conventional
 const BUS_OUT = 0;
@@ -59,6 +60,7 @@ export type State = {
   meterData: MeterData,
   lowpassState: LowpassWidgetState,
   text: string,
+  rollEditorState: RollEditorProps,
 }
 
 type Effect =
@@ -240,6 +242,20 @@ function mkState(): State {
     meterData: { level: 0, peak: 0 },
     lowpassState: [{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }],
     text: '',
+    rollEditorState: {
+      offsetTicks: 0,
+      debugOffsetTicks: 0,
+      useOffsetTicks: 0,
+      mouseState: { t: 'hover', mp: null },
+      gridSize: 1,
+      noteSize: 1,
+      scrollOctave: 3,
+      style: 'piano',
+      pattern: { length: 32, notes: [] },
+      h: 100,
+      w: 100,
+      previewNote: null,
+    }
   };
 }
 
@@ -446,6 +462,8 @@ function App(props: AppProps): JSX.Element {
 
   const { connected, iface_gain, iface_highpass, allpass, meterData, text } = state;
 
+  const rollEditorProps = state.rollEditorState;
+
   return <div>
     <button disabled={!connected} onMouseDown={() => { send({ t: 'drum' }) }}>Action</button><br />
     <button disabled={!connected} onMouseDown={() => { send({ t: 'quit' }) }}>Quit</button><br />
@@ -479,6 +497,7 @@ function App(props: AppProps): JSX.Element {
     <DbMeter label="RMS" value={meterData.level} /><br />
     <DbMeter label="Peak" value={meterData.peak} /><br />
     <textarea value={text} onInput={textareaOnInput}>d</textarea>
-    <button onMouseDown={updateText}>update</button>
+    <button onMouseDown={updateText}>update</button><br />
+    <RollEditor {...rollEditorProps} />
   </div>;
 }
