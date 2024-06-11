@@ -1,6 +1,7 @@
 import { LowpassWidgetState } from './lowpass-widget';
 import { MeterData, WebMessage } from './protocol';
 import { RollEditorProps } from './roll';
+import { rollDims } from './roll-util';
 
 export type AppProps = {
 
@@ -78,8 +79,9 @@ export function mkState(): State {
       scrollOctave: 3,
       style: 'piano',
       pattern: { length: 32, notes: [] },
-      h: 100,
-      w: 100,
+      // XXX Fix this to be a Point:
+      h: rollDims.w,
+      w: rollDims.h,
       previewNote: null,
     }
   };
