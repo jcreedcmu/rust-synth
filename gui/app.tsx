@@ -1,70 +1,20 @@
-import ReactDOM from 'react-dom';
-import { CSSProperties, useEffect, useReducer, useRef, useState } from 'react';
-import { Adsr, ControlBlock, LowpassControlBlock, MeterData, SynthMessage, Tap, WebMessage } from './protocol';
 import { produce } from 'immer';
-import { Chart } from './chart';
-import { LowpassCfg, LowpassWidgetState } from './lowpass-widget';
-import { useEffectfulReducer } from './use-effectful-reducer';
+import { CSSProperties, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { DbMeter } from './db-meter';
-import { RollEditor, RollEditorProps } from './roll';
+import { LowpassCfg } from './lowpass-widget';
+import { Adsr, ControlBlock, SynthMessage, Tap, WebMessage } from './protocol';
+import { RollEditor } from './roll';
+import { Action, AllpassState, AppProps, Effect, State, WebSocketContainer, mkState } from './state';
+import { useEffectfulReducer } from './use-effectful-reducer';
 
 // BUS_OUT should match consts.rs, rest are conventional
 const BUS_OUT = 0;
 const MAX_GAIN = 40;
 
-type AppProps = {
-
-};
-
 export function init(props: AppProps) {
   ReactDOM.render(<App {...props} />, document.querySelector('.app') as any);
 }
-
-type WebSocketContainer = { ws: WebSocket };
-
-export type Action =
-  | { t: 'setSequencer', inst: number, pat: number, on: boolean }
-  | { t: 'setConnected', connected: boolean }
-  | { t: 'setGain', iface_gain: number }
-  | { t: 'setHighpass', iface_highpass: number }
-  | { t: 'setAllpassDelay', iface_allpass_delay: number }
-  | { t: 'setAllpassGain', iface_allpass_gain: number }
-  | { t: 'setAllpassNaive', iface_allpass_naive: boolean }
-  | { t: 'setMeterValues', msg: MeterData }
-  | { t: 'setLowpassState', lowpassState: LowpassWidgetState }
-  | { t: 'setRoomSize', iface_roomsize: number }
-  | { t: 'setWet', iface_wet: number }
-  ;
-
-type SequencerProps = {
-  table: boolean[][],
-  dispatch(action: Action): void;
-}
-
-export type AllpassState = {
-  iface_allpass_gain: number,
-  iface_allpass_delay: number,
-  iface_allpass_naive: boolean,
-};
-
-export type State = {
-  table: boolean[][],
-  connected: boolean,
-  iface_gain: number,
-  iface_highpass: number,
-  iface_roomsize: number,
-  iface_wet: number,
-  allpass: AllpassState;
-  outbox: WebMessage[],
-  meterData: MeterData,
-  lowpassState: LowpassWidgetState,
-  text: string,
-  rollEditorState: RollEditorProps,
-}
-
-type Effect =
-  | { t: 'send', msg: WebMessage }
-  ;
 
 function reduce(state: State, action: Action): { state: State, effects: Effect[] } {
   let newState = reduce_inner(state, action);
@@ -214,43 +164,9 @@ function reduce_inner(state: State, action: Action): State {
   }
 }
 
-function mkState(): State {
-  return {
-    table: [
-      [false, false], [false, false], [false, false], [false, false],
-      [false, false], [false, false], [false, false], [false, false],
-      [false, false], [false, false], [false, false], [false, false],
-      [false, false], [false, false], [false, false], [false, false]
-    ],
-    outbox: [],
-    connected: true,
-    iface_gain: 10,
-    iface_highpass: 50,
-    iface_roomsize: 50,
-    iface_wet: 50,
-    allpass: {
-      iface_allpass_gain: 50,
-      iface_allpass_delay: 50,
-      iface_allpass_naive: true,
-    },
-    meterData: { level: 0, peak: 0 },
-    lowpassState: [{ pos: 1, weight: 90 }, { pos: 2620, weight: 10 }],
-    text: '',
-    rollEditorState: {
-      offsetTicks: 0,
-      debugOffsetTicks: 0,
-      useOffsetTicks: 0,
-      mouseState: { t: 'hover', mp: null },
-      gridSize: 1,
-      noteSize: 1,
-      scrollOctave: 3,
-      style: 'piano',
-      pattern: { length: 32, notes: [] },
-      h: 100,
-      w: 100,
-      previewNote: null,
-    }
-  };
+type SequencerProps = {
+  table: boolean[][],
+  dispatch(action: Action): void;
 }
 
 function Sequencer(props: SequencerProps): JSX.Element {
