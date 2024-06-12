@@ -1,7 +1,8 @@
 import { produce } from 'immer';
 import { ControlBlock, Tap, WebMessage } from './protocol';
-import { Action, Effect, State } from './state';
+import { Action, Effect, RollAction, State } from './state';
 import { MAX_GAIN, DEFAULT_GAIN_CONTROL_BLOCK, DEFAULT_LOW_PASS_CONTROL_BLOCK, allpassMsg, DEFAULT_REVERB_CONTROL_BLOCK } from './app';
+import { RollEditorState } from './roll';
 
 export function reduce(state: State, action: Action): { state: State; effects: Effect[]; } {
   let newState = reduce_inner(state, action);
@@ -10,6 +11,14 @@ export function reduce(state: State, action: Action): { state: State; effects: E
     s.outbox = [];
   });
   return { state: newState, effects };
+}
+
+function reduceRollAction(state: RollEditorState, action: RollAction): RollEditorState {
+  switch (action.t) {
+    case 'mousedown': {
+      return state;
+    }
+  }
 }
 
 function reduce_inner(state: State, action: Action): State {
@@ -141,6 +150,12 @@ function reduce_inner(state: State, action: Action): State {
     case 'Vscroll': {
       return produce(state, s => {
         s.rollEditorState.scrollOctave = action.top;
+      });
+    }
+    case 'rollAction': {
+      const newRollState = reduceRollAction(state.rollEditorState, action.action);
+      return produce(state, s => {
+        s.rollEditorState = newRollState;
       });
     }
   }

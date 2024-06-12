@@ -29,3 +29,6 @@ export type Score = {
   song: Song,
   patterns: { [P in string]: Pattern },
 };
+
+export type SzRect = { p: Point, sz: Point };
+export type Color = { r: number, g: number, b: number, a: number };

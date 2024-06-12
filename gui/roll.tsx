@@ -1,8 +1,8 @@
 import { CSSProperties } from "react";
 import { RollEditorMain } from "./roll-editor-main";
-import { RollEditorOverlay } from "./roll-editor-overlay";
+import { RollEditorOverlay, RollEditorOverlayProps } from "./roll-editor-overlay";
 import { GUTTER_WIDTH, PIANO_WIDTH, getScrollbarDims, mpoint } from "./roll-util";
-import { Dispatch } from "./state";
+import { Action, Dispatch, RollAction } from "./state";
 import { Note, Pattern } from "./types";
 import { VScrollBar } from "./vscrollbar";
 
@@ -33,7 +33,8 @@ export type RollEditorState = {
   pattern: Pattern,
 } & DerivedState & { w: number, h: number };
 
-export type RollEditorProps = RollEditorState & { dispatch: Dispatch };
+export type RollDispatch = (action: RollAction) => void;
+export type RollEditorProps = RollEditorState & { dispatch: Dispatch }; // XXX change this to RollDispatch
 
 
 export function RollEditor(props: RollEditorProps): JSX.Element {
@@ -69,11 +70,12 @@ export function RollEditor(props: RollEditorProps): JSX.Element {
     //// XXX go back to editing song
     // dispatch({ t: "EditSong" })
   }
+  const overlayProps: RollEditorOverlayProps = { ...props, dispatch: action => dispatch({ t: 'rollAction', action }) };
   const elt = <div>
     <img className="button" src="img/back.png" onClick={goBack}></img><br />
     <div style={style} className={cursorState} >
       <RollEditorMain {...props} scroll={0} />
-      <RollEditorOverlay {...props} />
+      <RollEditorOverlay {...overlayProps} />
       {vscroller}
       {hscroller}
     </div>

@@ -3,12 +3,17 @@ import { MeterData, WebMessage } from './protocol';
 import { RollEditorState } from './roll';
 import { rollDims } from './roll-util';
 import { score } from './score';
+import { Point } from './types';
 
 export type AppProps = {
 
 };
 
 export type WebSocketContainer = { ws: WebSocket };
+
+export type RollAction =
+  | { t: 'mousedown', p_in_canvas: Point }
+  ;
 
 export type Action =
   | { t: 'setSequencer', inst: number, pat: number, on: boolean }
@@ -22,7 +27,8 @@ export type Action =
   | { t: 'setLowpassState', lowpassState: LowpassWidgetState }
   | { t: 'setRoomSize', iface_roomsize: number }
   | { t: 'setWet', iface_wet: number }
-  | { t: 'Vscroll', top: number }
+  | { t: 'Vscroll', top: number } // XXX move under rollAction
+  | { t: 'rollAction', action: RollAction }
   ;
 
 export type Dispatch = (action: Action) => void;
