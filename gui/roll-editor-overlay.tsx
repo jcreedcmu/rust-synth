@@ -48,5 +48,8 @@ export function RollEditorOverlay(props: RollEditorOverlayProps): JSX.Element {
   return <canvas style={{ position: 'absolute', width: props.w, height: props.h }}
     ref={cref}
     onMouseDown={e => dispatch({ t: 'Mousedown', p_in_canvas: rrelpos(e) })}
+    onMouseMove={e => dispatch({ t: 'Mousemove', p_in_canvas: rrelpos(e) })}
+    onMouseUp={e => dispatch({ t: 'Mouseup' })}
+    onMouseLeave={e => dispatch({ t: 'Mouseleave' })}
   />
 }
