@@ -76,6 +76,8 @@ export function get_camera(scrollOctave: number): Point {
   };
 }
 
+export const note_name = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+
 export const noteColors = [
   "#7882e2",
   "#38396e",
