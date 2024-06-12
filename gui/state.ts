@@ -12,7 +12,10 @@ export type AppProps = {
 export type WebSocketContainer = { ws: WebSocket };
 
 export type RollAction =
-  | { t: 'mousedown', p_in_canvas: Point }
+  | { t: 'Mousemove'; p_in_canvas: Point; }
+  | { t: 'Mousedown'; p_in_canvas: Point; extra?: string }
+  | { t: 'Mouseup' }
+  | { t: 'Mouseleave' }
   ;
 
 export type Action =

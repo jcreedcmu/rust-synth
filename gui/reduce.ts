@@ -15,7 +15,16 @@ export function reduce(state: State, action: Action): { state: State; effects: E
 
 function reduceRollAction(state: RollEditorState, action: RollAction): RollEditorState {
   switch (action.t) {
-    case 'mousedown': {
+    case 'Mousedown': {
+      return state;
+    }
+    case 'Mousemove': {
+      return state;
+    }
+    case 'Mouseup': {
+      return state;
+    }
+    case 'Mouseleave': {
       return state;
     }
   }
