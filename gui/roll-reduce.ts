@@ -1,36 +1,49 @@
 import { RollEditorState } from './roll';
 import { produce } from 'immer';
 import { GUTTER_WIDTH, PIANO_WIDTH, PITCH_HEIGHT, PIXELS_PER_TICK, RollAction, RollMouseAction, RollMouseState, SCALE, mpoint, y0pitch_of_scrollOctave } from './roll-util';
-import { findLastIndex, unreachable } from './util';
-import { getCurrentNotes } from './accessors';
-import { Note, Point } from './types';
+import { findLast, findLastIndex, unreachable } from './util';
+import { getCurrentNotes, updateCurrentNotes } from './accessors';
+import { IdNote, Note, Point } from './types';
 
+function find_note_at_mpoint<T extends Note>(notes: T[], mp: mpoint): T | undefined {
+  return findLast(notes, note => {
+    return (note.pitch == mp.pitch
+      && note.time[0] <= mp.time
+      && note.time[1] >= mp.time);
+  });
+}
 
 function rollReduceMouse(state: RollEditorState, ms: RollMouseState, a: RollMouseAction): RollEditorState {
   const notes = getCurrentNotes(state);
-
   switch (ms.t) {
     case "down":
       if (a.t == "Mouseup") {
-        // const mp = ms.orig;
-        // const note = find_note_at_mpoint(notes, mp);
-        // if (note) {
-        //   // Delete note
-        //   const notIt = x => JSON.stringify(x) != JSON.stringify(note);
-        //   const s = updateCurrentNotes(state, n => fromJS(toJS(n).filter(notIt)));
-        //   return set(s, 'noteSize', note.time[1] - note.time[0]);
-        // }
-        // else {
-        //   // Create note
-        //   const sn: Note = restrictAtState(snap(get(state, 'gridSize'), get(state, 'noteSize'), mp), state);
-        //   if (sn == null)
-        //     return state
-        //   else {
-        //     const id = getIn(state, x => x.score.next_id);
-        //     const s = setIn(state, x => x.score.next_id, id + 1 as any);
-        //     return updateCurrentNotes(s, n => fromJS(toJS(n).concat([{ ...sn, id: "n" + id }])));
-        //   }
-        // }
+        console.log('up a down');
+        const mp = ms.orig;
+        console.log('notes', notes, 'mp', mp);
+        const note = find_note_at_mpoint(notes, mp);
+        console.log('note', note);
+        if (note !== undefined) {
+          // Delete note
+          const notIt = (x: IdNote) => x.id != note.id;
+          return produce(updateCurrentNotes(state, n => n.filter(notIt)), s => {
+            // Record the duration of that note as the default note length, in case we want to
+            // place the "same" note elsewhere maybe
+            s.noteSize = note.time[1] - note.time[0];
+          });
+        }
+        else {
+          // // Create note
+          // const sn: Note = restrictAtState(snap(get(state, 'gridSize'), get(state, 'noteSize'), mp), state);
+          // if (sn == null)
+          //   return state
+          // else {
+          //   const id = getIn(state, x => x.score.next_id);
+          //   const s = setIn(state, x => x.score.next_id, id + 1 as any);
+          //   return updateCurrentNotes(s, n => fromJS(toJS(n).concat([{ ...sn, id: "n" + id }])));
+          //}
+          return state;
+        }
         return state;
       }
       break;
@@ -131,7 +144,7 @@ function rollNewMouseState(state: RollEditorState, ms: RollMouseState, a: RollMo
 export function rollReduce(state: RollEditorState, action: RollAction): RollEditorState {
   const nst = rollReduceMouse(state, state.mouseState, action);
   const nmst = rollNewMouseState(state, state.mouseState, action);
-  return produce(state, s => {
+  return produce(nst, s => {
     s.mouseState = nmst;
     // s.mode = { ...mode, mouseState: nmst }; // XXX save this for later once I implement app modes
   });
