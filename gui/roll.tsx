@@ -1,20 +1,12 @@
 import { CSSProperties } from "react";
 import { RollEditorMain } from "./roll-editor-main";
 import { RollEditorOverlay, RollEditorOverlayProps } from "./roll-editor-overlay";
-import { GUTTER_WIDTH, PIANO_WIDTH, getScrollbarDims, mpoint } from "./roll-util";
-import { Action, Dispatch, RollAction } from "./state";
+import { GUTTER_WIDTH, PIANO_WIDTH, RollAction, RollMouseState, getScrollbarDims, mpoint } from "./roll-util";
+import { Action, Dispatch } from "./state";
 import { Note, Pattern } from "./types";
 import { VScrollBar } from "./vscrollbar";
 
 export type Style = "piano" | "drums";
-
-export type RollMouseState =
-  | { t: "hover", mp: mpoint | null }
-  | { t: "down", orig: mpoint, now: mpoint | null }
-  | {
-    t: "resizeNote", fromRight: boolean, orig: mpoint, now: mpoint | null,
-    note: Note, noteIx: number
-  }
 
 export type DerivedState = {
   // XXX this belongs scoped to editpattern mode data I think?

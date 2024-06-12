@@ -170,3 +170,10 @@ export function flatUndef<A>(xs: (undefined | A)[]): undefined | A[] {
   }
   return rv;
 }
+
+export function findLastIndex<T>(xs: T[], f: (x: T) => boolean): number {
+  for (let i = xs.length - 1; i >= 0; i--) {
+    if (f(xs[i])) return i;
+  }
+  return -1;
+}

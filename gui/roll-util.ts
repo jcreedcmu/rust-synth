@@ -21,6 +21,7 @@ export const rollDims = {
   w: PIANO_WIDTH + GUTTER_WIDTH + SCORE_WIDTH,
   h: PIANO_OCTAVE_VSPACE * 3 + SCALE
 };
+
 export type RollMouseState =
   | { t: "hover", mp: mpoint | null }
   | { t: "down", orig: mpoint, now: mpoint | null }
@@ -28,6 +29,16 @@ export type RollMouseState =
     t: "resizeNote", fromRight: boolean, orig: mpoint, now: mpoint | null,
     note: Note, noteIx: number
   }
+  ;
+
+export type RollAction = RollMouseAction;
+
+export type RollMouseAction =
+  | { t: 'Mousemove'; p_in_canvas: Point; }
+  | { t: 'Mousedown'; p_in_canvas: Point; extra?: string }
+  | { t: 'Mouseup' }
+  | { t: 'Mouseleave' }
+  ;
 
 export type RollMode = {
   t: "editPattern",

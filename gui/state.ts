@@ -1,7 +1,7 @@
 import { LowpassWidgetState } from './lowpass-widget';
 import { MeterData, WebMessage } from './protocol';
 import { RollEditorState } from './roll';
-import { rollDims } from './roll-util';
+import { RollAction, rollDims } from './roll-util';
 import { score } from './score';
 import { Point } from './types';
 
@@ -10,13 +10,6 @@ export type AppProps = {
 };
 
 export type WebSocketContainer = { ws: WebSocket };
-
-export type RollAction =
-  | { t: 'Mousemove'; p_in_canvas: Point; }
-  | { t: 'Mousedown'; p_in_canvas: Point; extra?: string }
-  | { t: 'Mouseup' }
-  | { t: 'Mouseleave' }
-  ;
 
 export type Action =
   | { t: 'setSequencer', inst: number, pat: number, on: boolean }
