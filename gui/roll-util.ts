@@ -92,3 +92,25 @@ export function rect_of_note(n: Note, c: Camera): Rect {
 export function inset(rect: Rect): Rect {
   return [rect[0] + SCALE, rect[1] + SCALE, rect[2] - 2 * SCALE, rect[3] - 2 * SCALE];
 }
+
+declare global {
+  interface Window {
+    scrollbarDims: { width: number, height: number };
+  }
+}
+
+// simplified version of
+// http://stackoverflow.com/questions/986937/how-can-i-get-the-browsers-scrollbar-sizes
+export function getScrollbarDims() {
+  if (!window.scrollbarDims) {
+    const div = document.createElement('div');
+    div.innerHTML = '<div style="width:100px;height:100px;overflow:scroll;"></div>';
+    const c = div.firstChild as HTMLElement;
+    document.body.appendChild(c);
+    const width = c.offsetWidth - c.clientWidth;
+    const height = c.offsetHeight - c.clientHeight;
+    document.body.removeChild(c);
+    window.scrollbarDims = { width, height };
+  }
+  return window.scrollbarDims;
+}

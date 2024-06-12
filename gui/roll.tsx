@@ -1,9 +1,10 @@
 import { CSSProperties } from "react";
 import { RollEditorMain } from "./roll-editor-main";
 import { RollEditorOverlay } from "./roll-editor-overlay";
-import { mpoint } from "./roll-util";
+import { GUTTER_WIDTH, PIANO_WIDTH, getScrollbarDims, mpoint } from "./roll-util";
 import { Dispatch } from "./state";
 import { Note, Pattern } from "./types";
+import { VScrollBar } from "./vscrollbar";
 
 export type Style = "piano" | "drums";
 
@@ -36,10 +37,27 @@ export type RollEditorProps = RollEditorState & { dispatch: Dispatch };
 
 
 export function RollEditor(props: RollEditorProps): JSX.Element {
-  const { dispatch } = props;
+  const { w, h, dispatch } = props;
 
-  const vscroller = <div></div>; // XXX
-  const hscroller = <div></div>; // XXX
+  const onVscroll = (top: number) => dispatch({ t: "Vscroll", top: Math.round(3 * top / h) });
+
+  const vscroller = <VScrollBar height={h}
+    scrollTop={props.scrollOctave * h / 3}
+    onScroll={onVscroll}
+    content_height={(7 / 3) * h}
+    x={w} y={0} />;
+
+  const s = getScrollbarDims();
+
+  // XXX this still doesn't actually do anything
+  const hscroller =
+    <div style={{
+      height: s.height, top: h, left: PIANO_WIDTH + GUTTER_WIDTH,
+      width: w - PIANO_WIDTH - GUTTER_WIDTH, overflowY: 'hidden',
+      overflowX: 'scroll', position: 'absolute'
+    }}>
+      <div style={{ width: 2 * w }}>&nbsp;</div>
+    </div>;
 
   const style: CSSProperties = {
     width: props.w, height: props.h,

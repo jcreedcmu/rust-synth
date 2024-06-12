@@ -22,6 +22,7 @@ export type Action =
   | { t: 'setLowpassState', lowpassState: LowpassWidgetState }
   | { t: 'setRoomSize', iface_roomsize: number }
   | { t: 'setWet', iface_wet: number }
+  | { t: 'Vscroll', top: number }
   ;
 
 export type Dispatch = (action: Action) => void;
