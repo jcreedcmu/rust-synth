@@ -2,8 +2,9 @@ import { RollEditorState } from './roll';
 import { produce } from 'immer';
 import { GUTTER_WIDTH, PIANO_WIDTH, PITCH_HEIGHT, PIXELS_PER_TICK, RollAction, RollMouseAction, RollMouseState, SCALE, mpoint, restrictAtState, snapToGrid, y0pitch_of_scrollOctave } from './roll-util';
 import { findLast, findLastIndex, unreachable } from './util';
-import { getCurrentNotes, updateCurrentNotes } from './accessors';
+import { getCurrentNotes, getCurrentPat, updateCurrentNotes } from './accessors';
 import { IdNote, Note, Point } from './types';
+import { augment_and_snap } from './extra-util';
 
 function find_note_at_mpoint<T extends Note>(notes: T[], mp: mpoint): T | undefined {
   return findLast(notes, note => {
@@ -50,26 +51,26 @@ function rollReduceMouse(state: RollEditorState, ms: RollMouseState, a: RollMous
       break;
     case "resizeNote":
       if (a.t == "Mousemove") {
-        // if (ms.now == null) return state;
-        // const oldLength = (ms.note.time[1] - ms.note.time[0]);
-        // const lengthDiff = augment_and_snap(ms.now.time - ms.orig.time);
-        // if (ms.fromRight) {
-        //   const newLength = Math.max(1, lengthDiff + oldLength);
-        //   const pat = getCurrentPat(state);
-        //   if (pat == undefined)
-        //     return state;
-        //   const newEnd = Math.min(pat.length, ms.note.time[0] + newLength);
+        if (ms.now == null) return state;
+        const oldLength = (ms.note.time[1] - ms.note.time[0]);
+        const lengthDiff = augment_and_snap(ms.now.time - ms.orig.time);
+        if (ms.fromRight) {
+          const newLength = Math.max(1, lengthDiff + oldLength);
+          const pat = getCurrentPat(state);
+          if (pat == undefined)
+            return state;
+          const newEnd = Math.min(pat.length, ms.note.time[0] + newLength);
 
-        //   const s = updateCurrentNotes(state, n => setIn(n, x => x[ms.noteIx].time[1], newEnd as any));
-        //   return set(s, 'noteSize', newLength);
-        // }
-        // else {
-        //   const newLength = Math.max(1, oldLength - lengthDiff);
-        //   const newBegin = Math.max(0, ms.note.time[1] - newLength);
+          return produce(updateCurrentNotes(state, notes => produce(notes, n => { n[ms.noteIx].time[1] = newEnd; })),
+            s => { s.noteSize = newLength; });
+        }
+        else {
+          const newLength = Math.max(1, oldLength - lengthDiff);
+          const newBegin = Math.max(0, ms.note.time[1] - newLength);
 
-        //   const s = updateCurrentNotes(state, n => setIn(n, x => x[ms.noteIx].time[0], newBegin as any));
-        //   return set(s, 'noteSize', newLength);
-        // }
+          return produce(updateCurrentNotes(state, notes => produce(notes, n => { n[ms.noteIx].time[0] = newBegin; })),
+            s => { s.noteSize = newLength; });
+        }
         return state;
       }
       else {

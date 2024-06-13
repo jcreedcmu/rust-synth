@@ -1,6 +1,10 @@
 import { produce } from "immer";
 import { RollEditorState } from "./roll";
-import { IdNote } from "./types";
+import { IdNote, Pattern } from "./types";
+
+export function getCurrentPat(state: RollEditorState): Pattern | undefined {
+  return state.pattern;
+}
 
 export function getCurrentNotes(state: RollEditorState): IdNote[] {
   return state.pattern.notes;
