@@ -5,7 +5,7 @@ run:
 	cargo run
 
 count:
-	wc -l src/*.rs gui/*.ts{x,}
+	wc -l src/*.rs gui/*.ts gui/*.tsx
 
 watch:
 	node ./build.js watch

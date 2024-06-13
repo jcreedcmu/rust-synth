@@ -89,6 +89,7 @@ export function mkState(): State {
       h: rollDims.w,
       w: rollDims.h,
       previewNote: null,
+      next_id: 1000, // XXX should be gotten from Score
     }
   };
 }

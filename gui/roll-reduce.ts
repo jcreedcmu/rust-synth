@@ -1,6 +1,6 @@
 import { RollEditorState } from './roll';
 import { produce } from 'immer';
-import { GUTTER_WIDTH, PIANO_WIDTH, PITCH_HEIGHT, PIXELS_PER_TICK, RollAction, RollMouseAction, RollMouseState, SCALE, mpoint, y0pitch_of_scrollOctave } from './roll-util';
+import { GUTTER_WIDTH, PIANO_WIDTH, PITCH_HEIGHT, PIXELS_PER_TICK, RollAction, RollMouseAction, RollMouseState, SCALE, mpoint, restrictAtState, snapToGrid, y0pitch_of_scrollOctave } from './roll-util';
 import { findLast, findLastIndex, unreachable } from './util';
 import { getCurrentNotes, updateCurrentNotes } from './accessors';
 import { IdNote, Note, Point } from './types';
@@ -33,15 +33,16 @@ function rollReduceMouse(state: RollEditorState, ms: RollMouseState, a: RollMous
           });
         }
         else {
-          // // Create note
-          // const sn: Note = restrictAtState(snap(get(state, 'gridSize'), get(state, 'noteSize'), mp), state);
-          // if (sn == null)
-          //   return state
-          // else {
-          //   const id = getIn(state, x => x.score.next_id);
-          //   const s = setIn(state, x => x.score.next_id, id + 1 as any);
-          //   return updateCurrentNotes(s, n => fromJS(toJS(n).concat([{ ...sn, id: "n" + id }])));
-          //}
+          // Create note
+          const sn: Note | null = restrictAtState(snapToGrid(state.gridSize, state.noteSize, mp), state);
+          if (sn == null)
+            return state
+          else {
+            const id = state.next_id;
+            return produce(updateCurrentNotes(state, n => n.concat([{ ...sn, id: "n" + id }])), s => {
+              s.next_id = id + 1;
+            });
+          }
           return state;
         }
         return state;

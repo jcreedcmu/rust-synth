@@ -1,3 +1,4 @@
+import { RollEditorState } from './roll';
 import { Note, Point, Rect } from './types'
 
 export const SCALE = 2; // units: pixels per fat pixel
@@ -126,4 +127,25 @@ export function getScrollbarDims() {
     window.scrollbarDims = { width, height };
   }
   return window.scrollbarDims;
+}
+
+function restrict(note: Note, patlength: number): Note | null {
+  if (note.time[0] < 0) return null;
+  if (note.time[0] >= patlength) return null;
+  if (note.time[1] > patlength) {
+    const newStart = note.time[0] - (note.time[1] - patlength);
+    if (newStart < 0) return null;
+    return { pitch: note.pitch, time: [newStart, patlength] };
+  }
+  return note;
+}
+
+export function restrictAtState(note: Note, state: RollEditorState): Note | null {
+  return restrict(note, state.pattern.length);
+}
+
+export function snapToGrid(gridSize: number, noteSize: number, mp: mpoint): Note {
+  const gs = gridSize;
+  const b = Math.floor(mp.time / gs) * gs;
+  return { pitch: mp.pitch, time: [b, b + noteSize] };
 }

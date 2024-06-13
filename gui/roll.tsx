@@ -23,6 +23,8 @@ export type RollEditorState = {
   scrollOctave: number,
   style: Style,
   pattern: Pattern,
+  // XXX this doesn't belong here, but rather in Score
+  next_id: number,
 } & DerivedState & { w: number, h: number };
 
 export type RollDispatch = (action: RollAction) => void;
