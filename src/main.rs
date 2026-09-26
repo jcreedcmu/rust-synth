@@ -24,7 +24,6 @@ mod util;
 mod wavetables;
 mod webserver;
 
-use audio::{BUF_SIZE, CHANNELS};
 use clap::Parser;
 use consts::BUS_OUT;
 use midi::{Message, MidiService};
@@ -96,8 +95,8 @@ fn mk_sequencer_thread(sg: StateGuard) -> JoinHandle {
   })
 }
 
-fn mk_midi_service(sg: StateGuard) -> anyhow::Result<MidiService> {
-  midi::MidiService::new(0, move |msg: &Message| -> anyhow::Result<()> {
+fn mk_midi_service(sg: StateGuard, port: usize) -> anyhow::Result<MidiService> {
+  midi::MidiService::new(port, move |msg: &Message| -> anyhow::Result<()> {
     let mut s: MutexGuard<State> = depoison(sg.lock())?;
     reduce::midi_reducer(msg, &mut s)?;
     Ok(())
@@ -140,14 +139,28 @@ fn mk_stdin_thread(sg: StateGuard) -> JoinHandle {
   })
 }
 
+#[cfg(target_os = "linux")]
+const DEFAULT_MIDI_PORT: usize = 1;
+#[cfg(not(target_os = "linux"))]
+const DEFAULT_MIDI_PORT: usize = 0;
+
 #[derive(Parser, Debug, Clone)]
 #[command(version, about)]
 pub struct Args {
-  // Sound card
+  // Sound card (ALSA card number, only used on Linux)
   #[arg(short = 'c', long, env)]
-  sound_card: u8,
+  sound_card: Option<u8>,
 
-  // Profiling interval, measured in number of BUF_SIZE-long audio sample generation periods
+  // Frames of audio rendered at a time. On macOS this is also the requested
+  // output buffer size; on Linux the ALSA buffer is twice this.
+  #[arg(short = 'b', long, env, default_value_t = 64)]
+  buffer_frames: usize,
+
+  // MIDI input port index
+  #[arg(short = 'm', long, env, default_value_t = DEFAULT_MIDI_PORT)]
+  midi_port: usize,
+
+  // Profiling interval, measured in number of buffer_frames-long audio sample generation periods
   #[arg(long, env)]
   profile_interval: Option<usize>,
 }
@@ -163,8 +176,7 @@ fn setup_ctrlc_handler(sg: StateGuard) {
 fn run() -> Result<(), Box<dyn Error>> {
   let args = Args::parse();
 
-  let mono_buf_size = BUF_SIZE / (CHANNELS as usize);
-  let mut state = State::new(mono_buf_size);
+  let mut state = State::new(args.buffer_frames);
 
   state.fixed_ugens = vec![
     // send midi notes straight to out
@@ -173,7 +185,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 
   let state = Arc::new(Mutex::new(state));
 
-  let ms = mk_midi_service(state.clone())?;
+  let ms = mk_midi_service(state.clone(), args.midi_port)?;
   mk_sequencer_thread(state.clone());
   mk_stdin_thread(state.clone());
   mk_web_thread(state.clone());

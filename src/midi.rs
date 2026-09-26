@@ -75,11 +75,14 @@ impl MidiService {
     let mut midi_in = MidiInput::new("midir input")?;
     midi_in.ignore(Ignore::None);
 
-    let midi_device_num = 1;
-    let in_port = midi_in
-      .ports()
-      .get(midi_device_num)
-      .ok_or(anyhow!("Invalid port number"))?
+    let ports = midi_in.ports();
+    println!("MIDI input ports:");
+    for (i, p) in ports.iter().enumerate() {
+      println!("  {i}: {}", midi_in.port_name(p)?);
+    }
+    let in_port = ports
+      .get(source_index)
+      .ok_or(anyhow!("Invalid MIDI port number {source_index}"))?
       .clone();
 
     println!("\nOpening connections");
