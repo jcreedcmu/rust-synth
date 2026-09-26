@@ -6,11 +6,13 @@ Playing around with audio synthesis in rust.
 Building
 --------
 
+```shell
 cargo test # generates bindings for typescript side
 npm ci
 node ./build.js # or `make test` for a continuous build
 cargo run
 # browse to localhost:8000
+```
 
 Nix Notes
 ---------
